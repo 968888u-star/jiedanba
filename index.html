@@ -344,8 +344,8 @@
 
 <div id="modal-root"></div>
 
-<script>const LS_KEY = 'order.v8';
-const CFG_KEY = 'order.v8.config';
+<script>const LS_KEY = 'order.v9';
+const CFG_KEY = 'order.v9.config';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
@@ -852,10 +852,12 @@ function fallbackCopy(text) {
 }
 
 /* =========================================================
-   🔥 一键支付 imToken（核心）
-   - 只做一次同步跳转，不会触发"反复尝试"警告
-   - Android 用 intent://，iOS 用 imtokenv2://
-   - 参数：收款地址 + 金额 + USDT 合约 全部自动带入
+   🔥 一键支付 imToken（修复版）
+   使用 imToken 官方标准转账 DeepLink 格式：
+   imtoken://transfer?chain=trx&address=xxx&amount=xxx
+   - chain: trx (TRC20) / eth (ERC20)
+   - address: 收款地址
+   - amount: 最小单位整数（USDT 6 位小数）
    ========================================================= */
 function payWithImToken() {
   const net = state.depositNet;
@@ -867,27 +869,13 @@ function payWithImToken() {
 
   // USDT 精度 6 位小数
   const amountUnits = Math.floor(amount * 1e6).toString();
-  const contract = USDT_CONTRACT[net];
-  const network = net === 'TRC20' ? 'trx' : 'ethereum';
+  // 链标识
+  const chain = net === 'TRC20' ? 'trx' : 'eth';
 
-  // 检测环境
-  const ua = navigator.userAgent.toLowerCase();
-  const isAndroid = ua.includes('android');
-  const isIOS = /iphone|ipad|ipod/.test(ua);
+  // imToken 官方标准转账 DeepLink
+  const uri = `imtoken://transfer?chain=${chain}&address=${to}&amount=${amountUnits}`;
 
-  // 构造 imToken 官方 DeepLink（带完整参数）
-  const params = `navigate?screen=Transfer&symbol=USDT&contract=${contract}&to=${to}&amount=${amountUnits}&decimals=6&network=${network}`;
-
-  let uri;
-  if (isAndroid) {
-    // Android: intent:// 强指定 imToken 包名，参数不会丢失
-    uri = `intent://${params}#Intent;scheme=imtokenv2;package=im.token.app;end`;
-  } else {
-    // iOS / 其他: imToken 官方 scheme
-    uri = `imtokenv2://${params}`;
-  }
-
-  // 只用 <a> 标签点击跳转（最稳定，不会被拦截）
+  // 用 <a> 标签点击触发（比 location.href 更稳定）
   const a = document.createElement('a');
   a.href = uri;
   a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
