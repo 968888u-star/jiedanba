@@ -116,6 +116,18 @@
   .pm-choice-info{flex:1;min-width:0}
   .pm-choice-info .t{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:2px}
   .pm-choice-info .s{font-size:11.5px;color:var(--ink3);word-break:break-all}
+
+  /* 钱包选择卡片 */
+  .wallet-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+  .wallet-card{display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;transition:.16s;text-align:left;position:relative;}
+  .wallet-card:hover{border-color:#c9cddc}
+  .wallet-card.active{border-color:var(--brand);background:var(--brand-soft);}
+  .wallet-card .wc-icon{width:36px;height:36px;border-radius:10px;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;}
+  .wallet-card .wc-icon.imtoken{background:linear-gradient(135deg,#3aa3ff,#1c7ed6)}
+  .wallet-card .wc-info{flex:1;min-width:0}
+  .wallet-card .wc-name{font-size:13.5px;font-weight:800;color:var(--ink)}
+  .wallet-card .wc-tip{font-size:11px;color:var(--ink3);margin-top:2px}
+  .wallet-card .wc-check{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;display:grid;place-items:center;border:2px solid #fff;}
   @media (max-width:900px){
     .sidebar{display:none}
     .main{margin-left:0;padding:0 12px 80px;max-width:100%}
@@ -126,6 +138,7 @@
     .toast{bottom:80px}
     .overlay{padding:0;align-items:flex-end}
     .modal{width:100%;max-height:90vh;border-radius:16px 16px 0 0;}
+    .wallet-choices{grid-template-columns:1fr}
   }
 </style>
 </head><body>
@@ -146,12 +159,13 @@ const state = {
   refunds: [],
   config: { trc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '' },
   view: 'hall',
-  orderTab: 'all',
+  orderTab: 'hall',   // ← 默认 tab 改为 'hall'（只显示待审核订单）
   mineTab: 'working',
   authTab: 'login',
   loading: false,
   pollTimer: null,
   grabChoice: null,
+  wallet: 'imtoken',  // ← 新增：充值钱包，默认 imToken
 };
 
 function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch(e) { return null; } }
@@ -216,8 +230,6 @@ function toast(msg) {
 
 /* =========================================================
    收款方式工具（支持新旧格式）
-   - 旧格式：{ type, realName, account, bank }
-   - 新格式：{ alipay: {...}|null, bank: {...}|null }
    ========================================================= */
 function getPayMethods(u) {
   if (!u || !u.payMethod) return [];
@@ -448,23 +460,32 @@ const STATUS_MAP = {
 const statusOf = s => STATUS_MAP[s] || STATUS_MAP.pending;
 
 function viewHall() {
-  // 去掉了"暂停中" tab
+  // 大厅默认只显示"待审核"，被接单（待收款）后自动移出大厅
   const tabs = [
-    { id: 'all', name: '订单大厅' },
+    { id: 'hall', name: '订单大厅' },       // 只显示 pending
     { id: 'confirm', name: '待收款' },
     { id: 'paid', name: '已收款' },
     { id: 'cancelled', name: '已取消' },
   ];
   let list = state.orders.slice();
-  if (state.orderTab !== 'all') list = list.filter(o => o.status === state.orderTab);
+  if (state.orderTab === 'hall') {
+    list = list.filter(o => o.status === 'pending');
+  } else {
+    list = list.filter(o => o.status === state.orderTab);
+  }
   list.sort((a, b) => b.createdAt - a.createdAt);
+
+  const emptyText = state.orderTab === 'hall'
+    ? '大厅里暂时没有可接订单'
+    : '该分类下还没有订单';
+
   return `
   <div class="page">
     <div class="order-tabs">
       ${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${t.name}</button>`).join('')}
     </div>
     <div class="order-list">
-      ${list.length ? list.map(orderCard).join('') : `<div class="empty"><div class="empty-ico">📭</div><h3>暂无订单</h3><p>该分类下还没有订单</p></div>`}
+      ${list.length ? list.map(orderCard).join('') : `<div class="empty"><div class="empty-ico">📭</div><h3>暂无订单</h3><p>${emptyText}</p></div>`}
     </div>
   </div>`;
 }
@@ -548,7 +569,7 @@ function mineOrderCard(o) {
 }
 
 /* =========================================================
-   充值押金
+   充值押金（含钱包选择）
    ========================================================= */
 function viewDeposit() {
   const addr = state.config.trc20;
@@ -558,19 +579,42 @@ function viewDeposit() {
     <div class="form-card">
       <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">充值押金</h2>
       <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">使用 USDT (TRC20) 充值，抢单前需缴纳押金</p>
+
       <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:16px;margin-bottom:18px">
         <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
         <div style="font-size:24px;font-weight:800;color:var(--brand);margin-top:2px">${u.deposit} <span style="font-size:13px">USDT</span></div>
       </div>
+
+      <!-- 钱包选择 -->
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div>
+      <div class="wallet-choices">
+        <button class="wallet-card active" data-action="pick-wallet" data-wallet="imtoken">
+          <div class="wc-icon imtoken">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3.5 C6.5 3.5, 3 8, 3 12.5 C3 17, 6.5 20.5, 12 20.5 C15 20.5, 17.5 19.5, 19 17.5 C19 17.5, 14.5 16.5, 14.5 12 C14.5 7.5, 19 6.5, 19 6.5 C17.5 4.5, 15 3.5, 12 3.5 Z" fill="#fff"/>
+            </svg>
+          </div>
+          <div class="wc-info">
+            <div class="wc-name">imToken</div>
+            <div class="wc-tip">推荐 · 内置浏览器</div>
+          </div>
+          <div class="wc-check">✓</div>
+        </button>
+      </div>
+
       <div class="notice" style="margin-bottom:14px">🦊 点击「一键支付」将在 imToken 内置浏览器打开支付页面</div>
+
       <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">收款地址（TRC20）</div>
       <div style="background:#f8f9fd;border-radius:10px;padding:10px 14px;font-size:12px;word-break:break-all;color:var(--ink2);margin-bottom:14px">${esc(addr)}</div>
+
       <label class="field" style="margin-bottom:12px">
         <span class="field-label">支付金额（USDT）</span>
         <input class="input" id="deposit-amount" type="number" min="${state.config.minDeposit}" step="1" value="100">
       </label>
+
       <button class="btn btn-imtoken btn-block" data-action="pay-imtoken">🦊 一键支付 · 打开 imToken</button>
       <button class="btn btn-primary btn-block" data-action="manual-confirm-deposit" style="margin-top:10px">我已完成支付</button>
+
       <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(state.config.support)}</div>
     </div>
   </div>`;
@@ -643,7 +687,6 @@ function openPayMethodModal(isForce = false) {
   const canClose = !isForce;
   const pm = state.user?.payMethod || {};
 
-  // 兼容旧格式
   let alipay = { realName: '', account: '' };
   let bank = { realName: '', account: '', bank: '' };
   if (pm.type === 'alipay') { alipay = { realName: pm.realName || '', account: pm.account || '' }; }
@@ -663,7 +706,6 @@ function openPayMethodModal(isForce = false) {
         ${isForce ? '⚠️ 抢单前至少绑定一种收款方式，可同时绑定支付宝与银行卡' : '⚠️ 至少填写一种，可同时绑定支付宝与银行卡'}
       </div>
 
-      <!-- 支付宝 -->
       <div style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;background:#f8faff">
         <div style="font-size:13.5px;font-weight:800;color:#2563eb;margin-bottom:12px">💙 支付宝（选填）</div>
         <label class="field" style="margin-bottom:10px">
@@ -676,7 +718,6 @@ function openPayMethodModal(isForce = false) {
         </label>
       </div>
 
-      <!-- 银行卡 -->
       <div style="border:1px solid var(--line);border-radius:12px;padding:14px;background:#fffdf8">
         <div style="font-size:13.5px;font-weight:800;color:#b45309;margin-bottom:12px">🏦 银行卡（选填）</div>
         <label class="field" style="margin-bottom:10px">
@@ -761,7 +802,6 @@ function openGrabModal(id) {
   if (!hasEnoughDeposit(o)) { toast(`押金不足，需 ${depositRequired(o)} USDT`); return; }
 
   const pms = getPayMethods(state.user);
-  // 默认选第一个
   state.grabChoice = pms.length === 1 ? pms[0].type : (state.grabChoice || pms[0].type);
 
   const choiceHtml = pms.length === 1 ? `
@@ -850,7 +890,24 @@ function openDepositModal(order) {
         <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
         <div style="font-size:22px;font-weight:800;color:var(--brand);margin-top:2px">${state.user.deposit} <span style="font-size:13px">USDT</span></div>
       </div>
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">充值地址（TRC20）</div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div>
+      <div class="wallet-choices" style="grid-template-columns:1fr">
+        <button class="wallet-card active" data-action="pick-wallet" data-wallet="imtoken">
+          <div class="wc-icon imtoken">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3.5 C6.5 3.5, 3 8, 3 12.5 C3 17, 6.5 20.5, 12 20.5 C15 20.5, 17.5 19.5, 19 17.5 C19 17.5, 14.5 16.5, 14.5 12 C14.5 7.5, 19 6.5, 19 6.5 C17.5 4.5, 15 3.5, 12 3.5 Z" fill="#fff"/>
+            </svg>
+          </div>
+          <div class="wc-info">
+            <div class="wc-name">imToken</div>
+            <div class="wc-tip">推荐 · 内置浏览器</div>
+          </div>
+          <div class="wc-check">✓</div>
+        </button>
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px;margin-top:14px">充值地址（TRC20）</div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
         <input class="input" value="${esc(addr)}" readonly style="font-size:12px;flex:1">
         <button class="btn btn-ghost" data-action="copy-addr" style="padding:0 14px;background:#fff;border-color:var(--line)">复制</button>
@@ -991,7 +1048,7 @@ function payWithImToken() {
   a.click();
   setTimeout(() => { try { a.remove(); } catch (e) {} }, 500);
 }/* =========================================================
-   认证操作（注册不再需要昵称）
+   认证操作
    ========================================================= */
 async function doLogin() {
   const username = ($('#login-username')?.value || '').trim();
@@ -1021,7 +1078,6 @@ async function doRegister() {
   if (password.length < 6) { toast('密码至少 6 位'); return; }
   if (password !== password2) { toast('两次密码不一致'); return; }
   try {
-    // 用用户名同时作为 nickname（后端 nickname NOT NULL）
     const r = await api('/auth/register', {
       method: 'POST',
       body: { username, nickname: username, password }
@@ -1045,6 +1101,7 @@ async function doLogout() {
   state.orders = [];
   state.refunds = [];
   state.view = 'hall';
+  state.orderTab = 'hall';
   state.authTab = 'login';
   stopPolling();
   closeModal();
@@ -1052,7 +1109,7 @@ async function doLogout() {
 }
 
 /* =========================================================
-   保存收款方式（同时保存支付宝 + 银行卡）
+   保存收款方式
    ========================================================= */
 async function savePayMethod() {
   const alipayName = ($('#pm-alipay-name')?.value || '').trim();
@@ -1061,13 +1118,11 @@ async function savePayMethod() {
   const bankAcc = ($('#pm-bank-account')?.value || '').trim();
   const bankBank = ($('#pm-bank-bank')?.value || '').trim();
 
-  // 判断用户是否填了支付宝或银行卡（只要填了一项就按该项保存）
   const hasAlipay = alipayName || alipayAcc;
   const hasBank = bankName || bankAcc || bankBank;
 
   if (!hasAlipay && !hasBank) { toast('请至少填写一种收款方式'); return; }
 
-  // 校验填写完整性
   if (hasAlipay) {
     if (!alipayName) { toast('请填写支付宝收款姓名'); return; }
     if (!alipayAcc) { toast('请填写支付宝账号'); return; }
@@ -1120,12 +1175,19 @@ document.addEventListener('click', async e => {
 
       case 'pick-pm':
         state.grabChoice = el.dataset.type;
-        // 重新渲染单选高亮
         document.querySelectorAll('.pm-choice-item').forEach(it => {
           const isActive = it.dataset.type === state.grabChoice;
           it.classList.toggle('active', isActive);
           const radio = it.querySelector('input[type="radio"]');
           if (radio) radio.checked = isActive;
+        });
+        break;
+
+      case 'pick-wallet':
+        state.wallet = el.dataset.wallet || 'imtoken';
+        // 视觉上更新选中状态
+        document.querySelectorAll('.wallet-card').forEach(c => {
+          c.classList.toggle('active', c.dataset.wallet === state.wallet);
         });
         break;
 
