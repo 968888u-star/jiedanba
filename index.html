@@ -110,8 +110,13 @@
     display:flex;align-items:flex-start;justify-content:space-between;
     gap:10px;margin-bottom:10px;
   }
-  .order-no{font-size:12.5px;color:var(--ink2);line-height:1.4;word-break:break-all}
-  .order-status{font-size:12.5px;font-weight:700;white-space:nowrap;flex:0 0 auto}
+  .order-no{
+    font-size:12.5px;color:var(--ink2);line-height:1.4;
+    word-break:break-all;
+  }
+  .order-status{
+    font-size:12.5px;font-weight:700;white-space:nowrap;flex:0 0 auto;
+  }
   .status-pending{color:#f0a020}
   .status-confirm{color:#4f46e5}
   .status-paid{color:#10b981}
@@ -147,13 +152,19 @@
   }
   .order-btn:hover{background:#f0a020;color:#fff}
   .order-btn:active{transform:scale(.98)}
-  .order-btn.done{background:#f1f2f7;color:var(--ink3);cursor:default;transform:none}
+  .order-btn.done{
+    background:#f1f2f7;color:var(--ink3);cursor:default;
+    transform:none;
+  }
   .order-btn.done:hover{background:#f1f2f7;color:var(--ink3)}
 
   .order-btn.need-deposit{
-    background:#fff4ec;color:#c2410c;border:1px dashed #f0a020;
+    background:#fff4ec;color:#c2410c;
+    border:1px dashed #f0a020;
   }
-  .order-btn.need-deposit:hover{background:#ffe9d6;color:#9a3412}
+  .order-btn.need-deposit:hover{
+    background:#ffe9d6;color:#9a3412;
+  }
 
   .empty{
     text-align:center;padding:60px 20px;background:#fff;border-radius:12px;
@@ -256,6 +267,7 @@
   }
   .chip-cat.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 
+  /* 二维码容器 */
   .qr-wrap{
     display:flex;justify-content:center;align-items:center;
     padding:12px;background:#fff;border:1px solid var(--line);
@@ -268,7 +280,10 @@
     font-size:12px;color:var(--ink3);background:#fff;
   }
 
-  .admin-head{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  /* 管理后台 */
+  .admin-head{
+    display:flex;align-items:center;gap:10px;margin-bottom:20px;
+  }
   .admin-badge{
     display:inline-flex;align-items:center;gap:5px;
     background:#12141d;color:#fff;font-size:11px;font-weight:700;
@@ -284,184 +299,6 @@
   }
   .admin-sec h3::before{
     content:'';width:3px;height:14px;border-radius:2px;background:var(--brand);
-  }
-
-  /* ========== 支付网关页面（图2样式） ========== */
-  .pay-page{
-    background:#e8f0fb;min-height:100vh;
-    padding:0 0 30px;
-    animation:fadeUp .3s ease;
-  }
-  .pay-topbar{
-    display:flex;align-items:center;gap:12px;
-    padding:14px 16px;background:#e8f0fb;
-    position:sticky;top:0;z-index:10;
-  }
-  .pay-close{
-    width:32px;height:32px;border-radius:50%;background:#fff;
-    display:grid;place-items:center;font-size:16px;color:#5b6070;
-    box-shadow:0 2px 6px rgba(0,0,0,.06);
-  }
-  .pay-url{
-    flex:1;background:#fff;border-radius:20px;
-    padding:7px 16px;text-align:center;
-    font-size:12.5px;color:#5b6070;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    box-shadow:0 2px 6px rgba(0,0,0,.04);
-  }
-  .pay-lang{
-    display:flex;align-items:center;gap:5px;
-    background:#1e78e0;color:#fff;font-size:12.5px;font-weight:600;
-    padding:6px 12px;border-radius:20px;
-  }
-
-  .pay-hero{
-    text-align:center;padding:10px 20px 18px;
-  }
-  .pay-lock-icon{
-    width:56px;height:56px;border-radius:14px;
-    background:linear-gradient(135deg,#ffe9b8,#ffc764);
-    display:grid;place-items:center;margin:0 auto 12px;
-    font-size:26px;
-    box-shadow:0 6px 16px rgba(255,190,60,.35);
-  }
-  .pay-hero h1{
-    font-size:15.5px;font-weight:800;color:#1a2b45;
-    line-height:1.5;margin-bottom:14px;
-  }
-  .pay-alert{
-    background:#fff8e1;border:1px solid #ffe0a3;
-    border-radius:10px;padding:11px 14px;
-    font-size:12.5px;color:#8a6d1e;line-height:1.6;
-    text-align:left;
-  }
-
-  .pay-sec{
-    background:#fff;margin:12px 16px;border-radius:14px;
-    padding:16px 18px;
-    box-shadow:0 2px 10px rgba(30,80,150,.05);
-  }
-  .pay-sec-title{
-    font-size:13px;font-weight:800;color:#1e78e0;
-    margin-bottom:12px;display:flex;align-items:center;gap:6px;
-  }
-  .pay-sec-title::before{
-    content:'';width:3px;height:13px;border-radius:2px;background:#1e78e0;
-  }
-
-  .pay-row{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:10px 0;font-size:13.5px;
-    border-bottom:1px solid #f0f3f8;
-  }
-  .pay-row:last-child{border-bottom:none;padding-bottom:0}
-  .pay-row .k{color:#5b7090}
-  .pay-row .v{color:#1a2b45;font-weight:600;word-break:break-all;text-align:right}
-
-  .pay-amount-row{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:14px 0 4px;font-size:15px;font-weight:700;
-  }
-  .pay-amount-row .k{color:#1e78e0}
-  .pay-amount-row .v{
-    font-size:26px;font-weight:850;color:#1e78e0;letter-spacing:-1px;
-  }
-  .pay-amount-row .v small{font-size:13px;font-weight:600;margin-left:3px;letter-spacing:0}
-
-  /* 钱包选择 */
-  .pay-wallets{
-    display:grid;grid-template-columns:1fr 1fr;gap:12px;
-  }
-  .pay-wallet{
-    position:relative;
-    border:2px solid #e5ecf6;border-radius:14px;
-    padding:18px 12px 14px;text-align:center;
-    transition:.18s;background:#fff;
-  }
-  .pay-wallet.active{
-    border-color:#1e78e0;background:#f5faff;
-  }
-  .pay-wallet.disabled{
-    opacity:.45;cursor:not-allowed;
-    background:#f7f9fc;
-  }
-  .pay-wallet .w-icon{
-    width:52px;height:52px;border-radius:14px;margin:0 auto 10px;
-    display:grid;place-items:center;font-size:24px;font-weight:800;color:#fff;
-    box-shadow:0 6px 14px rgba(30,120,224,.2);
-  }
-  .pay-wallet .w-icon.imt{
-    background:linear-gradient(135deg,#33b3a6,#0e8c7d);
-  }
-  .pay-wallet .w-icon.tp{
-    background:linear-gradient(135deg,#4a90e2,#2f6cd6);
-  }
-  .pay-wallet .w-name{
-    font-size:13px;font-weight:700;color:#1a2b45;
-  }
-  .pay-wallet .w-tag{
-    font-size:10.5px;font-weight:700;color:#1e78e0;
-    background:#e6f0ff;border-radius:10px;
-    padding:2px 8px;display:inline-block;margin-top:6px;
-  }
-  .pay-check{
-    position:absolute;top:8px;left:8px;
-    width:20px;height:20px;border-radius:50%;
-    background:#1e78e0;color:#fff;
-    display:grid;place-items:center;font-size:11px;
-  }
-
-  .pay-wallet-hint{
-    margin-top:12px;text-align:center;
-    font-size:12px;color:#8a9ab0;
-  }
-
-  /* 支付按钮 */
-  .pay-action{
-    padding:16px;
-    position:sticky;bottom:0;
-    background:linear-gradient(to top,#e8f0fb 70%,transparent);
-  }
-  .pay-btn{
-    width:100%;padding:14px 0;border-radius:14px;
-    font-size:16px;font-weight:800;letter-spacing:.5px;
-    background:linear-gradient(135deg,#3a9ae0,#1e78e0);
-    color:#fff;
-    box-shadow:0 8px 20px rgba(30,120,224,.35);
-    transition:.16s;
-  }
-  .pay-btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(30,120,224,.42)}
-  .pay-btn:active{transform:scale(.98)}
-  .pay-btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
-
-  .pay-tip{
-    text-align:center;font-size:11.5px;color:#8a9ab0;
-    padding:0 16px;line-height:1.6;margin-top:8px;
-  }
-
-  /* 等待支付浮层 */
-  .waiting-box{
-    text-align:center;padding:30px 20px;
-  }
-  .waiting-spinner{
-    width:64px;height:64px;margin:0 auto 18px;
-    border:5px solid #d9e6f7;border-top-color:#1e78e0;
-    border-radius:50%;animation:spin 1s linear infinite;
-  }
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .waiting-box h3{font-size:16px;font-weight:800;color:#1a2b45;margin-bottom:8px}
-  .waiting-box p{font-size:13px;color:#8a9ab0;line-height:1.6;margin-bottom:18px}
-  .waiting-actions{display:flex;flex-direction:column;gap:10px}
-  .waiting-steps{
-    text-align:left;background:#f5f9ff;border-radius:10px;
-    padding:14px 16px;font-size:12.5px;color:#3a5a80;line-height:2;
-  }
-  .waiting-steps b{color:#1e78e0}
-
-  .copy-mini{
-    font-size:12px;color:#1e78e0;font-weight:700;
-    padding:4px 10px;border-radius:8px;background:#e6f0ff;
-    margin-left:8px;
   }
 
   .toast{
@@ -507,10 +344,7 @@
     .form-row{grid-template-columns:1fr}
     .form-card{padding:16px}
     .overlay{padding:0;align-items:flex-end}
-    .modal{width:100%;max-height:90vh;border-radius:16px 16px 0 0}
-
-    .pay-sec{margin:10px 12px}
-    .pay-wallets{gap:10px}
+    .modal{width:100%;max-height:90vh;border-radius:16px 16px 0 0;}
   }
 </style>
 </head><body>
@@ -567,8 +401,8 @@
 <script>/* =========================================================
    工具
    ========================================================= */
-const LS_KEY = 'order.v4';
-const CFG_KEY = 'order.v4.config';
+const LS_KEY = 'order.v3';
+const CFG_KEY = 'order.v3.config';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
@@ -579,6 +413,7 @@ function esc(s) {
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
   ));
 }
+
 function timeAgo(ts) {
   const d = Date.now() - ts;
   const m = Math.floor(d / 60000);
@@ -590,37 +425,27 @@ function timeAgo(ts) {
   if (dd < 30) return dd + ' 天前';
   return new Date(ts).toLocaleDateString('zh-CN');
 }
+
 function fmtDateTime(ts) {
   const d = new Date(ts);
   const p = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-/* 生成图2那种长订单号：20261007211506583514 */
-function genPayOrderNo() {
-  const d = new Date();
-  const p = n => String(n).padStart(2, '0');
-  const ymd = `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}`;
-  const hms = `${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
-  const rand = Math.floor(100000 + Math.random() * 900000);
-  return ymd + hms + rand;
-}
-
 /* =========================================================
-   全局配置
+   全局配置（管理后台可改，存 localStorage）
    ========================================================= */
 const DEFAULT_CONFIG = {
-  trc20: 'TLsgrS8KPwtmVWx3YZiWQ5hcRRUfkxGBo1',
+  trc20: 'TXk7YbWcWnQPNhSCXC3p4aFb5tHKqMgRzA',
   erc20: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
-  ratio: 0.1,
-  minDeposit: 10,
-  notice: '付款成功后请勿关闭此页面，请耐心等待自动回调订单，否则可能无法自动到账！',
+  ratio: 0.1,           // 押金比例（占订单金额）
+  minDeposit: 10,       // 最低押金（USDT）
+  notice: '请务必使用所选网络充值，转账到其他网络将无法到账',
   support: '客服微信：support_usdt',
-  // USDT-TRC20 合约地址（用于拉起 imToken 转账）
-  usdtContract: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
 };
 
 let CONFIG = Object.assign({}, DEFAULT_CONFIG);
+
 function loadConfig() {
   try {
     const raw = localStorage.getItem(CFG_KEY);
@@ -640,11 +465,8 @@ const state = {
   view: 'hall',
   orderTab: 'all',
   mineTab: 'working',
+  // 充值时选择的网络
   depositNet: 'TRC20',
-  // 当前支付订单（拉起支付网关用）
-  payOrder: null,
-  // 支付网关状态：pending / waiting / done
-  payStatus: 'pending',
 };
 
 function save() {
@@ -652,11 +474,12 @@ function save() {
     localStorage.setItem(LS_KEY, JSON.stringify({ user: state.user, orders: state.orders }));
   } catch (e) {}
 }
+
 const getOrder = id => state.orders.find(o => o.id === id);
 const myTaker = o => (o.takers || []).find(x => x.userId === state.user.id) || null;
 
 /* =========================================================
-   押金规则
+   押金规则（读 CONFIG）
    ========================================================= */
 function depositRequired(o) {
   const r = Number(CONFIG.ratio) || 0.1;
@@ -674,6 +497,7 @@ function seedOrders() {
   const now = Date.now();
   const H = 3600000;
   const orderNo = () => '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
+
   const mk = (o) => Object.assign({
     id: uid(), status: 'pending', takers: [], createdAt: now - H,
     publisherId: 'sys', publisherName: '系统发布', credit: 100,
@@ -737,10 +561,12 @@ function boot() {
     save();
   }
 
+  // 支持 #admin 直接进入管理后台
   if (location.hash === '#admin') state.view = 'admin';
 
   render();
   updateUserUI();
+
   if (!state.user.name) showWelcome();
 }/* =========================================================
    订单状态映射
@@ -765,6 +591,7 @@ function viewHall() {
     { id: 'paused', name: '暂停中' },
     { id: 'cancelled', name: '已取消' },
   ];
+
   let list = state.orders.slice();
   if (state.orderTab !== 'all') list = list.filter(o => o.status === state.orderTab);
   list.sort((a, b) => b.createdAt - a.createdAt);
@@ -777,6 +604,7 @@ function viewHall() {
                 data-action="order-tab" data-tab="${t.id}">${t.name}</button>
       `).join('')}
     </div>
+
     <div class="order-list">
       ${list.length ? list.map(orderCard).join('') : `
         <div class="empty">
@@ -794,21 +622,30 @@ function orderCard(o) {
   const mine = o.publisherId === state.user.id;
   const took = !!myTaker(o);
   const canGrab = o.status === 'pending' && !mine && !took;
+
   const required = depositRequired(o);
   const enough = hasEnoughDeposit(o);
 
-  let btnText = '抢单', btnClass = 'order-btn', btnAction = 'grab';
-  if (mine) { btnText = '我发布的'; btnClass += ' done'; btnAction = ''; }
-  else if (took) { btnText = '已接单'; btnClass += ' done'; btnAction = ''; }
-  else if (o.status !== 'pending') { btnText = st.text; btnClass += ' done'; btnAction = ''; }
-  else if (!canGrab) { btnText = '已抢完'; btnClass += ' done'; btnAction = ''; }
-  else if (!enough) {
+  let btnText = '抢单';
+  let btnClass = 'order-btn';
+  let btnAction = 'grab';
+
+  if (mine) {
+    btnText = '我发布的'; btnClass += ' done'; btnAction = '';
+  } else if (took) {
+    btnText = '已接单'; btnClass += ' done'; btnAction = '';
+  } else if (o.status !== 'pending') {
+    btnText = st.text; btnClass += ' done'; btnAction = '';
+  } else if (!canGrab) {
+    btnText = '已抢完'; btnClass += ' done'; btnAction = '';
+  } else if (!enough) {
     btnText = `需押金 ${required} USDT · 去充值`;
     btnClass = 'order-btn need-deposit';
     btnAction = 'deposit';
   }
 
   const btnAttr = btnAction ? `data-action="${btnAction}" data-id="${o.id}"` : 'disabled';
+
   const depositTip = (canGrab && !enough)
     ? `<div class="deposit-tip">🔒 当前押金 ${state.user.deposit} USDT，抢此单需 ${required} USDT</div>`
     : '';
@@ -819,6 +656,7 @@ function orderCard(o) {
       <div class="order-no">订单号：${esc(o.orderNo)}</div>
       <div class="order-status ${st.cls}">${st.text}</div>
     </div>
+
     <div class="order-amounts">
       <div class="amount-item">
         <span class="amount-label">收款金额：</span>
@@ -829,7 +667,9 @@ function orderCard(o) {
         <span class="amount-value gold">${Number(o.commission).toFixed(2)}</span>
       </div>
     </div>
+
     ${depositTip}
+
     <div class="order-info">
       <div class="order-info-row">
         <span class="label">创建时间：</span>
@@ -840,6 +680,7 @@ function orderCard(o) {
         <span class="val">${esc(o.payType)}</span>
       </div>
     </div>
+
     <button class="${btnClass}" ${btnAttr} data-action="${btnAction}" data-id="${o.id}">${btnText}</button>
   </div>`;
 }
@@ -852,14 +693,17 @@ function viewPost() {
   <div class="page">
     <div class="form-card">
       <h2 style="font-size:18px;font-weight:800;margin-bottom:20px;">发布订单</h2>
+
       <label class="field">
         <span class="field-label">收款金额（元）<i>*</i></span>
         <input class="input" name="amount" type="number" min="0.01" step="0.01" required placeholder="例如：1000.00">
       </label>
+
       <label class="field">
         <span class="field-label">返佣金额（元）<i>*</i></span>
         <input class="input" name="commission" type="number" min="0.01" step="0.01" required placeholder="例如：100.00">
       </label>
+
       <div class="form-row">
         <label class="field">
           <span class="field-label">收款类型 <i>*</i></span>
@@ -875,10 +719,12 @@ function viewPost() {
           <input class="input" name="orderNo" value="系统自动生成" disabled>
         </label>
       </div>
+
       <label class="field">
         <span class="field-label">订单备注</span>
         <textarea class="input" name="desc" rows="3" placeholder="补充说明，例如操作要求、注意事项等"></textarea>
       </label>
+
       <button class="btn btn-primary btn-block" type="submit" data-action="submit-post">确认发布</button>
     </div>
   </div>`;
@@ -891,6 +737,7 @@ function viewMine() {
   const all = state.orders.filter(o => myTaker(o));
   const working = all.filter(o => myTaker(o).status === 'working');
   const done = all.filter(o => myTaker(o).status === 'done');
+
   const listMap = { working, done };
   const list = listMap[state.mineTab] || working;
 
@@ -919,6 +766,7 @@ function viewMine() {
 function mineOrderCard(o) {
   const tk = myTaker(o);
   const isDone = tk.status === 'done';
+
   return `
   <div class="order-card" data-action="open" data-id="${o.id}">
     <div class="order-header">
@@ -963,6 +811,7 @@ function viewPosted() {
       </div>
     </div>`;
   }
+
   return `
   <div class="page">
     <div class="order-list">
@@ -996,7 +845,7 @@ function viewPosted() {
 }
 
 /* =========================================================
-   视图：充值押金（金额输入步骤）
+   视图：充值押金（读取 CONFIG，显示真实二维码）
    ========================================================= */
 function viewDeposit() {
   const net = state.depositNet;
@@ -1040,158 +889,9 @@ function viewDeposit() {
 
       <div class="notice" style="margin-bottom:14px">⚠️ ${esc(CONFIG.notice)}</div>
 
-      <button class="btn btn-primary btn-block" data-action="go-pay" data-id="">下一步：确认支付</button>
+      <button class="btn btn-primary btn-block" data-action="confirm-deposit" data-id="">我已完成支付</button>
 
       <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(CONFIG.support)}</div>
-    </div>
-  </div>`;
-}
-
-/* =========================================================
-   视图：支付网关（图2样式）
-   ========================================================= */
-function viewPay() {
-  const po = state.payOrder;
-  if (!po) return `<div class="page"><div class="empty"><h3>订单已失效</h3></div></div>`;
-
-  const net = po.net;
-  const addr = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
-  const status = state.payStatus;
-
-  /* ---- 等待支付中 ---- */
-  if (status === 'waiting') {
-    return `
-    <div class="pay-page">
-      <div class="pay-topbar">
-        <button class="pay-close" data-action="pay-close">✕</button>
-        <div class="pay-url">${esc(location.host || 'oga.onai24.top')}</div>
-        <div class="pay-lang">🌐 English</div>
-      </div>
-
-      <div class="pay-sec">
-        <div class="waiting-box">
-          <div class="waiting-spinner"></div>
-          <h3>正在等待支付到账</h3>
-          <p>请在 imToken 中完成 USDT 转账<br>支付成功后请勿关闭此页面</p>
-
-          <div class="waiting-steps">
-            <div>1️⃣ 打开 <b>imToken</b> App</div>
-            <div>2️⃣ 向指定地址转账 <b>${po.amount} USDT</b></div>
-            <div>3️⃣ 等待链上确认（约 1-3 分钟）</div>
-          </div>
-
-          <div style="margin-top:16px;font-size:12px;color:#8a9ab0;word-break:break-all;line-height:1.6">
-            收款地址：<br>
-            <b style="color:#1a2b45">${esc(addr)}</b>
-          </div>
-
-          <div class="waiting-actions" style="margin-top:20px">
-            <button class="btn btn-primary btn-block" data-action="pay-confirm">我已支付完成</button>
-            <button class="btn btn-ghost btn-block" data-action="pay-cancel">取消订单</button>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  }
-
-  /* ---- 支付成功 ---- */
-  if (status === 'done') {
-    return `
-    <div class="pay-page">
-      <div class="pay-topbar">
-        <button class="pay-close" data-action="pay-close">✕</button>
-        <div class="pay-url">${esc(location.host || 'oga.onai24.top')}</div>
-        <div class="pay-lang">🌐 English</div>
-      </div>
-
-      <div class="pay-sec">
-        <div class="waiting-box">
-          <div style="width:72px;height:72px;border-radius:50%;background:#e6f9f0;display:grid;place-items:center;margin:0 auto 16px;font-size:34px">✅</div>
-          <h3 style="color:#10b981">支付成功</h3>
-          <p>已成功充值 <b style="color:#1a2b45;font-size:16px">${po.amount} USDT</b><br>押金余额已更新</p>
-
-          <div style="background:#f5f9ff;border-radius:10px;padding:12px 16px;margin:18px 0;font-size:13px;color:#3a5a80">
-            <div style="display:flex;justify-content:space-between;padding:5px 0">
-              <span>订单号</span><span style="font-weight:700;color:#1a2b45">${esc(po.orderNo)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:5px 0">
-              <span>充值金额</span><span style="font-weight:700;color:#1e78e0">${po.amount} USDT</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding:5px 0">
-              <span>当前押金</span><span style="font-weight:700;color:#10b981">${state.user.deposit} USDT</span>
-            </div>
-          </div>
-
-          <button class="btn btn-primary btn-block" data-action="pay-close">完成</button>
-        </div>
-      </div>
-    </div>`;
-  }
-
-  /* ---- 订单支付页（图2主体） ---- */
-  return `
-  <div class="pay-page">
-    <div class="pay-topbar">
-      <button class="pay-close" data-action="pay-close">✕</button>
-      <div class="pay-url">${esc(location.host || 'oga.onai24.top')}</div>
-      <div class="pay-lang">🌐 English</div>
-    </div>
-
-    <div class="pay-hero">
-      <div class="pay-lock-icon">🔐</div>
-      <h1>为了您的安全起见，请打开钱包App进行支付！</h1>
-      <div class="pay-alert">${esc(CONFIG.notice)}</div>
-    </div>
-
-    <div class="pay-sec">
-      <div class="pay-sec-title">订单信息</div>
-      <div class="pay-row"><span class="k">商品订单</span><span class="v">${esc(po.orderNo)}</span></div>
-      <div class="pay-row"><span class="k">商品详情</span><span class="v">正在支付USDT</span></div>
-      <div class="pay-row"><span class="k">购买数量</span><span class="v">1</span></div>
-    </div>
-
-    <div class="pay-sec">
-      <div class="pay-amount-row">
-        <span class="k">付款金额</span>
-        <span class="v">${po.amount}<small>USDT</small></span>
-      </div>
-      <div class="pay-row" style="padding-top:6px">
-        <span class="k">收款地址</span>
-        <span class="v" style="font-size:11.5px;color:#5b7090">
-          ${esc(addr.slice(0, 10))}...${esc(addr.slice(-8))}
-          <button class="copy-mini" data-action="copy-addr">复制</button>
-        </span>
-      </div>
-      <input type="hidden" id="usdt-addr" value="${esc(addr)}">
-      <div class="pay-row">
-        <span class="k">网络</span>
-        <span class="v">USDT-${net}</span>
-      </div>
-    </div>
-
-    <div class="pay-sec">
-      <div class="pay-sec-title">选择付款钱包</div>
-      <div class="pay-wallets">
-        <button class="pay-wallet active" data-action="pick-wallet" data-wallet="imtoken">
-          <div class="pay-check">✓</div>
-          <div class="w-icon imt">🦊</div>
-          <div class="w-name">imToken钱包</div>
-          <div class="w-tag">推荐</div>
-        </button>
-        <button class="pay-wallet disabled" disabled>
-          <div class="w-icon tp">TP</div>
-          <div class="w-name">TokenPocket</div>
-          <div class="w-tag" style="background:#f0f3f8;color:#a9b5c5">暂不支持</div>
-        </button>
-      </div>
-      <div class="pay-wallet-hint">仅支持 imToken 钱包支付，请确保已安装最新版</div>
-    </div>
-
-    <div class="pay-action">
-      <button class="pay-btn" data-action="open-imtoken">
-        🚀 打开 imToken 支付 ${po.amount} USDT
-      </button>
-      <div class="pay-tip">点击后将自动跳转到 imToken，<br>收款地址和金额已自动填入</div>
     </div>
   </div>`;
 }
@@ -1212,10 +912,12 @@ function viewAdmin() {
 
     <div class="admin-sec">
       <h3>押金收款地址</h3>
+
       <label class="field">
         <span class="field-label">TRC20 地址（波场网络）</span>
-        <input class="input" id="cfg-trc20" maxlength="80" value="${esc(CONFIG.trc20)}" placeholder="例如：TLsgrS8KPwtmVWx3YZiWQ5hcRRUfkxGBo1">
+        <input class="input" id="cfg-trc20" maxlength="80" value="${esc(CONFIG.trc20)}" placeholder="例如：TXk7YbWcWnQPNhSCXC3p4aFb5tHKqMgRzA">
       </label>
+
       <label class="field" style="margin-bottom:0">
         <span class="field-label">ERC20 地址（以太坊网络）</span>
         <input class="input" id="cfg-erc20" maxlength="80" value="${esc(CONFIG.erc20)}" placeholder="例如：0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb">
@@ -1223,15 +925,8 @@ function viewAdmin() {
     </div>
 
     <div class="admin-sec">
-      <h3>USDT 合约地址（用于拉起 imToken）</h3>
-      <label class="field" style="margin-bottom:0">
-        <span class="field-label">USDT-TRC20 合约</span>
-        <input class="input" id="cfg-usdt-contract" maxlength="80" value="${esc(CONFIG.usdtContract)}" placeholder="TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t">
-      </label>
-    </div>
-
-    <div class="admin-sec">
       <h3>押金规则</h3>
+
       <div class="form-row">
         <label class="field">
           <span class="field-label">押金比例（%）</span>
@@ -1248,10 +943,12 @@ function viewAdmin() {
 
     <div class="admin-sec">
       <h3>提示文案</h3>
+
       <label class="field">
-        <span class="field-label">支付页顶部提示</span>
+        <span class="field-label">充值页提示</span>
         <input class="input" id="cfg-notice" maxlength="120" value="${esc(CONFIG.notice)}">
       </label>
+
       <label class="field" style="margin-bottom:0">
         <span class="field-label">客服信息</span>
         <input class="input" id="cfg-support" maxlength="60" value="${esc(CONFIG.support)}">
@@ -1260,13 +957,16 @@ function viewAdmin() {
 
     <div class="admin-sec">
       <h3>二维码预览</h3>
+
       <div style="display:flex;gap:8px;margin-bottom:14px">
         <button class="chip-cat${net === 'TRC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="admin-net" data-net="TRC20">TRC20</button>
         <button class="chip-cat${net === 'ERC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="admin-net" data-net="ERC20">ERC20</button>
       </div>
+
       <div class="qr-wrap" id="admin-qr">
         <div class="qr-loading">二维码加载中…</div>
       </div>
+
       <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:10px;word-break:break-all;padding:0 10px">${esc(addr)}</div>
     </div>
 
@@ -1291,11 +991,11 @@ function render() {
     mine: viewMine,
     posted: viewPosted,
     deposit: viewDeposit,
-    pay: viewPay,
     admin: viewAdmin,
   };
   view.innerHTML = (map[state.view] || viewHall)();
 
+  // 渲染二维码
   if (state.view === 'deposit') {
     const addr = state.depositNet === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
     renderQR($('#qr-box'), addr);
@@ -1329,7 +1029,7 @@ function updateUserUI() {
   if (mhA) mhA.textContent = ch;
   if (sbS) sbS.textContent = `押金 ${state.user.deposit} USDT · 收入 ¥${state.user.income}`;
 }/* =========================================================
-   弹窗
+   弹窗基础
    ========================================================= */
 function openModal(html) {
   $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">${html}</div></div>`;
@@ -1341,13 +1041,18 @@ function closeModal() {
 }
 
 /* =========================================================
-   二维码渲染
+   二维码渲染：调用在线 API 生成真实可扫的二维码
    ========================================================= */
 function renderQR(el, text) {
   if (!el) return;
-  if (!text) { el.innerHTML = `<div class="qr-loading">地址为空</div>`; return; }
+  if (!text) {
+    el.innerHTML = `<div class="qr-loading">地址为空</div>`;
+    return;
+  }
+
   const size = 300;
   const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=10&data=${encodeURIComponent(text)}`;
+
   el.innerHTML = `
     <img src="${url}" alt="收款二维码" crossorigin="anonymous"
          onload="this.parentNode.querySelector('.qr-loading')?.remove()"
@@ -1355,11 +1060,16 @@ function renderQR(el, text) {
     <div class="qr-loading">二维码加载中…</div>
   `;
 }
+
+// 网络异常时降级为伪二维码
 function qrFallback(el, text) {
   if (!el) return;
   const size = 21;
   let hash = 0;
-  for (let i = 0; i < text.length; i++) { hash = ((hash << 5) - hash) + text.charCodeAt(i); hash |= 0; }
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
   let html = `<div style="display:grid;grid-template-columns:repeat(${size},1fr);width:100%;height:100%">`;
   for (let i = 0; i < size * size; i++) {
     hash = (hash * 1103515245 + 12345) & 0x7fffffff;
@@ -1389,14 +1099,19 @@ function showWelcome() {
   `);
   setTimeout(() => $('#welcome-name')?.focus(), 120);
 }
+
 function saveName() {
   const el = $('#welcome-name') || $('#edit-name-input');
   const v = (el?.value || '').trim();
   if (!v) { toast('请输入一个昵称'); el?.focus(); return; }
   state.user.name = v.slice(0, 12);
-  save(); updateUserUI(); closeModal(); render();
+  save();
+  updateUserUI();
+  closeModal();
+  render();
   toast('欢迎，' + state.user.name);
 }
+
 function editName() {
   openModal(`
     <div class="modal-head">
@@ -1432,9 +1147,14 @@ function openGrabModal(id) {
   const o = getOrder(id);
   if (!o) return;
   if (o.status !== 'pending' || myTaker(o) || o.publisherId === state.user.id) {
-    toast('这个订单已经不能抢了'); return;
+    toast('这个订单已经不能抢了');
+    return;
   }
-  if (!hasEnoughDeposit(o)) { gotoPay(o); return; }
+
+  if (!hasEnoughDeposit(o)) {
+    openDepositModal(o);
+    return;
+  }
 
   openModal(`
     <div class="modal-head">
@@ -1447,12 +1167,14 @@ function openGrabModal(id) {
         <div style="font-size:28px;font-weight:850;color:var(--red);letter-spacing:-1px">${Number(o.amount).toFixed(2)}</div>
         <div style="font-size:13px;color:var(--brand);font-weight:700;margin-top:4px">返佣 ${Number(o.commission).toFixed(2)}</div>
       </div>
+
       <div class="detail-grid" style="margin:0 0 14px">
         <div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div>
         <div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${esc(o.publisherName)}</div></div>
         <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${o.credit ?? 100}</div></div>
         <div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div>
       </div>
+
       <div class="notice">⚡ 抢单后请尽快完成，审核通过后返佣自动结算</div>
     </div>
     <div class="modal-foot">
@@ -1466,9 +1188,15 @@ function submitGrab(id) {
   const o = getOrder(id);
   if (!o) return;
   if (o.status !== 'pending' || myTaker(o)) {
-    toast('手慢了，订单已被抢'); closeModal(); render(); return;
+    toast('手慢了，订单已被抢');
+    closeModal(); render(); return;
   }
-  if (!hasEnoughDeposit(o)) { toast('押金不足，请先充值'); closeModal(); gotoPay(o); return; }
+
+  if (!hasEnoughDeposit(o)) {
+    toast('押金不足，请先充值');
+    openDepositModal(o);
+    return;
+  }
 
   o.takers = o.takers || [];
   o.takers.push({
@@ -1479,148 +1207,95 @@ function submitGrab(id) {
   });
   o.status = 'confirm';
 
-  save(); closeModal(); state.mineTab = 'working'; render();
+  save();
+  closeModal();
+  state.mineTab = 'working';
+  render();
   toast('抢单成功，请尽快完成');
 }
 
 /* =========================================================
-   前往支付网关（核心流程）
+   充值押金弹窗（客户端）
    ========================================================= */
-function gotoPay(order) {
+function openDepositModal(order) {
+  const required = order ? depositRequired(order) : 50;
   const net = state.depositNet;
-  const required = order ? depositRequired(order) : Math.max(CONFIG.minDeposit, 100);
+  const addr = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
 
-  state.payOrder = {
-    orderNo: genPayOrderNo(),
-    amount: required,
-    net: net,
-    at: Date.now(),
-    // 关联的业务订单（如果是因为抢单触发的充值）
-    relatedOrderId: order ? order.id : '',
-  };
-  state.payStatus = 'pending';
-  state.view = 'pay';
-  closeModal();
-  render();
+  openModal(`
+    <div class="modal-head">
+      <h2>充值押金</h2>
+      <button class="icon-btn" data-action="close-modal">✕</button>
+    </div>
+
+    <div class="modal-body">
+      ${order ? `
+        <div class="notice" style="margin-bottom:14px">
+          🔒 抢此单需押金 ${required} USDT，当前押金 ${state.user.deposit} USDT，请先充值
+        </div>
+      ` : ''}
+
+      <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
+          <div style="font-size:22px;font-weight:800;color:var(--brand);margin-top:2px">${state.user.deposit} <span style="font-size:13px">USDT</span></div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择网络</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="chip-cat${net === 'TRC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="net" data-net="TRC20">TRC20（推荐）</button>
+        <button class="chip-cat${net === 'ERC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="net" data-net="ERC20">ERC20</button>
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">充值地址（${net}）</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input class="input" id="usdt-addr" value="${esc(addr)}" readonly style="font-size:12px;flex:1">
+        <button class="btn btn-ghost" data-action="copy-addr" style="padding:0 14px;flex:0 0 auto">复制</button>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin:14px 0">
+        <div id="qr-box" class="qr-wrap">
+          <div class="qr-loading">二维码加载中…</div>
+        </div>
+      </div>
+
+      <label class="field" style="margin-bottom:12px">
+        <span class="field-label">充值金额（USDT）</span>
+        <input class="input" id="deposit-amount" type="number" min="${CONFIG.minDeposit}" step="1" value="100">
+      </label>
+
+      <div class="notice">⚠️ ${esc(CONFIG.notice)}</div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-action="close-modal">取消</button>
+      <button class="btn btn-primary" data-action="confirm-deposit" data-id="${order ? order.id : ''}">我已完成支付</button>
+    </div>
+  `);
+
+  setTimeout(() => renderQR($('#qr-box'), addr), 30);
 }
 
-/* 从充值页「下一步」按钮进入支付 */
-function gotoPayFromInput() {
+function submitDeposit(orderId) {
   const amount = Number($('#deposit-amount')?.value) || 0;
   const min = Number(CONFIG.minDeposit) || 10;
   if (amount < min) { toast(`最低充值 ${min} USDT`); return; }
 
-  state.payOrder = {
-    orderNo: genPayOrderNo(),
-    amount: amount,
-    net: state.depositNet,
-    at: Date.now(),
-    relatedOrderId: '',
-  };
-  state.payStatus = 'pending';
-  state.view = 'pay';
-  render();
-}
-
-/* =========================================================
-   拉起 imToken 支付
-   ========================================================= */
-function openImToken() {
-  const po = state.payOrder;
-  if (!po) return;
-
-  const addr = po.net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
-  const contract = CONFIG.usdtContract;
-
-  // 构造 imToken deep link
-  // 参考 imToken URI scheme：
-  // imtokenv2://navigate/DappView?url=<encoded>
-  // 以及 Tron 转账协议 tron:<addr>?amount=<amount>&token=<contract>
-  let deepLinks = [];
-
-  if (po.net === 'TRC20') {
-    // Tron 转账 URI（imToken 支持识别）
-    const tronUri = `tron:${addr}?amount=${po.amount}&token=${contract}`;
-    deepLinks.push(tronUri);
-    // imToken 打开特定 dapp 的通用链接
-    deepLinks.push(`imtokenv2://navigate/DappView?url=${encodeURIComponent(location.href)}`);
-  } else {
-    // ERC20：EIP-681
-    const ethUri = `ethereum:${contract}@1/transfer?address=${addr}&uint256=${po.amount * 1e6}`;
-    deepLinks.push(ethUri);
-    deepLinks.push(`imtokenv2://navigate/DappView?url=${encodeURIComponent(location.href)}`);
-  }
-
-  // 兜底：直接打开 imToken
-  deepLinks.push('imtokenv2://');
-
-  // 依次尝试（浏览器会取第一个能识别的）
-  try {
-    // 用一个隐藏的 iframe 触发，不打断当前页面
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = deepLinks[0];
-    document.body.appendChild(iframe);
-    setTimeout(() => iframe.remove(), 1500);
-
-    // 同时尝试跳转（部分浏览器需要直接 location.href 才能唤起）
-    setTimeout(() => {
-      try { window.location.href = deepLinks[0]; } catch (e) {}
-    }, 200);
-  } catch (e) {}
-
-  // 进入等待支付状态
-  state.payStatus = 'waiting';
-  render();
-
-  toast('正在拉起 imToken…');
-
-  // 模拟链上回调：15 秒后自动到账（demo 用）
-  clearTimeout(window.__payTimer);
-  window.__payTimer = setTimeout(() => {
-    if (state.payStatus === 'waiting' && state.payOrder) {
-      confirmPaySuccess();
-    }
-  }, 15000);
-}
-
-/* =========================================================
-   支付结果处理
-   ========================================================= */
-function confirmPaySuccess() {
-  if (!state.payOrder) return;
-  const po = state.payOrder;
-
-  state.user.deposit = Number(state.user.deposit) + Number(po.amount);
+  state.user.deposit = Number(state.user.deposit) + amount;
   save();
-  state.payStatus = 'done';
+
+  closeModal();
   updateUserUI();
-  render();
 
-  // 如果是因为抢单触发的充值，自动打开抢单弹窗
-  if (po.relatedOrderId) {
-    const o = getOrder(po.relatedOrderId);
-    if (o && o.status === 'pending' && !myTaker(o)) {
-      setTimeout(() => openGrabModal(o.id), 600);
-    }
+  // 如果当前在充值页，需要重新渲染
+  if (state.view === 'deposit') render();
+
+  toast(`充值成功，当前押金 ${state.user.deposit} USDT`);
+
+  if (orderId) {
+    setTimeout(() => openGrabModal(orderId), 400);
   }
-}
-
-function cancelPay() {
-  clearTimeout(window.__payTimer);
-  state.payStatus = 'pending';
-  state.payOrder = null;
-  state.view = 'deposit';
-  render();
-}
-
-function closePayPage() {
-  clearTimeout(window.__payTimer);
-  state.payStatus = 'pending';
-  state.payOrder = null;
-  state.view = state.user.deposit > 0 ? 'hall' : 'deposit';
-  history.replaceState(null, '', '#');
-  render();
 }
 
 /* =========================================================
@@ -1629,6 +1304,7 @@ function closePayPage() {
 function openDetail(id) {
   const o = getOrder(id);
   if (!o) return;
+
   const st = statusOf(o.status);
   const tk = myTaker(o);
   const isOwner = o.publisherId === state.user.id;
@@ -1672,10 +1348,13 @@ function openDetail(id) {
       </div>
       <button class="icon-btn" data-action="close-modal">✕</button>
     </div>
+
     <div class="modal-body">
       <div style="font-size:12.5px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div>
+
       <div class="detail-price">${Number(o.amount).toFixed(2)}<small>收款金额</small></div>
       <div style="font-size:14px;font-weight:800;color:var(--brand)">返佣 ${Number(o.commission).toFixed(2)}</div>
+
       <div class="detail-grid">
         <div class="dg-item"><div class="dg-k">创建时间</div><div class="dg-v">${fmtDateTime(o.createdAt)}</div></div>
         <div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div>
@@ -1683,9 +1362,11 @@ function openDetail(id) {
         <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${o.credit ?? 100}</div></div>
         <div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div>
       </div>
+
       ${o.desc ? `<div class="detail-desc">${esc(o.desc)}</div>` : ''}
       ${takersHtml}
     </div>
+
     <div class="modal-foot">${foot}</div>
   `);
 }
@@ -1696,11 +1377,16 @@ function submitWork(id) {
   if (!o) return;
   const tk = myTaker(o);
   if (!tk || tk.status !== 'working') return;
+
   tk.status = 'done';
   tk.doneAt = Date.now();
   o.status = 'paid';
+
   state.user.income += Number(o.commission);
-  save(); closeModal(); state.mineTab = 'done'; render();
+  save();
+  closeModal();
+  state.mineTab = 'done';
+  render();
   toast(`订单完成，返佣 ¥${Number(o.commission).toFixed(2)} 已到账`);
 }
 
@@ -1713,17 +1399,24 @@ function submitPost(form) {
   const desc = String(fd.get('desc') || '').trim();
 
   if (amount <= 0 || commission <= 0 || !payType) {
-    toast('请填写完整的订单信息'); return;
+    toast('请填写完整的订单信息');
+    return;
   }
+
   const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
+
   state.orders.unshift({
-    id: uid(), orderNo, amount, commission, payType, desc,
-    createdAt: Date.now(), status: 'pending',
+    id: uid(),
+    orderNo,
+    amount, commission, payType, desc,
+    createdAt: Date.now(),
+    status: 'pending',
     publisherId: state.user.id,
     publisherName: state.user.name || '我',
     credit: state.user.credit,
     takers: [],
   });
+
   save();
   state.view = 'posted';
   render();
@@ -1731,12 +1424,11 @@ function submitPost(form) {
 }
 
 /* =========================================================
-   管理后台
+   管理后台操作
    ========================================================= */
 function saveAdminConfig() {
   const trc20 = ($('#cfg-trc20')?.value || '').trim();
   const erc20 = ($('#cfg-erc20')?.value || '').trim();
-  const usdtContract = ($('#cfg-usdt-contract')?.value || '').trim();
   const ratioPct = Number($('#cfg-ratio')?.value) || 10;
   const minD = Number($('#cfg-min')?.value) || 10;
   const notice = ($('#cfg-notice')?.value || '').trim();
@@ -1746,7 +1438,6 @@ function saveAdminConfig() {
 
   CONFIG.trc20 = trc20;
   CONFIG.erc20 = erc20;
-  CONFIG.usdtContract = usdtContract || DEFAULT_CONFIG.usdtContract;
   CONFIG.ratio = Math.max(0.01, Math.min(1, ratioPct / 100));
   CONFIG.minDeposit = Math.max(1, minD);
   CONFIG.notice = notice || DEFAULT_CONFIG.notice;
@@ -1756,6 +1447,7 @@ function saveAdminConfig() {
   toast('配置已保存');
   render();
 }
+
 function resetAdminConfig() {
   if (!confirm('确定恢复默认配置吗？')) return;
   CONFIG = Object.assign({}, DEFAULT_CONFIG);
@@ -1800,107 +1492,88 @@ document.addEventListener('click', e => {
     case 'grab': openGrabModal(id); break;
     case 'submit-grab': submitGrab(id); break;
     case 'submit-work': submitWork(id); break;
-    case 'order-tab': state.orderTab = el.dataset.tab; render(); break;
-    case 'mine-tab': state.mineTab = el.dataset.tab; render(); break;
+    case 'order-tab':
+      state.orderTab = el.dataset.tab;
+      render();
+      break;
+    case 'mine-tab':
+      state.mineTab = el.dataset.tab;
+      render();
+      break;
     case 'edit-name': editName(); break;
     case 'save-name': saveName(); break;
-
     case 'deposit':
-      // 从订单卡片直接点「去充值」
-      gotoPay(getOrder(id));
+      openDepositModal(getOrder(id));
       break;
-
     case 'open-deposit':
       closeModal();
-      setTimeout(() => { state.view = 'deposit'; render(); }, 100);
+      setTimeout(() => openDepositModal(null), 100);
       break;
 
-    // 网络切换
+    // 客户端切换充值网络
     case 'net':
       state.depositNet = el.dataset.net;
       if (state.view === 'deposit') {
         render();
       } else {
-        // 弹窗中切换
+        // 弹窗中切换：只更新弹窗内的地址和二维码
         const net = state.depositNet;
         const addr = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
         const input = $('#usdt-addr');
         if (input) input.value = addr;
         const qr = $('#qr-box');
         if (qr) renderQR(qr, addr);
-        $$('[data-action="net"]').forEach(b => b.classList.toggle('active', b.dataset.net === net));
+        // 更新按钮态
+        $$('[data-action="net"]').forEach(b => {
+          b.classList.toggle('active', b.dataset.net === net);
+        });
       }
       break;
 
-    case 'admin-net': state.depositNet = el.dataset.net; render(); break;
+    // 管理后台切换预览网络
+    case 'admin-net':
+      state.depositNet = el.dataset.net;
+      render();
+      break;
 
     case 'copy-addr': {
-      const addr = $('#usdt-addr')?.value || state.payOrder
-        ? (state.depositNet === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20) : '';
-      const finalAddr = (state.payOrder && state.payOrder.net === 'TRC20') ? CONFIG.trc20
-                      : (state.payOrder && state.payOrder.net === 'ERC20') ? CONFIG.erc20
-                      : addr;
-      if (!finalAddr) { toast('地址为空'); break; }
+      const addr = $('#usdt-addr')?.value || '';
+      if (!addr) { toast('地址为空'); break; }
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(finalAddr).then(
+        navigator.clipboard.writeText(addr).then(
           () => toast('地址已复制'),
           () => toast('复制失败，请手动选择')
         );
       } else {
         const inp = $('#usdt-addr');
-        if (inp) { inp.value = finalAddr; inp.select(); document.execCommand('copy'); toast('地址已复制'); }
+        if (inp) { inp.select(); document.execCommand('copy'); toast('地址已复制'); }
       }
       break;
     }
 
-    // 充值页「下一步」
-    case 'go-pay':
-      if (id) gotoPay(getOrder(id));
-      else gotoPayFromInput();
+    case 'confirm-deposit':
+      submitDeposit(el.dataset.id || '');
       break;
 
-    // 支付页：确认已支付
-    case 'pay-confirm':
-      confirmPaySuccess();
-      break;
-
-    // 支付页：取消
-    case 'pay-cancel':
-      cancelPay();
-      break;
-
-    // 支付页：关闭
-    case 'pay-close':
-      closePayPage();
-      break;
-
-    // 支付页：选择钱包（目前只有 imToken）
-    case 'pick-wallet':
-      toast('仅支持 imToken 钱包支付');
-      break;
-
-    // 支付页：拉起 imToken
-    case 'open-imtoken':
-      openImToken();
-      break;
-
-    // 管理后台
+    // 管理后台入口
     case 'admin':
       closeModal();
       state.view = 'admin';
       history.replaceState(null, '', '#admin');
       render();
       break;
+
     case 'admin-close':
       history.replaceState(null, '', '#');
       go('hall');
       break;
+
     case 'save-cfg': saveAdminConfig(); break;
     case 'reset-cfg': resetAdminConfig(); break;
   }
 });
 
-/* 表单提交 */
+/* 发布表单提交 */
 document.addEventListener('submit', e => {
   if (e.target.closest('.form-card') && e.target.querySelector('input[name="amount"]')) {
     e.preventDefault();
@@ -1910,17 +1583,16 @@ document.addEventListener('submit', e => {
 
 /* 快捷键 */
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    if (state.view === 'pay' && state.payStatus === 'pending') closePayPage();
-    else closeModal();
-  }
+  if (e.key === 'Escape') closeModal();
   if (e.key === 'Enter' && document.activeElement?.id === 'welcome-name') saveName();
 });
 
-/* hash 监听 */
+/* 监听 URL hash 变化 */
 window.addEventListener('hashchange', () => {
   if (location.hash === '#admin') {
-    state.view = 'admin'; closeModal(); render();
+    state.view = 'admin';
+    closeModal();
+    render();
   }
 });
 
