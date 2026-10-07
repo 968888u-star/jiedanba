@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>USDT 支付</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:#f5f6fa;color:#12141d;line-height:1.55;
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:20px;
+  }
+  .card{
+    background:#fff;border-radius:20px;padding:30px 24px;
+    width:min(420px,100%);box-shadow:0 20px 60px rgba(15,17,26,.12);
+    text-align:center;
+  }
+  .icon{font-size:48px;margin-bottom:16px}
+  h1{font-size:22px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px}
+  .sub{font-size:13.5px;color:#8d93a6;margin-bottom:24px}
+  .info{
+    background:#f8f9fd;border-radius:14px;padding:18px;margin-bottom:20px;
+    text-align:left;
+  }
+  .info-row{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 0;border-bottom:1px dashed #e8eaf1;
+  }
+  .info-row:last-child{border-bottom:none;padding-bottom:0}
+  .info-k{font-size:13px;color:#8d93a6;flex:0 0 auto}
+  .info-v{font-size:13.5px;font-weight:700;word-break:break-all;text-align:right;margin-left:12px}
+  .info-v.gold{color:#f0a020;font-size:18px}
+  .btn{
+    display:block;width:100%;padding:15px;border-radius:14px;
+    border:none;font-size:16px;font-weight:800;cursor:pointer;
+    transition:.18s;margin-bottom:12px;
+  }
+  .btn-pay{background:linear-gradient(135deg,#f0a020,#e88a10);color:#fff}
+  .btn-pay:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(240,160,32,.35)}
+  .btn-pay:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn-ghost{background:#f1f2f7;color:#5b6070}
+  .status{
+    padding:14px;border-radius:12px;font-size:13.5px;
+    margin-top:16px;display:none;
+  }
+  .status.loading{display:block;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2}
+  .status.success{display:block;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+  .status.error{display:block;background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+  .env-warn{
+    padding:14px;border-radius:12px;font-size:13px;
+    background:#fff4ec;color:#c2410c;border:1px solid #ffe0b2;
+    margin-bottom:16px;line-height:1.6;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">💳</div>
+  <h1>USDT 支付</h1>
+  <p class="sub">请在 imToken 中确认支付</p>
+
+  <div id="env-warn" class="env-warn" style="display:none">
+    ⚠️ 当前不在 imToken 环境中，请通过 imToken 的 DApp 浏览器打开此页面
+  </div>
+
+  <div class="info">
+    <div class="info-row">
+      <span class="info-k">收款地址</span>
+      <span class="info-v" id="info-addr">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-k">网络</span>
+      <span class="info-v" id="info-chain">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-k">支付金额</span>
+      <span class="info-v gold" id="info-amount">-</span>
+    </div>
+  </div>
+
+  <button class="btn btn-pay" id="btn-pay" disabled>确认支付</button>
+  <button class="btn btn-ghost" id="btn-cancel">取消</button>
+
+  <div class="status" id="status"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const toAddress = params.get('address') || '';
+const amount = Number(params.get('amount')) || 0;
+const chain = params.get('chain') || 'trx';
+
+const USDT_CONTRACT = {
+  trx: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+  eth: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+};
+
+function $(s) { return document.querySelector(s); }
+
+$('#info-addr').textContent = toAddress || '未配置';
+$('#info-chain').textContent = chain === 'trx' ? 'TRC20 (波场)' : 'ERC20 (以太坊)';
+$('#info-amount').textContent = amount + ' USDT';
+
+const hasTron = !!(window.tron || window.tronWeb);
+const hasEth = !!window.ethereum;
+
+if (!hasTron && !hasEth) {
+  $('#env-warn').style.display = 'block';
+} else {
+  $('#btn-pay').disabled = false;
+}
+
+$('#btn-pay').onclick = async function () {
+  const btn = this;
+  btn.disabled = true;
+  btn.textContent = '支付中…';
+  setStatus('loading', '请在 imToken 中确认交易…');
+
+  try {
+    if (chain === 'trx') {
+      await payTRC20();
+    } else {
+      await payERC20();
+    }
+    setStatus('success', '✅ 支付已提交，请在 imToken 中查看交易状态');
+    btn.textContent = '已提交';
+  } catch (err) {
+    console.error(err);
+    setStatus('error', '❌ ' + (err.message || '支付失败，请重试'));
+    btn.disabled = false;
+    btn.textContent = '重新支付';
+  }
+};
+
+$('#btn-cancel').onclick = () => window.history.back();
+
+function setStatus(type, msg) {
+  const el = $('#status');
+  el.className = 'status ' + type;
+  el.textContent = msg;
+}
+
+async function payTRC20() {
+  const contract = USDT_CONTRACT.trx;
+  const amountUnits = Math.floor(amount * 1e6).toString();
+
+  if (window.tron && window.tron.request) {
+    return await window.tron.request({
+      method: 'tron_sendTransaction',
+      params: [{
+        to: toAddress,
+        amount: 0,
+        contractAddress: contract,
+        data: buildTRC20Data(toAddress, amountUnits),
+        tokenId: 'USDT',
+        tokenDecimals: 6,
+        tokenAmount: amountUnits,
+      }]
+    });
+  }
+
+  if (window.tronWeb && window.tronWeb.ready) {
+    const c = await window.tronWeb.contract().at(contract);
+    return await c.transfer(toAddress, amountUnits).send();
+  }
+
+  throw new Error('未检测到 TRON Provider');
+}
+
+function buildTRC20Data(to, amountUnits) {
+  const paddedTo = to.padStart(64, '0');
+  const paddedAmount = BigInt(amountUnits).toString(16).padStart(64, '0');
+  return 'a9059cbb' + paddedTo + paddedAmount;
+}
+
+async function payERC20() {
+  if (!window.ethereum) throw new Error('未检测到以太坊 Provider');
+  await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const signer = provider.getSigner();
+  const amountUnits = ethers.BigNumber.from(Math.floor(amount * 1e6).toString());
+  const abi = ['function transfer(address to, uint256 amount) returns (bool)'];
+  const contract = new ethers.Contract(USDT_CONTRACT.eth, abi, signer);
+  const tx = await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
+  await tx.wait();
+  return tx;
+}
+</script>
+</body>
+</html>
