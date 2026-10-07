@@ -344,8 +344,8 @@
 
 <div id="modal-root"></div>
 
-<script>const LS_KEY = 'order.v9';
-const CFG_KEY = 'order.v9.config';
+<script>const LS_KEY = 'order.v10';
+const CFG_KEY = 'order.v10.config';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
@@ -371,11 +371,6 @@ function fmtDateTime(ts) {
   const p = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
-
-const USDT_CONTRACT = {
-  TRC20: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-  ERC20: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
-};
 
 const DEFAULT_CONFIG = {
   trc20: 'TXk7YbWcWnQPNhSCXC3p4aFb5tHKqMgRzA',
@@ -686,7 +681,7 @@ function viewDeposit() {
       </div>
       ${wallet === 'imtoken' ? `
         <div class="notice notice-dark" style="margin-bottom:14px">
-          🦊 点击「一键支付」将直接打开 imToken 钱包，收款地址和金额自动填入
+          🦊 点击「一键支付」将在 imToken 内置浏览器打开支付页面，自动填充收款地址和金额
         </div>
         <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">收款地址（${net}）</div>
         <div style="background:#f8f9fd;border-radius:10px;padding:10px 14px;font-size:12px;word-break:break-all;color:var(--ink2);margin-bottom:14px">${esc(addr)}</div>
@@ -852,12 +847,9 @@ function fallbackCopy(text) {
 }
 
 /* =========================================================
-   🔥 一键支付 imToken（修复版）
-   使用 imToken 官方标准转账 DeepLink 格式：
-   imtoken://transfer?chain=trx&address=xxx&amount=xxx
-   - chain: trx (TRC20) / eth (ERC20)
-   - address: 收款地址
-   - amount: 最小单位整数（USDT 6 位小数）
+   🔥 一键支付 imToken（Universal Link 方案）
+   通过 https://connect.token.im/link/navigate/DappView?url=xxx
+   在 imToken 内置浏览器中打开支付页面 pay.html
    ========================================================= */
 function payWithImToken() {
   const net = state.depositNet;
@@ -867,17 +859,16 @@ function payWithImToken() {
   if (!to) { toast('收款地址未配置'); return; }
   if (amount < 1) { toast('请输入支付金额'); return; }
 
-  // USDT 精度 6 位小数
-  const amountUnits = Math.floor(amount * 1e6).toString();
-  // 链标识
+  // 构建支付页 URL（pay.html 部署在同目录）
   const chain = net === 'TRC20' ? 'trx' : 'eth';
+  const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=${chain}`;
 
-  // imToken 官方标准转账 DeepLink
-  const uri = `imtoken://transfer?chain=${chain}&address=${to}&amount=${amountUnits}`;
+  // imToken Universal Link
+  const imtokenUniversalLink = `https://connect.token.im/link/navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
 
-  // 用 <a> 标签点击触发（比 location.href 更稳定）
+  // 用 <a> 标签触发跳转
   const a = document.createElement('a');
-  a.href = uri;
+  a.href = imtokenUniversalLink;
   a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
   a.rel = 'noopener';
   document.body.appendChild(a);
