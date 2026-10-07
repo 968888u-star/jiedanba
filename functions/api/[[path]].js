@@ -80,9 +80,7 @@ function parseRefund(row) {
     status: row.status,
     createdAt: row.created_at,
   };
-}
-
-export async function onRequest(context) {
+}export async function onRequest(context) {
   const { request, env, params } = context;
   const path = '/' + (params.path || []).join('/');
   const method = request.method;
@@ -108,15 +106,16 @@ export async function onRequest(context) {
     /* ============ 用户认证 ============ */
     if (path === '/auth/register' && method === 'POST') {
       const { username, nickname, password } = await request.json();
-      if (!username || !nickname || !password) return json({ error: '参数不完整' }, 400);
+      if (!username || !password) return json({ error: '参数不完整' }, 400);
       if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return json({ error: '用户名需为 3-20 位字母/数字' }, 400);
       if (password.length < 6) return json({ error: '密码至少 6 位' }, 400);
       const exist = await db.prepare('SELECT id FROM users WHERE username = ?').bind(username).first();
       if (exist) return json({ error: '用户名已被占用' }, 400);
       const id = uid();
       const hash = await sha256(password);
+      const nick = String(nickname || username).slice(0, 12);
       await db.prepare('INSERT INTO users (id, username, nickname, password, created_at) VALUES (?, ?, ?, ?, ?)')
-        .bind(id, username, String(nickname).slice(0, 12), hash, Date.now()).run();
+        .bind(id, username, nick, hash, Date.now()).run();
       const newToken = genToken();
       await db.prepare('INSERT INTO sessions (token, user_id, role, created_at) VALUES (?, ?, ?, ?)')
         .bind(newToken, id, 'user', Date.now()).run();
@@ -185,90 +184,111 @@ export async function onRequest(context) {
       return json({ config: await getConfig(db) });
     }
 
-    /* ============ 订单 ============ */
+    /* ============ 订单列表 ============ */
     if (path === '/orders' && method === 'GET') {
       const rows = await db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
       return json({ orders: (rows.results || []).map(parseOrder) });
-    }
+    }/* ============ 抢单 / 提交完成 ============ */
+if (path.startsWith('/orders/') && method === 'POST') {
+  if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
+  const parts = path.split('/');
+  const orderId = parts[2];
+  const action = parts[3];
+  const order = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first();
+  if (!order) return json({ error: '订单不存在' }, 404);
 
-    if (path.startsWith('/orders/') && method === 'POST') {
-      if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
-      const parts = path.split('/');
-      const orderId = parts[2];
-      const action = parts[3];
-      const order = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first();
-      if (!order) return json({ error: '订单不存在' }, 404);
+  if (action === 'grab') {
+    if (order.status !== 'pending') return json({ error: '订单已被抢或已完成' }, 400);
+    const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first();
+    const cfg = await getConfig(db);
+    const ratio = Number(cfg.ratio) || 0.1;
+    const minDep = Number(cfg.minDeposit) || 10;
+    const required = Math.max(minDep, Math.round(Number(order.amount) * ratio));
+    if (Number(u.deposit) < required) return json({ error: `押金不足，需 ${required} USDT` }, 400);
 
-      if (action === 'grab') {
-        if (order.status !== 'pending') return json({ error: '订单已被抢或已完成' }, 400);
-        const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first();
-        const cfg = await getConfig(db);
-        const ratio = Number(cfg.ratio) || 0.1;
-        const minDep = Number(cfg.minDeposit) || 10;
-        const required = Math.max(minDep, Math.round(Number(order.amount) * ratio));
-        if (Number(u.deposit) < required) return json({ error: `押金不足，需 ${required} USDT` }, 400);
-        const takers = JSON.parse(order.takers || '[]');
-        if (takers.some(t => t.userId === session.user_id)) return json({ error: '你已接过此单' }, 400);
-        takers.push({
-          userId: u.id,
-          userName: u.nickname,
-          payMethod: u.pay_method ? JSON.parse(u.pay_method) : null,
-          at: Date.now(),
-          status: 'working',
-        });
-        await db.prepare('UPDATE orders SET status = ?, takers = ? WHERE id = ?')
-          .bind('confirm', JSON.stringify(takers), orderId).run();
-        return json({ ok: true });
-      }
+    const userPm = u.pay_method ? JSON.parse(u.pay_method) : null;
+    if (!userPm) return json({ error: '请先绑定收款方式' }, 400);
 
-      if (action === 'work') {
-        const takers = JSON.parse(order.takers || '[]');
-        const idx = takers.findIndex(t => t.userId === session.user_id && t.status === 'working');
-        if (idx < 0) return json({ error: '无权操作' }, 403);
-        takers[idx].status = 'done';
-        takers[idx].doneAt = Date.now();
-        await db.prepare('UPDATE orders SET status = ?, takers = ? WHERE id = ?')
-          .bind('paid', JSON.stringify(takers), orderId).run();
-        await db.prepare('UPDATE users SET income = income + ? WHERE id = ?')
-          .bind(Number(order.commission), session.user_id).run();
-        return json({ ok: true });
+    const body = await request.json().catch(() => ({}));
+    const selected = body.payMethod;
+
+    // 兼容旧格式（单个 type）和新格式（alipay + bank）
+    let chosen;
+    if (userPm.type) {
+      chosen = userPm;
+    } else {
+      if (selected && selected.type) {
+        if (selected.type === 'alipay' && !userPm.alipay) return json({ error: '未绑定支付宝' }, 400);
+        if (selected.type === 'bank' && !userPm.bank) return json({ error: '未绑定银行卡' }, 400);
+        chosen = { type: selected.type, ...(selected.type === 'alipay' ? userPm.alipay : userPm.bank) };
+      } else {
+        if (userPm.alipay && userPm.bank) return json({ error: '请指定收款方式' }, 400);
+        chosen = userPm.alipay
+          ? { type: 'alipay', ...userPm.alipay }
+          : { type: 'bank', ...userPm.bank };
       }
     }
 
-    /* ============ 充值（用户确认后立即到账，生产环境应改为链上监听） ============ */
-    if (path === '/deposit' && method === 'POST') {
-      if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
-      const { amount } = await request.json();
-      if (!amount || amount <= 0) return json({ error: '金额错误' }, 400);
-      await db.prepare('UPDATE users SET deposit = deposit + ? WHERE id = ?')
-        .bind(Number(amount), session.user_id).run();
-      const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first();
-      return json({ user: parseUser(u) });
-    }
+    const takers = JSON.parse(order.takers || '[]');
+    if (takers.some(t => t.userId === session.user_id)) return json({ error: '你已接过此单' }, 400);
+    takers.push({
+      userId: u.id,
+      userName: u.nickname || u.username,
+      payMethod: chosen,
+      at: Date.now(),
+      status: 'working',
+    });
+    await db.prepare('UPDATE orders SET status = ?, takers = ? WHERE id = ?')
+      .bind('confirm', JSON.stringify(takers), orderId).run();
+    return json({ ok: true });
+  }
 
-    /* ============ 退款 ============ */
-    if (path === '/refund' && method === 'POST') {
-      if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
-      const { amount, address } = await request.json();
-      const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first();
-      if (!amount || amount <= 0 || amount > u.deposit) return json({ error: '金额错误' }, 400);
-      if (!address) return json({ error: '请填写接收地址' }, 400);
-      const id = uid();
-      await db.prepare('INSERT INTO refunds (id, user_id, user_name, amount, address, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-        .bind(id, u.id, u.nickname, amount, address, 'pending', Date.now()).run();
-      await db.prepare('UPDATE users SET deposit = deposit - ? WHERE id = ?')
-        .bind(Number(amount), u.id).run();
-      return json({ ok: true });
-    }
+  if (action === 'work') {
+    const takers = JSON.parse(order.takers || '[]');
+    const idx = takers.findIndex(t => t.userId === session.user_id && t.status === 'working');
+    if (idx < 0) return json({ error: '无权操作' }, 403);
+    takers[idx].status = 'done';
+    takers[idx].doneAt = Date.now();
+    await db.prepare('UPDATE orders SET status = ?, takers = ? WHERE id = ?')
+      .bind('paid', JSON.stringify(takers), orderId).run();
+    await db.prepare('UPDATE users SET income = income + ? WHERE id = ?')
+      .bind(Number(order.commission), session.user_id).run();
+    return json({ ok: true });
+  }
+}
 
-    if (path === '/refunds/mine' && method === 'GET') {
-      if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
-      const rows = await db.prepare('SELECT * FROM refunds WHERE user_id = ? ORDER BY created_at DESC')
-        .bind(session.user_id).all();
-      return json({ refunds: (rows.results || []).map(parseRefund) });
-    }
+/* ============ 充值（用户确认后立即到账，生产环境应改为链上监听） ============ */
+if (path === '/deposit' && method === 'POST') {
+  if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
+  const { amount } = await request.json();
+  if (!amount || amount <= 0) return json({ error: '金额错误' }, 400);
+  await db.prepare('UPDATE users SET deposit = deposit + ? WHERE id = ?')
+    .bind(Number(amount), session.user_id).run();
+  const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first();
+  return json({ user: parseUser(u) });
+}
 
-    /* ============ 管理端 ============ */
+/* ============ 退款 ============ */
+if (path === '/refund' && method === 'POST') {
+  if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
+  const { amount, address } = await request.json();
+  const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first();
+  if (!amount || amount <= 0 || amount > u.deposit) return json({ error: '金额错误' }, 400);
+  if (!address) return json({ error: '请填写接收地址' }, 400);
+  const id = uid();
+  await db.prepare('INSERT INTO refunds (id, user_id, user_name, amount, address, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, u.id, u.nickname, amount, address, 'pending', Date.now()).run();
+  await db.prepare('UPDATE users SET deposit = deposit - ? WHERE id = ?')
+    .bind(Number(amount), u.id).run();
+  return json({ ok: true });
+}
+
+if (path === '/refunds/mine' && method === 'GET') {
+  if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
+  const rows = await db.prepare('SELECT * FROM refunds WHERE user_id = ? ORDER BY created_at DESC')
+    .bind(session.user_id).all();
+  return json({ refunds: (rows.results || []).map(parseRefund) });
+}    /* ============ 管理端 ============ */
     if (path.startsWith('/admin/')) {
       if (!session || session.role !== 'admin') return json({ error: '无权限' }, 403);
 
@@ -291,6 +311,12 @@ export async function onRequest(context) {
         const orderId = path.split('/')[3];
         const { status } = await request.json();
         await db.prepare('UPDATE orders SET status = ? WHERE id = ?').bind(status, orderId).run();
+        return json({ ok: true });
+      }
+
+      if (path.startsWith('/admin/orders/') && method === 'DELETE') {
+        const orderId = path.split('/')[3];
+        await db.prepare('DELETE FROM orders WHERE id = ?').bind(orderId).run();
         return json({ ok: true });
       }
 
