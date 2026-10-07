@@ -33,7 +33,6 @@
 
   .app{display:flex;min-height:100vh}
 
-  /* 侧边栏（桌面端保留） */
   .sidebar{
     position:fixed;top:0;left:0;bottom:0;width:220px;
     background:var(--card);border-right:1px solid var(--line);
@@ -74,14 +73,12 @@
   .user-name{font-size:13px;font-weight:700}
   .user-sub{font-size:11px;color:var(--ink3)}
 
-  /* 主内容 */
   .main{margin-left:220px;flex:1;padding:20px 24px 80px;max-width:900px}
   .page{animation:fadeUp .3s ease}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
   .mhead{display:none}
 
-  /* 顶部标签页 */
   .order-tabs{
     display:flex;gap:0;background:#fff;border-radius:12px 12px 0 0;
     padding:0 16px;border-bottom:1px solid var(--line);
@@ -100,17 +97,15 @@
     height:3px;border-radius:3px 3px 0 0;background:var(--brand);
   }
 
-  /* 订单卡片列表 */
   .order-list{background:#fff;border-radius:0 0 12px 12px;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
 
   .order-card{
     border:1px solid var(--line);border-radius:12px;
     padding:14px 16px;background:#fff;transition:.18s;
-    display:flex;flex-direction:column;
+    display:flex;flex-direction:column;cursor:pointer;
   }
   .order-card:hover{border-color:#ffe0b2;box-shadow:0 4px 16px rgba(240,160,32,.08)}
 
-  /* 订单头部 */
   .order-header{
     display:flex;align-items:flex-start;justify-content:space-between;
     gap:10px;margin-bottom:10px;
@@ -122,13 +117,12 @@
   .order-status{
     font-size:12.5px;font-weight:700;white-space:nowrap;flex:0 0 auto;
   }
-  .status-pending{color:#f0a020}    /* 待审核 */
-  .status-confirm{color:#4f46e5}    /* 待确认 */
-  .status-paid{color:#10b981}       /* 已收款 */
-  .status-paused{color:#8d93a6}     /* 暂停中 */
-  .status-cancel{color:#c9cddc}     /* 已取消 */
+  .status-pending{color:#f0a020}
+  .status-confirm{color:#4f46e5}
+  .status-paid{color:#10b981}
+  .status-paused{color:#8d93a6}
+  .status-cancel{color:#c9cddc}
 
-  /* 金额行 */
   .order-amounts{
     display:flex;align-items:center;justify-content:space-between;
     margin-bottom:10px;gap:10px;
@@ -139,13 +133,17 @@
   .amount-value.red{color:var(--red)}
   .amount-value.gold{color:var(--brand)}
 
-  /* 订单信息行 */
+  .deposit-tip{
+    font-size:12px;color:#c2410c;
+    background:#fff9ec;border:1px dashed #ffe0b2;
+    border-radius:8px;padding:7px 10px;margin-bottom:10px;
+  }
+
   .order-info{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
   .order-info-row{font-size:12.5px;color:var(--ink2);display:flex;gap:6px}
   .order-info-row .label{color:var(--ink3);flex:0 0 auto;min-width:62px}
   .order-info-row .val{color:var(--ink);font-weight:500}
 
-  /* 抢单按钮 */
   .order-btn{
     display:block;width:100%;padding:11px 0;
     border-radius:10px;font-size:15px;font-weight:800;
@@ -160,7 +158,14 @@
   }
   .order-btn.done:hover{background:#f1f2f7;color:var(--ink3)}
 
-  /* 空状态 */
+  .order-btn.need-deposit{
+    background:#fff4ec;color:#c2410c;
+    border:1px dashed #f0a020;
+  }
+  .order-btn.need-deposit:hover{
+    background:#ffe9d6;color:#9a3412;
+  }
+
   .empty{
     text-align:center;padding:60px 20px;background:#fff;border-radius:12px;
     border:1px dashed var(--line);margin-top:12px;
@@ -169,7 +174,6 @@
   .empty h3{font-size:15px;font-weight:700;margin-bottom:6px}
   .empty p{font-size:13px;color:var(--ink3)}
 
-  /* 表单 */
   .form-card{
     background:#fff;border:1px solid var(--line);border-radius:var(--r);
     padding:22px;max-width:680px;
@@ -196,10 +200,8 @@
   .btn-ghost:hover{border-color:#c9cddc;color:var(--ink)}
   .btn-block{width:100%}
 
-  /* 底部导航（移动端） */
   .tabbar{display:none}
 
-  /* 弹窗 */
   .overlay{
     position:fixed;inset:0;background:rgba(15,17,26,.5);
     -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
@@ -226,7 +228,7 @@
   .icon-btn:hover{background:#f1f2f7;color:var(--ink)}
   .modal-body{padding:0 20px 18px;overflow-y:auto;flex:1}
   .modal-foot{
-    display:flex;gap:10px;justify-content:flex-end;
+    display:flex;gap:10px;justify-content:flex-end;align-items:center;
     padding:14px 20px;border-top:1px solid var(--line);
     background:#fbfbfe;flex:0 0 auto;
   }
@@ -254,6 +256,14 @@
     display:flex;align-items:center;gap:8px;line-height:1.5;
   }
 
+  .chip-cat{
+    flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;
+    padding:8px 14px;border-radius:10px;border:1px solid var(--line);
+    background:#fff;font-size:13.5px;font-weight:600;color:var(--ink2);
+    white-space:nowrap;transition:.16s;
+  }
+  .chip-cat.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
   .toast{
     position:fixed;left:50%;bottom:104px;transform:translate(-50%,18px);
     background:#12141d;color:#fff;padding:12px 20px;border-radius:10px;
@@ -263,7 +273,6 @@
   }
   .toast.show{opacity:1;transform:translate(-50%,0)}
 
-  /* 响应式 */
   @media (max-width:900px){
     .sidebar{display:none}
     .main{margin-left:0;padding:0 12px 80px;max-width:100%}
@@ -303,7 +312,6 @@
 </style>
 </head><body>
 <div class="app">
-  <!-- 桌面侧边栏 -->
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-logo">单</div>
@@ -317,13 +325,14 @@
       <button class="nav-item" data-action="nav" data-view="post"><span class="ico">✏️</span>发布订单</button>
       <button class="nav-item" data-action="nav" data-view="mine"><span class="ico">📥</span>我的接单</button>
       <button class="nav-item" data-action="nav" data-view="posted"><span class="ico">📤</span>我的发布</button>
+      <button class="nav-item" data-action="nav" data-view="deposit"><span class="ico">💰</span>充值押金</button>
     </nav>
     <div class="sidebar-foot">
       <button class="user-box" data-action="edit-name">
         <div class="avatar" id="sb-avatar">我</div>
         <div>
           <div class="user-name" id="sb-name">我</div>
-          <div class="user-sub" id="sb-sub">信用分 100</div>
+          <div class="user-sub" id="sb-sub">押金 0 USDT</div>
         </div>
       </button>
     </div>
@@ -340,11 +349,11 @@
     <div id="view"></div>
   </main>
 
-  <!-- 底部导航（移动端） -->
   <nav class="tabbar">
     <button class="nav-item active" data-action="nav" data-view="hall"><span class="ico">📋</span>大厅</button>
     <button class="nav-item" data-action="nav" data-view="post"><span class="ico">✏️</span>发布</button>
     <button class="nav-item" data-action="nav" data-view="mine"><span class="ico">📥</span>接单</button>
+    <button class="nav-item" data-action="nav" data-view="deposit"><span class="ico">💰</span>押金</button>
     <button class="nav-item" data-action="nav" data-view="posted"><span class="ico">📤</span>发布</button>
   </nav>
 </div>
@@ -354,7 +363,7 @@
 <script>/* =========================================================
    工具
    ========================================================= */
-const LS_KEY = 'order.v1';
+const LS_KEY = 'order.v2';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
@@ -388,10 +397,10 @@ function fmtDateTime(ts) {
    状态
    ========================================================= */
 const state = {
-  user: { id: '', name: '', credit: 100, income: 0 },
+  user: { id: '', name: '', credit: 100, income: 0, deposit: 0 },
   orders: [],
   view: 'hall',
-  orderTab: 'all', // all | pending | confirm | paid | paused | cancelled
+  orderTab: 'all',
   mineTab: 'working',
 };
 
@@ -402,9 +411,17 @@ function save() {
 }
 
 const getOrder = id => state.orders.find(o => o.id === id);
+const myTaker = o => (o.takers || []).find(x => x.userId === state.user.id) || null;
 
-function myTaker(o) {
-  return (o.takers || []).find(x => x.userId === state.user.id) || null;
+/* =========================================================
+   押金规则
+   ========================================================= */
+// 每笔订单所需押金 = 收款金额的 10%，最低 10 USDT
+function depositRequired(o) {
+  return Math.max(10, Math.round(Number(o.amount) * 0.1));
+}
+function hasEnoughDeposit(o) {
+  return Number(state.user.deposit) >= depositRequired(o);
 }
 
 /* =========================================================
@@ -412,7 +429,7 @@ function myTaker(o) {
    ========================================================= */
 function seedOrders() {
   const now = Date.now();
-  const D = 86400000, H = 3600000;
+  const H = 3600000;
   const orderNo = () => '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
 
   const mk = (o) => Object.assign({
@@ -439,17 +456,13 @@ function seedOrders() {
       id: 'o3', orderNo: '20261007025226586123', status: 'confirm',
       amount: 500, commission: 50, payType: '微信收款码',
       createdAt: now - 12 * H, publisherName: '赵主管', credit: 100,
-      takers: [
-        { userId: 'u_li', userName: '李同学', at: now - 10 * H, status: 'working' }
-      ]
+      takers: [{ userId: 'u_li', userName: '李同学', at: now - 10 * H, status: 'working' }]
     }),
     mk({
       id: 'o4', orderNo: '20261007025226585555', status: 'paid',
       amount: 2000, commission: 200, payType: '支付宝固定小额',
       createdAt: now - 24 * H, publisherName: '孙总', credit: 99,
-      takers: [
-        { userId: 'u_ma', userName: '马师傅', at: now - 20 * H, status: 'done', doneAt: now - 18 * H }
-      ]
+      takers: [{ userId: 'u_ma', userName: '马师傅', at: now - 20 * H, status: 'done', doneAt: now - 18 * H }]
     }),
     mk({
       id: 'o5', orderNo: '20261007025226584444', status: 'paused',
@@ -472,10 +485,10 @@ function boot() {
   try { data = JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { data = null; }
 
   if (data && data.user && Array.isArray(data.orders)) {
-    state.user = Object.assign({ credit: 100, income: 0 }, data.user);
+    state.user = Object.assign({ credit: 100, income: 0, deposit: 0 }, data.user);
     state.orders = data.orders;
   } else {
-    state.user = { id: uid(), name: '', credit: 100, income: 0 };
+    state.user = { id: uid(), name: '', credit: 100, income: 0, deposit: 0 };
     state.orders = seedOrders();
     save();
   }
@@ -494,8 +507,7 @@ const STATUS_MAP = {
   paused:    { text: '暂停中', cls: 'status-paused' },
   cancelled: { text: '已取消', cls: 'status-cancel' },
 };
-
-function statusOf(s) { return STATUS_MAP[s] || STATUS_MAP.pending; }
+const statusOf = s => STATUS_MAP[s] || STATUS_MAP.pending;
 
 /* =========================================================
    视图：订单大厅
@@ -510,10 +522,7 @@ function viewHall() {
   ];
 
   let list = state.orders.slice();
-  if (state.orderTab !== 'all') {
-    list = list.filter(o => o.status === state.orderTab);
-  }
-  // 按最新创建排序
+  if (state.orderTab !== 'all') list = list.filter(o => o.status === state.orderTab);
   list.sort((a, b) => b.createdAt - a.createdAt);
 
   return `
@@ -543,14 +552,32 @@ function orderCard(o) {
   const took = !!myTaker(o);
   const canGrab = o.status === 'pending' && !mine && !took;
 
+  const required = depositRequired(o);
+  const enough = hasEnoughDeposit(o);
+
   let btnText = '抢单';
   let btnClass = 'order-btn';
-  if (mine) { btnText = '我发布的'; btnClass += ' done'; }
-  else if (took) { btnText = '已接单'; btnClass += ' done'; }
-  else if (o.status !== 'pending') { btnText = st.text; btnClass += ' done'; }
-  else if (!canGrab) { btnText = '已抢完'; btnClass += ' done'; }
+  let btnAction = 'grab';
 
-  const btnAttr = canGrab ? `data-action="grab" data-id="${o.id}"` : 'disabled';
+  if (mine) {
+    btnText = '我发布的'; btnClass += ' done'; btnAction = '';
+  } else if (took) {
+    btnText = '已接单'; btnClass += ' done'; btnAction = '';
+  } else if (o.status !== 'pending') {
+    btnText = st.text; btnClass += ' done'; btnAction = '';
+  } else if (!canGrab) {
+    btnText = '已抢完'; btnClass += ' done'; btnAction = '';
+  } else if (!enough) {
+    btnText = `需押金 ${required} USDT · 去充值`;
+    btnClass = 'order-btn need-deposit';
+    btnAction = 'deposit';
+  }
+
+  const btnAttr = btnAction ? `data-action="${btnAction}" data-id="${o.id}"` : 'disabled';
+
+  const depositTip = (canGrab && !enough)
+    ? `<div class="deposit-tip">🔒 当前押金 ${state.user.deposit} USDT，抢此单需 ${required} USDT</div>`
+    : '';
 
   return `
   <div class="order-card" data-action="open" data-id="${o.id}">
@@ -570,6 +597,8 @@ function orderCard(o) {
       </div>
     </div>
 
+    ${depositTip}
+
     <div class="order-info">
       <div class="order-info-row">
         <span class="label">创建时间：</span>
@@ -581,7 +610,7 @@ function orderCard(o) {
       </div>
     </div>
 
-    <button class="${btnClass}" ${btnAttr} data-action="${canGrab ? 'grab' : ''}" data-id="${o.id}">${btnText}</button>
+    <button class="${btnClass}" ${btnAttr} data-action="${btnAction}" data-id="${o.id}">${btnText}</button>
   </div>`;
 }
 
@@ -589,9 +618,6 @@ function orderCard(o) {
    视图：发布订单
    ========================================================= */
 function viewPost() {
-  const now = new Date();
-  const defDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-
   return `
   <div class="page">
     <div class="form-card">
@@ -668,7 +694,6 @@ function viewMine() {
 
 function mineOrderCard(o) {
   const tk = myTaker(o);
-  const st = statusOf(o.status);
   const isDone = tk.status === 'done';
 
   return `
@@ -749,14 +774,71 @@ function viewPosted() {
 }
 
 /* =========================================================
+   视图：充值押金
+   ========================================================= */
+function viewDeposit() {
+  const addr = USDT_ADDRESS;
+  return `
+  <div class="page">
+    <div class="form-card">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">充值押金</h2>
+      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">使用 USDT 充值，抢单前需缴纳押金</p>
+
+      <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
+          <div style="font-size:24px;font-weight:800;color:var(--brand);margin-top:2px">${state.user.deposit} <span style="font-size:13px">USDT</span></div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择网络</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="chip-cat active" style="flex:1;justify-content:center" data-action="network" data-net="TRC20">TRC20（推荐）</button>
+        <button class="chip-cat" style="flex:1;justify-content:center" data-action="network" data-net="ERC20">ERC20</button>
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">充值地址</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input class="input" id="usdt-addr" value="${addr}" readonly style="font-size:12px;flex:1">
+        <button class="btn btn-ghost" data-action="copy-addr" style="padding:0 14px;flex:0 0 auto">复制</button>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin:14px 0">
+        <div id="qr-box" style="width:160px;height:160px;background:#fff;border:1px solid var(--line);border-radius:10px;position:relative;overflow:hidden"></div>
+      </div>
+
+      <label class="field" style="margin-bottom:12px">
+        <span class="field-label">充值金额（USDT）</span>
+        <input class="input" id="deposit-amount" type="number" min="10" step="1" value="100" placeholder="最低 10 USDT">
+      </label>
+
+      <div class="notice" style="margin-bottom:14px">⚠️ 请务必使用所选网络充值，转账到其他网络将无法到账</div>
+
+      <button class="btn btn-primary btn-block" data-action="confirm-deposit" data-id="">我已完成支付</button>
+    </div>
+  </div>`;
+}
+
+/* =========================================================
    主渲染
    ========================================================= */
 function render() {
   const view = $('#view');
   if (!view) return;
 
-  const map = { hall: viewHall, post: viewPost, mine: viewMine, posted: viewPosted };
+  const map = {
+    hall: viewHall,
+    post: viewPost,
+    mine: viewMine,
+    posted: viewPosted,
+    deposit: viewDeposit,
+  };
   view.innerHTML = (map[state.view] || viewHall)();
+
+  // 充值页需要渲染二维码
+  if (state.view === 'deposit') {
+    setTimeout(() => renderQR($('#qr-box'), USDT_ADDRESS), 30);
+  }
 
   $$('[data-action="nav"]').forEach(el => {
     el.classList.toggle('active', el.dataset.view === state.view);
@@ -779,8 +861,14 @@ function updateUserUI() {
   if (sbA) sbA.textContent = ch;
   if (sbN) sbN.textContent = name;
   if (mhA) mhA.textContent = ch;
-  if (sbS) sbS.textContent = `信用分 ${state.user.credit} · 收入 ¥${state.user.income}`;
+  if (sbS) sbS.textContent = `押金 ${state.user.deposit} USDT · 收入 ¥${state.user.income}`;
 }/* =========================================================
+   USDT 常量
+   ========================================================= */
+const USDT_ADDRESS = 'TXk7YbWcWnQPNhSCXC3p4aFb5tHKqMgRzA';
+const USDT_NETWORK = 'TRC20';
+
+/* =========================================================
    弹窗基础
    ========================================================= */
 function openModal(html) {
@@ -833,11 +921,13 @@ function editName() {
         <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${state.user.credit}</div></div>
         <div class="dg-item"><div class="dg-k">累计收入</div><div class="dg-v">¥${state.user.income}</div></div>
         <div class="dg-item"><div class="dg-k">接单总数</div><div class="dg-v">${state.orders.filter(o => myTaker(o)).length}</div></div>
+        <div class="dg-item"><div class="dg-k">押金余额</div><div class="dg-v" style="color:var(--brand)">${state.user.deposit} USDT</div></div>
       </div>
+      <button class="btn btn-primary btn-block" data-action="open-deposit" style="margin-top:14px">充值押金（USDT）</button>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" data-action="close-modal">取消</button>
-      <button class="btn btn-primary" data-action="save-name">保存</button>
+      <button class="btn btn-primary" data-action="save-name">保存昵称</button>
     </div>
   `);
   setTimeout(() => $('#edit-name-input')?.focus(), 120);
@@ -849,6 +939,11 @@ function openGrabModal(id) {
   if (!o) return;
   if (o.status !== 'pending' || myTaker(o) || o.publisherId === state.user.id) {
     toast('这个订单已经不能抢了');
+    return;
+  }
+
+  if (!hasEnoughDeposit(o)) {
+    openDepositModal(o);
     return;
   }
 
@@ -868,7 +963,7 @@ function openGrabModal(id) {
         <div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div>
         <div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${esc(o.publisherName)}</div></div>
         <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${o.credit ?? 100}</div></div>
-        <div class="dg-item"><div class="dg-k">创建时间</div><div class="dg-v">${fmtDateTime(o.createdAt)}</div></div>
+        <div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div>
       </div>
 
       <div class="notice">⚡ 抢单后请尽快完成，审核通过后返佣自动结算</div>
@@ -888,6 +983,12 @@ function submitGrab(id) {
     closeModal(); render(); return;
   }
 
+  if (!hasEnoughDeposit(o)) {
+    toast('押金不足，请先充值');
+    openDepositModal(o);
+    return;
+  }
+
   o.takers = o.takers || [];
   o.takers.push({
     userId: state.user.id,
@@ -904,7 +1005,111 @@ function submitGrab(id) {
   toast('抢单成功，请尽快完成');
 }
 
-/* ---------- 订单详情 ---------- */
+/* =========================================================
+   充值押金弹窗
+   ========================================================= */
+function openDepositModal(order) {
+  const required = order ? depositRequired(order) : 50;
+
+  openModal(`
+    <div class="modal-head">
+      <h2>充值押金</h2>
+      <button class="icon-btn" data-action="close-modal">✕</button>
+    </div>
+
+    <div class="modal-body">
+      ${order ? `
+        <div class="notice" style="margin-bottom:14px">
+          🔒 抢此单需押金 ${required} USDT，当前押金 ${state.user.deposit} USDT，请先充值
+        </div>
+      ` : ''}
+
+      <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
+          <div style="font-size:22px;font-weight:800;color:var(--brand);margin-top:2px">${state.user.deposit} <span style="font-size:13px">USDT</span></div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择网络</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="chip-cat active" style="flex:1;justify-content:center" data-action="network" data-net="TRC20">TRC20（推荐）</button>
+        <button class="chip-cat" style="flex:1;justify-content:center" data-action="network" data-net="ERC20">ERC20</button>
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">充值地址</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <input class="input" id="usdt-addr" value="${USDT_ADDRESS}" readonly style="font-size:12px;flex:1">
+        <button class="btn btn-ghost" data-action="copy-addr" style="padding:0 14px;flex:0 0 auto">复制</button>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin:14px 0">
+        <div id="qr-box" style="width:150px;height:150px;background:#fff;border:1px solid var(--line);border-radius:10px;position:relative;overflow:hidden"></div>
+      </div>
+
+      <label class="field" style="margin-bottom:12px">
+        <span class="field-label">充值金额（USDT）</span>
+        <input class="input" id="deposit-amount" type="number" min="10" step="1" value="100" placeholder="最低 10 USDT">
+      </label>
+
+      <div class="notice">⚠️ 请务必使用 ${USDT_NETWORK} 网络充值，转账到其他网络将无法到账</div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-action="close-modal">取消</button>
+      <button class="btn btn-primary" data-action="confirm-deposit" data-id="${order ? order.id : ''}">我已完成支付</button>
+    </div>
+  `);
+
+  setTimeout(() => renderQR($('#qr-box'), USDT_ADDRESS), 30);
+}
+
+/* 简易二维码渲染（占位） */
+function renderQR(el, text) {
+  if (!el) return;
+  const size = 21;
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
+  let html = `<div style="display:grid;grid-template-columns:repeat(${size},1fr);width:100%;height:100%">`;
+  for (let i = 0; i < size * size; i++) {
+    hash = (hash * 1103515245 + 12345) & 0x7fffffff;
+    const on = (hash & 3) === 0;
+    html += `<div style="background:${on ? '#12141d' : '#fff'}"></div>`;
+  }
+  html += '</div>';
+  html += `
+    <div style="position:absolute;top:8px;left:8px;width:32px;height:32px;background:#fff;border:5px solid #12141d;border-radius:4px"></div>
+    <div style="position:absolute;top:8px;right:8px;width:32px;height:32px;background:#fff;border:5px solid #12141d;border-radius:4px"></div>
+    <div style="position:absolute;bottom:8px;left:8px;width:32px;height:32px;background:#fff;border:5px solid #12141d;border-radius:4px"></div>
+  `;
+  el.innerHTML = html;
+}
+
+/* 确认充值到账 */
+function submitDeposit(orderId) {
+  const amount = Number($('#deposit-amount')?.value) || 0;
+  if (amount < 10) { toast('最低充值 10 USDT'); return; }
+
+  state.user.deposit = Number(state.user.deposit) + amount;
+  save();
+
+  closeModal();
+  updateUserUI();
+  render();
+
+  toast(`充值成功，当前押金 ${state.user.deposit} USDT`);
+
+  if (orderId) {
+    setTimeout(() => openGrabModal(orderId), 400);
+  }
+}
+
+/* =========================================================
+   订单详情
+   ========================================================= */
 function openDetail(id) {
   const o = getOrder(id);
   if (!o) return;
@@ -964,6 +1169,7 @@ function openDetail(id) {
         <div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div>
         <div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${isOwner ? '我' : esc(o.publisherName)}</div></div>
         <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${o.credit ?? 100}</div></div>
+        <div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div>
       </div>
 
       ${o.desc ? `<div class="detail-desc">${esc(o.desc)}</div>` : ''}
@@ -1072,12 +1278,40 @@ document.addEventListener('click', e => {
       break;
     case 'edit-name': editName(); break;
     case 'save-name': saveName(); break;
+    case 'deposit':
+      openDepositModal(getOrder(id));
+      break;
+    case 'open-deposit':
+      openDepositModal(null);
+      break;
+    case 'copy-addr': {
+      const addr = $('#usdt-addr')?.value || '';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(addr).then(
+          () => toast('地址已复制'),
+          () => toast('复制失败，请手动选择')
+        );
+      } else {
+        const inp = $('#usdt-addr');
+        if (inp) { inp.select(); document.execCommand('copy'); toast('地址已复制'); }
+      }
+      break;
+    }
+    case 'network':
+      $$('[data-action="network"]').forEach(b => {
+        b.classList.toggle('active', b.dataset.net === el.dataset.net);
+      });
+      toast('已切换至 ' + el.dataset.net + ' 网络');
+      break;
+    case 'confirm-deposit':
+      submitDeposit(el.dataset.id || '');
+      break;
   }
 });
 
 /* 发布表单提交 */
 document.addEventListener('submit', e => {
-  if (e.target.closest('.form-card')) {
+  if (e.target.closest('.form-card') && e.target.querySelector('input[name="amount"]')) {
     e.preventDefault();
     submitPost(e.target);
   }
