@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#ff6a00" />
-<title>众包接单 · 一单一结，多劳多得</title>
+<meta name="theme-color" content="#f0a020" />
+<title>众包接单 · 订单大厅</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -14,12 +14,12 @@
     --ink2:#5b6070;
     --ink3:#8d93a6;
     --line:#e8eaf1;
-    --brand:#ff6a00;
-    --brand-dark:#e85d00;
-    --brand-soft:#fff4ec;
+    --brand:#f0a020;
+    --brand-dark:#d98a10;
+    --brand-soft:#fff9ec;
+    --red:#e02020;
     --ok:#10b981;
-    --warn:#f59e0b;
-    --r:16px;
+    --r:12px;
   }
   html,body{height:100%}
   body{
@@ -33,243 +33,173 @@
 
   .app{display:flex;min-height:100vh}
 
+  /* 侧边栏（桌面端保留） */
   .sidebar{
-    position:fixed;top:0;left:0;bottom:0;width:248px;
+    position:fixed;top:0;left:0;bottom:0;width:220px;
     background:var(--card);border-right:1px solid var(--line);
     padding:22px 16px;display:flex;flex-direction:column;z-index:20;
   }
   .brand{display:flex;align-items:center;gap:11px;padding:0 6px 20px}
   .brand-logo{
-    width:38px;height:38px;border-radius:12px;flex:0 0 auto;
-    background:linear-gradient(135deg,#ff8a3d,#ff6a00);
-    display:grid;place-items:center;color:#fff;font-size:17px;font-weight:800;
-    box-shadow:0 6px 16px rgba(255,106,0,.35);
+    width:36px;height:36px;border-radius:10px;flex:0 0 auto;
+    background:linear-gradient(135deg,#ffc107,#f0a020);
+    display:grid;place-items:center;color:#fff;font-size:16px;font-weight:800;
   }
-  .brand-name{font-size:16px;font-weight:800;letter-spacing:-.2px}
-  .brand-sub{font-size:11.5px;color:var(--ink3);margin-top:1px}
+  .brand-name{font-size:15px;font-weight:800;letter-spacing:-.2px}
+  .brand-sub{font-size:11px;color:var(--ink3);margin-top:1px}
 
   .nav{display:flex;flex-direction:column;gap:4px}
   .nav-item{
-    display:flex;align-items:center;gap:11px;
-    padding:11px 12px;border-radius:12px;
-    color:var(--ink2);font-size:14.5px;font-weight:500;
-    text-align:left;width:100%;transition:.16s;position:relative;
+    display:flex;align-items:center;gap:10px;
+    padding:11px 12px;border-radius:10px;
+    color:var(--ink2);font-size:14px;font-weight:500;
+    text-align:left;width:100%;transition:.16s;
   }
-  .nav-item .ico{font-size:17px;line-height:1;width:20px;text-align:center}
+  .nav-item .ico{font-size:16px;width:18px;text-align:center}
   .nav-item:hover{background:#f4f5fa;color:var(--ink)}
   .nav-item.active{background:var(--brand-soft);color:var(--brand);font-weight:700}
-  .nav-badge{
-    margin-left:auto;background:var(--brand);color:#fff;
-    font-size:10.5px;font-weight:700;min-width:19px;height:19px;
-    border-radius:10px;display:grid;place-items:center;padding:0 5px;
-  }
 
   .sidebar-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
   .user-box{
     display:flex;align-items:center;gap:10px;width:100%;
-    padding:8px;border-radius:12px;transition:.16s;text-align:left;
+    padding:8px;border-radius:10px;transition:.16s;text-align:left;
   }
   .user-box:hover{background:#f4f5fa}
   .avatar{
-    width:34px;height:34px;border-radius:50%;flex:0 0 auto;
-    background:linear-gradient(135deg,#ff8a3d,#ff6a00);
+    width:32px;height:32px;border-radius:50%;flex:0 0 auto;
+    background:linear-gradient(135deg,#ffc107,#f0a020);
     color:#fff;display:grid;place-items:center;
-    font-size:14px;font-weight:700;
+    font-size:13px;font-weight:700;
   }
-  .user-name{font-size:13.5px;font-weight:700;line-height:1.3}
+  .user-name{font-size:13px;font-weight:700}
   .user-sub{font-size:11px;color:var(--ink3)}
 
-  .main{margin-left:248px;flex:1;padding:28px 32px 90px}
-  .page{max-width:1140px;margin:0 auto;animation:fadeUp .3s ease}
+  /* 主内容 */
+  .main{margin-left:220px;flex:1;padding:20px 24px 80px;max-width:900px}
+  .page{animation:fadeUp .3s ease}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
   .mhead{display:none}
 
-  .page-head{margin-bottom:20px}
-  .page-title{font-size:26px;font-weight:800;letter-spacing:-.6px}
-  .page-sub{color:var(--ink3);font-size:13.5px;margin-top:5px}
-
-  .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:7px;
-    padding:11px 18px;border-radius:12px;border:1px solid transparent;
-    font-size:14.5px;font-weight:700;transition:.16s;white-space:nowrap;
+  /* 顶部标签页 */
+  .order-tabs{
+    display:flex;gap:0;background:#fff;border-radius:12px 12px 0 0;
+    padding:0 16px;border-bottom:1px solid var(--line);
+    overflow-x:auto;scrollbar-width:none;
   }
-  .btn-primary{background:var(--brand);color:#fff;box-shadow:0 4px 14px rgba(255,106,0,.28)}
-  .btn-primary:hover{background:var(--brand-dark)}
-  .btn-primary:active{transform:scale(.98)}
-  .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink2)}
-  .btn-ghost:hover{border-color:#c9cddc;color:var(--ink)}
-  .btn-danger{background:#fff;border-color:#fecaca;color:#dc2626}
-  .btn-danger:hover{background:#fef2f2}
-  .btn-sm{padding:8px 14px;font-size:13px;border-radius:10px}
-  .btn-block{width:100%}
-  .btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+  .order-tabs::-webkit-scrollbar{display:none}
+  .order-tab{
+    flex:0 0 auto;padding:15px 16px;font-size:14px;font-weight:600;
+    color:var(--ink2);position:relative;white-space:nowrap;
+    transition:.16s;
+  }
+  .order-tab:hover{color:var(--ink)}
+  .order-tab.active{color:var(--brand);font-weight:800}
+  .order-tab.active::after{
+    content:'';position:absolute;bottom:0;left:16px;right:16px;
+    height:3px;border-radius:3px 3px 0 0;background:var(--brand);
+  }
 
-  .input,select.select,textarea.input{
-    width:100%;padding:12px 14px;border-radius:12px;
+  /* 订单卡片列表 */
+  .order-list{background:#fff;border-radius:0 0 12px 12px;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
+
+  .order-card{
+    border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;background:#fff;transition:.18s;
+    display:flex;flex-direction:column;
+  }
+  .order-card:hover{border-color:#ffe0b2;box-shadow:0 4px 16px rgba(240,160,32,.08)}
+
+  /* 订单头部 */
+  .order-header{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    gap:10px;margin-bottom:10px;
+  }
+  .order-no{
+    font-size:12.5px;color:var(--ink2);line-height:1.4;
+    word-break:break-all;
+  }
+  .order-status{
+    font-size:12.5px;font-weight:700;white-space:nowrap;flex:0 0 auto;
+  }
+  .status-pending{color:#f0a020}    /* 待审核 */
+  .status-confirm{color:#4f46e5}    /* 待确认 */
+  .status-paid{color:#10b981}       /* 已收款 */
+  .status-paused{color:#8d93a6}     /* 暂停中 */
+  .status-cancel{color:#c9cddc}     /* 已取消 */
+
+  /* 金额行 */
+  .order-amounts{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:10px;gap:10px;
+  }
+  .amount-item{display:flex;align-items:baseline;gap:2px}
+  .amount-label{font-size:12.5px;color:var(--ink3);margin-right:2px}
+  .amount-value{font-size:16px;font-weight:800;letter-spacing:-.3px}
+  .amount-value.red{color:var(--red)}
+  .amount-value.gold{color:var(--brand)}
+
+  /* 订单信息行 */
+  .order-info{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+  .order-info-row{font-size:12.5px;color:var(--ink2);display:flex;gap:6px}
+  .order-info-row .label{color:var(--ink3);flex:0 0 auto;min-width:62px}
+  .order-info-row .val{color:var(--ink);font-weight:500}
+
+  /* 抢单按钮 */
+  .order-btn{
+    display:block;width:100%;padding:11px 0;
+    border-radius:10px;font-size:15px;font-weight:800;
+    background:#ffc107;color:#5b4200;transition:.16s;
+    text-align:center;letter-spacing:.5px;
+  }
+  .order-btn:hover{background:#f0a020;color:#fff}
+  .order-btn:active{transform:scale(.98)}
+  .order-btn.done{
+    background:#f1f2f7;color:var(--ink3);cursor:default;
+    transform:none;
+  }
+  .order-btn.done:hover{background:#f1f2f7;color:var(--ink3)}
+
+  /* 空状态 */
+  .empty{
+    text-align:center;padding:60px 20px;background:#fff;border-radius:12px;
+    border:1px dashed var(--line);margin-top:12px;
+  }
+  .empty-ico{font-size:36px;margin-bottom:12px;opacity:.6}
+  .empty h3{font-size:15px;font-weight:700;margin-bottom:6px}
+  .empty p{font-size:13px;color:var(--ink3)}
+
+  /* 表单 */
+  .form-card{
+    background:#fff;border:1px solid var(--line);border-radius:var(--r);
+    padding:22px;max-width:680px;
+  }
+  .field{display:block;margin-bottom:16px}
+  .field-label{display:block;font-size:13.5px;font-weight:700;color:var(--ink2);margin-bottom:8px}
+  .field-label i{color:#ef4444;font-style:normal}
+  .input{
+    width:100%;padding:12px 14px;border-radius:10px;
     border:1px solid var(--line);background:#fff;
     font-size:14.5px;transition:.16s;
   }
-  .input:focus,.select:focus,textarea.input:focus{
-    border-color:var(--brand);box-shadow:0 0 0 3px rgba(255,106,0,.12)
-  }
-  textarea.input{resize:vertical;line-height:1.6}
-  select.select{
-    appearance:none;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238d93a6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 14px center;
-    padding-right:36px;cursor:pointer
-  }
+  .input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(240,160,32,.12)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 
-  .field{display:block;margin-bottom:18px}
-  .field-label{display:block;font-size:13.5px;font-weight:700;color:var(--ink2);margin-bottom:8px}
-  .field-label i{color:#ef4444;font-style:normal}
-  .field-hint{font-size:12px;color:var(--ink3);margin-top:6px}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    padding:11px 18px;border-radius:10px;border:1px solid transparent;
+    font-size:14.5px;font-weight:700;transition:.16s;white-space:nowrap;
+  }
+  .btn-primary{background:var(--brand);color:#fff}
+  .btn-primary:hover{background:var(--brand-dark)}
+  .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink2)}
+  .btn-ghost:hover{border-color:#c9cddc;color:var(--ink)}
+  .btn-block{width:100%}
 
-  .icon-btn{
-    width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
-    color:var(--ink3);font-size:15px;transition:.16s;
-  }
-  .icon-btn:hover{background:#f1f2f7;color:var(--ink)}
+  /* 底部导航（移动端） */
+  .tabbar{display:none}
 
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
-  .stat{
-    background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:14px 16px;
-  }
-  .stat-k{font-size:12px;color:var(--ink3);margin-bottom:4px}
-  .stat-v{font-size:21px;font-weight:800;letter-spacing:-.5px}
-  .stat-v small{font-size:12px;font-weight:600;color:var(--ink3);margin-left:2px}
-  .stat-v.hl{color:var(--brand)}
-
-  .toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-  .search{flex:1;min-width:200px;position:relative}
-  .search-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;opacity:.5}
-  .search input{padding-left:40px}
-  .toolbar .select{width:auto;min-width:136px}
-
-  .chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:20px;scrollbar-width:none}
-  .chips::-webkit-scrollbar{display:none}
-  .chip-cat{
-    flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;
-    padding:8px 14px;border-radius:10px;border:1px solid var(--line);
-    background:#fff;font-size:13.5px;font-weight:600;color:var(--ink2);
-    white-space:nowrap;transition:.16s;
-  }
-  .chip-cat:hover{border-color:#c9cddc}
-  .chip-cat.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .chip-cat input{display:none}
-
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(312px,1fr));gap:16px}
-  .task-card{
-    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
-    padding:17px 18px 15px;cursor:pointer;transition:.18s;
-    display:flex;flex-direction:column;position:relative;overflow:hidden;
-  }
-  .task-card:hover{transform:translateY(-2px);border-color:#ffd4b8;box-shadow:0 10px 28px rgba(255,106,0,.1)}
-  .task-card.gone{opacity:.62}
-  .task-card.gone:hover{transform:none;border-color:var(--line);box-shadow:none}
-
-  .tc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
-  .cat-chip{
-    display:inline-flex;align-items:center;gap:5px;
-    padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;
-  }
-  .tc-price{font-size:22px;font-weight:800;color:var(--brand);letter-spacing:-.8px;line-height:1.1;text-align:right}
-  .tc-price small{display:block;font-size:10.5px;font-weight:600;color:var(--ink3);letter-spacing:0}
-
-  .tc-title{font-size:15.5px;font-weight:750;line-height:1.45;margin-bottom:7px;letter-spacing:-.2px}
-  .tc-desc{
-    font-size:13px;color:var(--ink2);line-height:1.6;margin-bottom:13px;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-  }
-  .tc-meta{display:flex;gap:14px;font-size:12px;color:var(--ink3);margin-bottom:13px;flex-wrap:wrap}
-  .tc-meta .hot{color:var(--brand);font-weight:700}
-  .tc-meta .urgent{color:#ef4444;font-weight:700}
-
-  .tc-foot{
-    margin-top:auto;padding-top:13px;border-top:1px dashed var(--line);
-    display:flex;align-items:center;justify-content:space-between;gap:10px;
-  }
-  .tc-owner{font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:6px;min-width:0}
-  .tc-owner b{color:var(--ink2);font-weight:700}
-  .dot-credit{
-    display:inline-flex;align-items:center;gap:3px;
-    background:#f0fdf4;color:#16a34a;font-size:11px;font-weight:700;
-    padding:2px 7px;border-radius:6px;
-  }
-  .grab-btn{
-    padding:9px 18px;border-radius:11px;font-size:13.5px;font-weight:800;
-    background:var(--brand);color:#fff;transition:.16s;flex:0 0 auto;
-    box-shadow:0 4px 12px rgba(255,106,0,.3);
-  }
-  .grab-btn:hover{background:var(--brand-dark)}
-  .grab-btn:active{transform:scale(.97)}
-  .grab-btn.done{
-    background:#f1f2f7;color:var(--ink3);box-shadow:none;cursor:default;
-  }
-  .grab-btn.done:hover{background:#f1f2f7}
-
-  .slot-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-  .slot-track{flex:1;height:5px;border-radius:3px;background:#f1f2f7;overflow:hidden}
-  .slot-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#ffa04d,#ff6a00);transition:.3s}
-  .slot-text{font-size:11.5px;color:var(--ink3);font-weight:600;white-space:nowrap}
-
-  .list{display:flex;flex-direction:column;gap:12px}
-  .list-item{
-    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
-    padding:16px 18px;display:flex;gap:14px;align-items:center;transition:.18s;
-  }
-  .list-item:hover{border-color:#ffd4b8;box-shadow:0 6px 20px rgba(255,106,0,.07)}
-  .li-main{flex:1;min-width:0;cursor:pointer}
-  .li-top{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap}
-  .li-title{font-size:15px;font-weight:750;margin-bottom:7px;letter-spacing:-.2px}
-  .li-meta{display:flex;gap:14px;font-size:12.5px;color:var(--ink3);flex-wrap:wrap;align-items:center}
-  .li-meta .money{color:var(--brand);font-weight:800;font-size:14px}
-  .li-side{flex:0 0 auto}
-
-  .chip{padding:4px 9px;border-radius:7px;font-size:11.5px;font-weight:700}
-  .chip-open{background:#fff4ec;color:#ea580c}
-  .chip-working{background:#eef2ff;color:#4f46e5}
-  .chip-reviewing{background:#f5f3ff;color:#7c3aed}
-  .chip-done{background:#f0fdf4;color:#16a34a}
-
-  .section-title{
-    font-size:13px;font-weight:800;color:var(--ink3);letter-spacing:.6px;
-    margin:26px 0 12px;display:flex;align-items:center;gap:8px;
-  }
-  .section-title:first-child{margin-top:0}
-  .section-title .cnt{
-    background:#f1f2f7;color:var(--ink2);font-size:11px;
-    padding:1px 7px;border-radius:8px;
-  }
-
-  .tabs{
-    display:flex;gap:4px;background:#eceef5;padding:4px;border-radius:13px;
-    margin-bottom:20px;overflow-x:auto;scrollbar-width:none;
-  }
-  .tabs::-webkit-scrollbar{display:none}
-  .tab{
-    flex:1;min-width:88px;padding:9px 12px;border-radius:10px;
-    font-size:13.5px;font-weight:700;color:var(--ink2);
-    transition:.16s;white-space:nowrap;text-align:center;
-  }
-  .tab.active{background:#fff;color:var(--brand);box-shadow:0 2px 8px rgba(20,22,40,.08)}
-
-  .empty{
-    grid-column:1/-1;text-align:center;padding:60px 20px;
-    background:var(--card);border:1px dashed var(--line);border-radius:var(--r);
-  }
-  .empty-ico{font-size:38px;margin-bottom:12px;opacity:.75}
-  .empty h3{font-size:15.5px;font-weight:750;margin-bottom:6px}
-  .empty p{font-size:13.5px;color:var(--ink3);margin-bottom:18px}
-
-  .form-card{
-    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
-    padding:26px;max-width:680px;
-  }
-  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-
+  /* 弹窗 */
   .overlay{
     position:fixed;inset:0;background:rgba(15,17,26,.5);
     -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
@@ -277,170 +207,121 @@
     padding:20px;animation:fadeIn .2s ease;
   }
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
   .modal{
-    background:#fff;border-radius:20px;width:min(620px,100%);
+    background:#fff;border-radius:16px;width:min(500px,100%);
     max-height:88vh;display:flex;flex-direction:column;
     animation:pop .24s cubic-bezier(.2,.9,.3,1.2);
     box-shadow:0 24px 60px rgba(15,17,26,.3);overflow:hidden;
   }
+  @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
   .modal-head{
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
-    padding:20px 22px 14px;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 20px 12px;flex:0 0 auto;
   }
-  .modal-head h2{font-size:18px;font-weight:800;letter-spacing:-.3px}
-  .modal-body{padding:0 22px 20px;overflow-y:auto;flex:1}
+  .modal-head h2{font-size:17px;font-weight:800}
+  .icon-btn{
+    width:32px;height:32px;border-radius:8px;display:grid;place-items:center;
+    color:var(--ink3);font-size:15px;transition:.16s;
+  }
+  .icon-btn:hover{background:#f1f2f7;color:var(--ink)}
+  .modal-body{padding:0 20px 18px;overflow-y:auto;flex:1}
   .modal-foot{
-    display:flex;gap:10px;justify-content:flex-end;align-items:center;
-    padding:16px 22px;border-top:1px solid var(--line);
+    display:flex;gap:10px;justify-content:flex-end;
+    padding:14px 20px;border-top:1px solid var(--line);
     background:#fbfbfe;flex:0 0 auto;
   }
 
   .detail-price{
-    font-size:30px;font-weight:850;color:var(--brand);
-    letter-spacing:-1.2px;margin:14px 0 4px;
+    font-size:28px;font-weight:850;color:var(--red);
+    letter-spacing:-1px;margin:12px 0 4px;
   }
   .detail-price small{font-size:13px;font-weight:600;color:var(--ink3);margin-left:5px;letter-spacing:0}
   .detail-grid{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;
-    padding:16px;background:#f8f9fd;border-radius:14px;margin:16px 0;
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;
+    padding:14px;background:#f8f9fd;border-radius:12px;margin:14px 0;
   }
   .dg-item .dg-k{font-size:11.5px;color:var(--ink3);margin-bottom:3px}
-  .dg-item .dg-v{font-size:14px;font-weight:700}
+  .dg-item .dg-v{font-size:13.5px;font-weight:700;word-break:break-all}
   .detail-desc{
-    font-size:14px;color:var(--ink2);line-height:1.75;white-space:pre-wrap;
-    padding:16px;background:#f8f9fd;border-radius:14px;margin-bottom:18px;
+    font-size:13.5px;color:var(--ink2);line-height:1.7;
+    padding:14px;background:#f8f9fd;border-radius:12px;margin-bottom:14px;
+    white-space:pre-wrap;
   }
-
-  .grab-box{
-    background:linear-gradient(135deg,#fff8f3,#fff4ec);
-    border:1px solid #ffe0c8;border-radius:16px;
-    padding:18px;text-align:center;margin-bottom:16px;
-  }
-  .grab-box .cat-chip{margin-bottom:10px}
-  .grab-box h3{font-size:16px;font-weight:750;line-height:1.45;margin-bottom:12px}
-  .grab-box .gp{font-size:32px;font-weight:850;color:var(--brand);letter-spacing:-1.2px}
-  .grab-box .gp small{font-size:13px;font-weight:600;color:var(--ink3);margin-left:4px;letter-spacing:0}
-  .grab-rows{display:flex;flex-direction:column;gap:9px;margin:16px 0}
-  .grab-row{
-    display:flex;justify-content:space-between;font-size:13.5px;
-    padding-bottom:9px;border-bottom:1px dashed var(--line);
-  }
-  .grab-row:last-child{border-bottom:none;padding-bottom:0}
-  .grab-row .k{color:var(--ink3)}
-  .grab-row .v{font-weight:700}
-
-  .taker{
-    display:flex;gap:12px;padding:14px;border:1px solid var(--line);
-    border-radius:14px;margin-bottom:10px;align-items:center;
-  }
-  .taker.me{border-color:#ffd4b8;background:#fffaf6}
-  .tk-main{flex:1;min-width:0}
-  .tk-name{font-size:14px;font-weight:750;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .tk-time{font-size:11.5px;color:var(--ink3);margin-top:4px}
-  .tk-price{font-size:14px;font-weight:800;color:var(--brand)}
 
   .notice{
-    padding:13px 15px;border-radius:12px;font-size:13.5px;
-    background:#fff4ec;color:#c2410c;border:1px solid #ffe0c8;
+    padding:12px 14px;border-radius:10px;font-size:13px;
+    background:#fff9ec;color:#c27800;border:1px solid #ffe0b2;
     display:flex;align-items:center;gap:8px;line-height:1.5;
   }
-  .notice-warn{background:#fffbeb;color:#b45309;border-color:#fde68a}
 
   .toast{
     position:fixed;left:50%;bottom:104px;transform:translate(-50%,18px);
-    background:#12141d;color:#fff;padding:12px 20px;border-radius:12px;
+    background:#12141d;color:#fff;padding:12px 20px;border-radius:10px;
     font-size:13.5px;font-weight:600;opacity:0;transition:.28s;
     z-index:300;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.25);
     max-width:calc(100vw - 40px);text-align:center;
   }
   .toast.show{opacity:1;transform:translate(-50%,0)}
 
-  .welcome{text-align:center;padding:34px 26px 28px}
-  .welcome-emoji{font-size:44px;margin-bottom:14px}
-  .welcome h2{font-size:21px;font-weight:800;margin-bottom:8px;letter-spacing:-.4px}
-  .welcome p{font-size:14px;color:var(--ink3);margin-bottom:24px}
-  .welcome .input{text-align:center;margin-bottom:16px;font-size:15px}
-
-  .tabbar{display:none}
-
+  /* 响应式 */
   @media (max-width:900px){
     .sidebar{display:none}
-    .main{margin-left:0;padding:0 16px 100px}
+    .main{margin-left:0;padding:0 12px 80px;max-width:100%}
     .mhead{
       display:flex;align-items:center;justify-content:space-between;
-      padding:14px 0 16px;position:sticky;top:0;z-index:15;
-      background:rgba(245,246,250,.92);
+      padding:12px 0 14px;position:sticky;top:0;z-index:15;
+      background:rgba(245,246,250,.95);
       -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
     }
     .mhead .brand{padding:0}
-    .mhead .brand-logo{width:34px;height:34px;border-radius:11px;font-size:16px}
-    .mhead .brand-sub{display:none}
+    .mhead .brand-logo{width:32px;height:32px;border-radius:9px;font-size:15px}
+    .mhead .brand-name{font-size:15px}
 
     .tabbar{
       display:flex;position:fixed;bottom:0;left:0;right:0;z-index:30;
-      background:rgba(255,255,255,.96);
+      background:rgba(255,255,255,.97);
       -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
       border-top:1px solid var(--line);
-      padding:7px 6px calc(7px + env(safe-area-inset-bottom));
+      padding:6px 4px calc(6px + env(safe-area-inset-bottom));
     }
     .tabbar .nav-item{
-      flex:1;flex-direction:column;gap:3px;font-size:10.5px;
-      padding:6px 2px;border-radius:11px;justify-content:center;position:relative;
+      flex:1;flex-direction:column;gap:2px;font-size:10px;
+      padding:5px 2px;border-radius:8px;justify-content:center;
     }
-    .tabbar .nav-item .ico{font-size:19px}
-    .tabbar .nav-badge{
-      position:absolute;top:2px;right:calc(50% - 22px);
-      margin:0;font-size:9.5px;min-width:16px;height:16px;
-    }
+    .tabbar .nav-item .ico{font-size:18px}
 
-    .page-title{font-size:22px}
-    .stats{grid-template-columns:repeat(3,1fr);gap:9px}
-    .stat{padding:11px 12px}
-    .stat-v{font-size:17px}
-    .stat-k{font-size:11px}
-
-    .grid{grid-template-columns:1fr}
-    .form-card{padding:20px}
+    .order-card{padding:12px 14px}
+    .order-amounts{margin-bottom:8px}
+    .amount-value{font-size:15px}
+    .order-btn{font-size:14.5px;padding:10px 0}
+    .toast{bottom:80px}
     .form-row{grid-template-columns:1fr}
+    .form-card{padding:16px}
     .overlay{padding:0;align-items:flex-end}
-    .modal{
-      width:100%;max-height:92vh;border-radius:22px 22px 0 0;
-      animation:slideUp .3s cubic-bezier(.2,.9,.3,1.05);
-    }
-    @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
-    .toast{bottom:96px}
-    .list-item{flex-direction:column;align-items:stretch;gap:12px}
-    .li-side{display:flex;justify-content:flex-end}
-    .li-side .btn{flex:1}
-  }
-  @media (max-width:420px){
-    .form-row{grid-template-columns:1fr}
-    .tc-price{font-size:19px}
+    .modal{width:100%;max-height:90vh;border-radius:16px 16px 0 0;}
   }
 </style>
 </head><body>
-
 <div class="app">
-  <!-- 侧边栏（桌面） -->
+  <!-- 桌面侧边栏 -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-logo">众</div>
+      <div class="brand-logo">单</div>
       <div>
         <div class="brand-name">众包接单</div>
-        <div class="brand-sub">一单一结 · 多劳多得</div>
+        <div class="brand-sub">订单大厅</div>
       </div>
     </div>
-    <nav class="nav" id="side-nav">
-      <button class="nav-item" data-action="nav" data-view="hall"><span class="ico">⚡</span>任务大厅<span class="nav-badge" id="badge-hall" hidden>0</span></button>
-      <button class="nav-item" data-action="nav" data-view="post"><span class="ico">✏️</span>发布任务</button>
-      <button class="nav-item" data-action="nav" data-view="mine"><span class="ico">📋</span>我的任务<span class="nav-badge" id="badge-mine" hidden>0</span></button>
+    <nav class="nav">
+      <button class="nav-item active" data-action="nav" data-view="hall"><span class="ico">📋</span>订单大厅</button>
+      <button class="nav-item" data-action="nav" data-view="post"><span class="ico">✏️</span>发布订单</button>
+      <button class="nav-item" data-action="nav" data-view="mine"><span class="ico">📥</span>我的接单</button>
       <button class="nav-item" data-action="nav" data-view="posted"><span class="ico">📤</span>我的发布</button>
     </nav>
     <div class="sidebar-foot">
       <button class="user-box" data-action="edit-name">
         <div class="avatar" id="sb-avatar">我</div>
-        <div style="min-width:0">
+        <div>
           <div class="user-name" id="sb-name">我</div>
           <div class="user-sub" id="sb-sub">信用分 100</div>
         </div>
@@ -448,14 +329,11 @@
     </div>
   </aside>
 
-  <!-- 主内容 -->
   <main class="main">
     <header class="mhead">
       <div class="brand">
-        <div class="brand-logo">众</div>
-        <div>
-          <div class="brand-name">众包接单</div>
-        </div>
+        <div class="brand-logo">单</div>
+        <div class="brand-name">订单大厅</div>
       </div>
       <button class="avatar" data-action="edit-name" id="mh-avatar">我</button>
     </header>
@@ -463,10 +341,10 @@
   </main>
 
   <!-- 底部导航（移动端） -->
-  <nav class="tabbar" id="tab-nav">
-    <button class="nav-item" data-action="nav" data-view="hall"><span class="ico">⚡</span>大厅</button>
+  <nav class="tabbar">
+    <button class="nav-item active" data-action="nav" data-view="hall"><span class="ico">📋</span>大厅</button>
     <button class="nav-item" data-action="nav" data-view="post"><span class="ico">✏️</span>发布</button>
-    <button class="nav-item" data-action="nav" data-view="mine"><span class="ico">📋</span>我的</button>
+    <button class="nav-item" data-action="nav" data-view="mine"><span class="ico">📥</span>接单</button>
     <button class="nav-item" data-action="nav" data-view="posted"><span class="ico">📤</span>发布</button>
   </nav>
 </div>
@@ -476,7 +354,7 @@
 <script>/* =========================================================
    工具
    ========================================================= */
-const LS_KEY = 'zhongbao.v2';
+const LS_KEY = 'order.v1';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
@@ -500,144 +378,88 @@ function timeAgo(ts) {
   return new Date(ts).toLocaleDateString('zh-CN');
 }
 
-function deadlineInfo(ts) {
-  const d = ts - Date.now();
-  if (d < 0) return { text: '已截止', urgent: true };
-  const h = Math.floor(d / 3600000);
-  if (h < 6) return { text: Math.max(1, h) + ' 小时后截止', urgent: true };
-  if (h < 24) return { text: h + ' 小时后截止', urgent: false };
-  return { text: Math.ceil(h / 24) + ' 天后截止', urgent: false };
-}
-
 function fmtDateTime(ts) {
   const d = new Date(ts);
   const p = n => String(n).padStart(2, '0');
-  return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
-
-/* =========================================================
-   常量
-   ========================================================= */
-const CATS = [
-  { id: 'design', name: '设计', icon: '🎨', color: '#8b5cf6' },
-  { id: 'dev',    name: '开发', icon: '💻', color: '#3b82f6' },
-  { id: 'copy',   name: '文案', icon: '✍️', color: '#f59e0b' },
-  { id: 'ops',    name: '运营', icon: '📈', color: '#10b981' },
-  { id: 'photo',  name: '摄影', icon: '📷', color: '#ec4899' },
-  { id: 'trans',  name: '翻译', icon: '🌐', color: '#06b6d4' },
-  { id: 'data',   name: '数据', icon: '📊', color: '#6366f1' },
-  { id: 'other',  name: '其他', icon: '📦', color: '#64748b' },
-];
-const catOf = id => CATS.find(c => c.id === id) || CATS[CATS.length - 1];
 
 /* =========================================================
    状态
    ========================================================= */
 const state = {
   user: { id: '', name: '', credit: 100, income: 0 },
-  tasks: [],
+  orders: [],
   view: 'hall',
+  orderTab: 'all', // all | pending | confirm | paid | paused | cancelled
   mineTab: 'working',
-  filters: { q: '', cat: 'all', sort: 'new', onlyAvailable: true },
 };
 
 function save() {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify({ user: state.user, tasks: state.tasks }));
-  } catch (e) { /* 忽略 */ }
+    localStorage.setItem(LS_KEY, JSON.stringify({ user: state.user, orders: state.orders }));
+  } catch (e) {}
 }
 
-const getTask = id => state.tasks.find(t => t.id === id);
+const getOrder = id => state.orders.find(o => o.id === id);
 
-const remaining = t => Math.max(0, t.slots - t.takers.length);
-
-function canGrab(t) {
-  return t.status === 'open'
-    && remaining(t) > 0
-    && t.deadline > Date.now()
-    && t.publisherId !== state.user.id
-    && !t.takers.some(x => x.userId === state.user.id);
-}
-
-function myTaker(t) {
-  return t.takers.find(x => x.userId === state.user.id) || null;
+function myTaker(o) {
+  return (o.takers || []).find(x => x.userId === state.user.id) || null;
 }
 
 /* =========================================================
    种子数据
    ========================================================= */
-function seedTasks() {
+function seedOrders() {
   const now = Date.now();
   const D = 86400000, H = 3600000;
+  const orderNo = () => '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
 
   const mk = (o) => Object.assign({
-    id: uid(), status: 'open', takers: [], createdAt: now - H,
-    publisherId: 'sys', publisherName: '官方任务', credit: 100,
+    id: uid(), status: 'pending', takers: [], createdAt: now - H,
+    publisherId: 'sys', publisherName: '系统发布', credit: 100,
+    orderNo: orderNo(), amount: 100, commission: 10,
+    payType: '支付宝固定小额', desc: '按订单要求完成收款操作，审核通过后返佣。',
   }, o);
 
   return [
     mk({
-      id: 't1', title: '电商女装详情页设计 5 张', cat: 'design',
-      budget: 800, slots: 2, deadline: now + 3 * D, createdAt: now - 2 * H,
-      desc: '需要为店铺新款女装设计 5 张商品详情页，风格偏简约高级，有参考图。要求有电商设计经验，能配合修改 2 次，交付 PSD 源文件。',
-      publisherName: '林小姐', contact: '微信 linshop2024', credit: 98,
+      id: 'o1', orderNo: '20261007025226586812', status: 'pending',
+      amount: 1000, commission: 100, payType: '支付宝固定小额',
+      createdAt: now - 2 * H, publisherName: '林经理', credit: 98,
+      desc: '需确认收款账户状态，操作简单，完成后截图提交审核。'
+    }),
+    mk({
+      id: 'o2', orderNo: '20261007025226586660', status: 'pending',
+      amount: 100, commission: 10, payType: '银行转账',
+      createdAt: now - 6 * H, publisherName: '王财务', credit: 95,
+      desc: '小额银行转账测试，完成后上传转账凭证即可。'
+    }),
+    mk({
+      id: 'o3', orderNo: '20261007025226586123', status: 'confirm',
+      amount: 500, commission: 50, payType: '微信收款码',
+      createdAt: now - 12 * H, publisherName: '赵主管', credit: 100,
       takers: [
-        { userId: 'u_chen', userName: '陈设计', at: now - 1 * H, status: 'working' }
+        { userId: 'u_li', userName: '李同学', at: now - 10 * H, status: 'working' }
       ]
     }),
     mk({
-      id: 't2', title: '微信小程序商城前端开发', cat: 'dev',
-      budget: 3500, slots: 1, deadline: now + 12 * D, createdAt: now - 6 * H,
-      desc: '已有 UI 设计稿和后台接口文档，需要完成小程序端页面开发与联调。约 18 个页面，包含商品列表、详情、购物车、下单、个人中心。要求熟悉 uni-app 或原生小程序。',
-      publisherName: '王先生', contact: '手机 138****6621', credit: 95,
-      takers: []
-    }),
-    mk({
-      id: 't3', title: '小红书种草文案 20 篇', cat: 'copy',
-      budget: 600, slots: 3, deadline: now + 5 * D, createdAt: now - 10 * H,
-      desc: '美妆护肤类目，每篇 300-500 字，需要带话题标签和配图建议。要求有小红书爆款写作经验，能模仿指定博主的语气风格。',
-      publisherName: '孙女士', contact: '微信 sun_mkt', credit: 100,
-      takers: []
-    }),
-    mk({
-      id: 't4', title: '产品说明书 中译英（约 6000 字）', cat: 'trans',
-      budget: 450, slots: 1, deadline: now + 6 * D, createdAt: now - 16 * H,
-      desc: '一份约 6000 字的智能家居产品说明书，需要翻译成英文。要求术语准确、语句地道，有电子产品翻译经验优先。交付 Word 文档。',
-      publisherName: '智汇科技', contact: '邮箱 hr@zhihui.example', credit: 100,
-      takers: []
-    }),
-    mk({
-      id: 't5', title: '短视频剪辑 10 条（口播类）', cat: 'ops',
-      budget: 1200, slots: 2, deadline: now + 8 * D, createdAt: now - 22 * H,
-      desc: '知识分享类口播视频，每条 1-2 分钟，需要加字幕、转场、简单特效和 BGM。素材我方提供，要求节奏感好，懂短视频平台调性。',
-      publisherName: '胡老师', contact: '微信 huls_2024', credit: 92,
+      id: 'o4', orderNo: '20261007025226585555', status: 'paid',
+      amount: 2000, commission: 200, payType: '支付宝固定小额',
+      createdAt: now - 24 * H, publisherName: '孙总', credit: 99,
       takers: [
-        { userId: 'u_xu', userName: '徐剪辑', at: now - 20 * H, status: 'working' }
+        { userId: 'u_ma', userName: '马师傅', at: now - 20 * H, status: 'done', doneAt: now - 18 * H }
       ]
     }),
     mk({
-      id: 't6', title: '商品图片数据标注 2000 张', cat: 'data',
-      budget: 300, slots: 5, deadline: now + 4 * D, createdAt: now - 28 * H,
-      desc: '对商品图片进行分类标注，按我方提供的标签体系操作，有详细说明文档和示例。要求细心、准确率高，可在后台查看实时进度。',
-      publisherName: '数标科技', contact: '微信 datalabel_hr', credit: 100,
-      takers: [
-        { userId: 'u_ma', userName: '马同学', at: now - 26 * H, status: 'working' },
-        { userId: 'u_qian', userName: '钱女士', at: now - 24 * H, status: 'working' }
-      ]
+      id: 'o5', orderNo: '20261007025226584444', status: 'paused',
+      amount: 300, commission: 30, payType: '银行转账',
+      createdAt: now - 30 * H, publisherName: '周经理', credit: 92,
     }),
     mk({
-      id: 't7', title: '咖啡店开业海报设计（含门头）', cat: 'design',
-      budget: 500, slots: 1, deadline: now + 2 * D, createdAt: now - 34 * H,
-      desc: '新开精品咖啡店，需要一张开业宣传海报和一张门头喷绘设计。风格偏日系简约，主色调米白 + 深棕。需要提供可编辑源文件。',
-      publisherName: '林小姐', contact: '微信 linshop2024', credit: 98,
-      takers: []
-    }),
-    mk({
-      id: 't8', title: '公众号文章排版 15 篇', cat: 'ops',
-      budget: 400, slots: 2, deadline: now + 7 * D, createdAt: now - 40 * H,
-      desc: '使用秀米或135编辑器排版，风格清新简洁，需要配图、分栏、引导关注等。文章内容我方提供，要求每天交付 2-3 篇。',
-      publisherName: '新知文化', contact: '微信 xinzhi_media', credit: 96,
-      takers: []
+      id: 'o6', orderNo: '20261007025226583333', status: 'cancelled',
+      amount: 150, commission: 15, payType: '微信收款码',
+      createdAt: now - 40 * H, publisherName: '吴老板', credit: 90,
     }),
   ];
 }
@@ -649,12 +471,12 @@ function boot() {
   let data = null;
   try { data = JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { data = null; }
 
-  if (data && data.user && Array.isArray(data.tasks)) {
+  if (data && data.user && Array.isArray(data.orders)) {
     state.user = Object.assign({ credit: 100, income: 0 }, data.user);
-    state.tasks = data.tasks;
+    state.orders = data.orders;
   } else {
     state.user = { id: uid(), name: '', credit: 100, income: 0 };
-    state.tasks = seedTasks();
+    state.orders = seedOrders();
     save();
   }
 
@@ -663,379 +485,266 @@ function boot() {
 
   if (!state.user.name) showWelcome();
 }/* =========================================================
-   视图：任务大厅
+   订单状态映射
+   ========================================================= */
+const STATUS_MAP = {
+  pending:   { text: '待审核', cls: 'status-pending' },
+  confirm:   { text: '待确认', cls: 'status-confirm' },
+  paid:      { text: '已收款', cls: 'status-paid' },
+  paused:    { text: '暂停中', cls: 'status-paused' },
+  cancelled: { text: '已取消', cls: 'status-cancel' },
+};
+
+function statusOf(s) { return STATUS_MAP[s] || STATUS_MAP.pending; }
+
+/* =========================================================
+   视图：订单大厅
    ========================================================= */
 function viewHall() {
-  const available = state.tasks.filter(t => canGrab(t)).length;
-  const working = state.tasks.filter(t => {
-    const tk = myTaker(t);
-    return tk && (tk.status === 'working' || tk.status === 'reviewing');
-  }).length;
+  const tabs = [
+    { id: 'all', name: '订单大厅' },
+    { id: 'pending', name: '待确认' },
+    { id: 'confirm', name: '已收款' },
+    { id: 'paused', name: '暂停中' },
+    { id: 'cancelled', name: '已取消' },
+  ];
+
+  let list = state.orders.slice();
+  if (state.orderTab !== 'all') {
+    list = list.filter(o => o.status === state.orderTab);
+  }
+  // 按最新创建排序
+  list.sort((a, b) => b.createdAt - a.createdAt);
 
   return `
   <div class="page">
-    <div class="page-head">
-      <h1 class="page-title">任务大厅</h1>
-      <p class="page-sub">抢单即开工，完成验收后结算</p>
+    <div class="order-tabs">
+      ${tabs.map(t => `
+        <button class="order-tab${state.orderTab === t.id ? ' active' : ''}"
+                data-action="order-tab" data-tab="${t.id}">${t.name}</button>
+      `).join('')}
     </div>
 
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-k">可抢任务</div>
-        <div class="stat-v hl">${available}<small>单</small></div>
-      </div>
-      <div class="stat">
-        <div class="stat-k">进行中</div>
-        <div class="stat-v">${working}<small>单</small></div>
-      </div>
-      <div class="stat">
-        <div class="stat-k">累计收入</div>
-        <div class="stat-v">¥${state.user.income}</div>
-      </div>
+    <div class="order-list">
+      ${list.length ? list.map(orderCard).join('') : `
+        <div class="empty">
+          <div class="empty-ico">📭</div>
+          <h3>暂无订单</h3>
+          <p>该分类下还没有订单，稍后再来看看吧</p>
+        </div>
+      `}
     </div>
-
-    <div class="toolbar">
-      <div class="search">
-        <span class="search-ico">🔍</span>
-        <input id="search-input" class="input" placeholder="搜索任务关键词…" value="${esc(state.filters.q)}" autocomplete="off">
-      </div>
-      <select id="sort-select" class="select">
-        <option value="new"${state.filters.sort === 'new' ? ' selected' : ''}>最新发布</option>
-        <option value="budget"${state.filters.sort === 'budget' ? ' selected' : ''}>赏金最高</option>
-        <option value="urgent"${state.filters.sort === 'urgent' ? ' selected' : ''}>即将截止</option>
-        <option value="slot"${state.filters.sort === 'slot' ? ' selected' : ''}>名额最多</option>
-      </select>
-    </div>
-
-    <div class="chips">
-      <button class="chip-cat" data-action="set-cat" data-cat="all">全部</button>
-      ${CATS.map(c => `<button class="chip-cat" data-action="set-cat" data-cat="${c.id}">${c.icon} ${c.name}</button>`).join('')}
-    </div>
-
-    <div id="task-grid" class="grid"></div>
   </div>`;
 }
 
-function filteredTasks() {
-  const f = state.filters;
-  let list = state.tasks.slice();
+function orderCard(o) {
+  const st = statusOf(o.status);
+  const mine = o.publisherId === state.user.id;
+  const took = !!myTaker(o);
+  const canGrab = o.status === 'pending' && !mine && !took;
 
-  if (f.cat !== 'all') list = list.filter(t => t.cat === f.cat);
+  let btnText = '抢单';
+  let btnClass = 'order-btn';
+  if (mine) { btnText = '我发布的'; btnClass += ' done'; }
+  else if (took) { btnText = '已接单'; btnClass += ' done'; }
+  else if (o.status !== 'pending') { btnText = st.text; btnClass += ' done'; }
+  else if (!canGrab) { btnText = '已抢完'; btnClass += ' done'; }
 
-  const q = f.q.trim().toLowerCase();
-  if (q) {
-    list = list.filter(t =>
-      (t.title + ' ' + t.desc + ' ' + t.publisherName).toLowerCase().includes(q)
-    );
-  }
-
-  const s = f.sort;
-  if (s === 'new') list.sort((a, b) => b.createdAt - a.createdAt);
-  else if (s === 'budget') list.sort((a, b) => b.budget - a.budget);
-  else if (s === 'urgent') list.sort((a, b) => a.deadline - b.deadline);
-  else if (s === 'slot') list.sort((a, b) => remaining(b) - remaining(a));
-
-  return list;
-}
-
-function taskCard(t) {
-  const c = catOf(t.cat);
-  const rem = remaining(t);
-  const gone = rem <= 0 || t.status !== 'open' || t.deadline < Date.now();
-  const dl = deadlineInfo(t.deadline);
-  const mine = t.publisherId === state.user.id;
-  const took = !!myTaker(t);
-  const grabbable = canGrab(t);
-  const taken = t.slots - rem;
-  const pct = Math.min(100, Math.round(taken / t.slots * 100));
-
-  let btn;
-  if (mine) btn = `<button class="grab-btn done" disabled>我发布的</button>`;
-  else if (took) btn = `<button class="grab-btn done" disabled>已接单</button>`;
-  else if (grabbable) btn = `<button class="grab-btn" data-action="grab" data-id="${t.id}">立即抢单</button>`;
-  else if (rem <= 0) btn = `<button class="grab-btn done" disabled>已抢完</button>`;
-  else btn = `<button class="grab-btn done" disabled>已截止</button>`;
+  const btnAttr = canGrab ? `data-action="grab" data-id="${o.id}"` : 'disabled';
 
   return `
-  <article class="task-card${gone ? ' gone' : ''}" data-action="open" data-id="${t.id}">
-    <div class="tc-top">
-      <span class="cat-chip" style="background:${c.color}1a;color:${c.color}">${c.icon} ${c.name}</span>
-      <div class="tc-price">¥${t.budget}<small>${t.slots > 1 ? '每人赏金' : '任务赏金'}</small></div>
+  <div class="order-card" data-action="open" data-id="${o.id}">
+    <div class="order-header">
+      <div class="order-no">订单号：${esc(o.orderNo)}</div>
+      <div class="order-status ${st.cls}">${st.text}</div>
     </div>
 
-    <h3 class="tc-title">${esc(t.title)}</h3>
-    <p class="tc-desc">${esc(t.desc)}</p>
-
-    <div class="tc-meta">
-      <span class="${dl.urgent ? 'urgent' : ''}">⏱ ${dl.text}</span>
-      <span>🕐 ${timeAgo(t.createdAt)}</span>
-      ${t.slots > 1 ? `<span class="hot">👥 招 ${t.slots} 人</span>` : ''}
-    </div>
-
-    <div class="slot-bar">
-      <div class="slot-track"><div class="slot-fill" style="width:${pct}%"></div></div>
-      <span class="slot-text">${rem > 0 ? `剩 ${rem} 个名额` : '名额已满'}</span>
-    </div>
-
-    <div class="tc-foot">
-      <div class="tc-owner">
-        <b>${mine ? '我' : esc(t.publisherName)}</b>
-        <span class="dot-credit">信 ${t.credit ?? 100}</span>
+    <div class="order-amounts">
+      <div class="amount-item">
+        <span class="amount-label">收款金额：</span>
+        <span class="amount-value red">${Number(o.amount).toFixed(2)}</span>
       </div>
-      ${btn}
+      <div class="amount-item">
+        <span class="amount-label">返佣金额：</span>
+        <span class="amount-value gold">${Number(o.commission).toFixed(2)}</span>
+      </div>
     </div>
-  </article>`;
-}
 
-function emptyState(icon, title, sub, action, label) {
-  return `
-  <div class="empty">
-    <div class="empty-ico">${icon}</div>
-    <h3>${esc(title)}</h3>
-    <p>${esc(sub || '')}</p>
-    ${action ? `<button class="btn btn-primary" data-action="${action}">${esc(label)}</button>` : ''}
+    <div class="order-info">
+      <div class="order-info-row">
+        <span class="label">创建时间：</span>
+        <span class="val">${fmtDateTime(o.createdAt)}</span>
+      </div>
+      <div class="order-info-row">
+        <span class="label">收款类型：</span>
+        <span class="val">${esc(o.payType)}</span>
+      </div>
+    </div>
+
+    <button class="${btnClass}" ${btnAttr} data-action="${canGrab ? 'grab' : ''}" data-id="${o.id}">${btnText}</button>
   </div>`;
-}
-
-function renderGrid() {
-  const grid = $('#task-grid');
-  if (!grid) return;
-
-  const list = filteredTasks();
-  grid.innerHTML = list.length
-    ? list.map(taskCard).join('')
-    : emptyState('🗂️', '没有找到匹配的任务', '换个关键词或分类试试', 'reset-filter', '清除筛选');
-
-  $$('[data-action="set-cat"]').forEach(el => {
-    el.classList.toggle('active', el.dataset.cat === state.filters.cat);
-  });
 }
 
 /* =========================================================
-   视图：发布任务
+   视图：发布订单
    ========================================================= */
 function viewPost() {
-  const d = new Date(Date.now() + 7 * 86400000);
-  const defDate = d.toISOString().slice(0, 10);
+  const now = new Date();
+  const defDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
   return `
   <div class="page">
-    <div class="page-head">
-      <h1 class="page-title">发布任务</h1>
-      <p class="page-sub">设置赏金和名额，接单者抢单后即可开工</p>
-    </div>
+    <div class="form-card">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:20px;">发布订单</h2>
 
-    <form class="form-card" id="post-form">
       <label class="field">
-        <span class="field-label">任务标题 <i>*</i></span>
-        <input class="input" name="title" required maxlength="40"
-               placeholder="例如：帮我的咖啡店设计一张开业海报">
+        <span class="field-label">收款金额（元）<i>*</i></span>
+        <input class="input" name="amount" type="number" min="0.01" step="0.01" required placeholder="例如：1000.00">
       </label>
 
-      <div class="field">
-        <span class="field-label">任务分类 <i>*</i></span>
-        <div class="chips" style="margin-bottom:0">
-          ${CATS.map((c, i) => `
-            <label class="chip-cat${i === 0 ? ' active' : ''}" data-cat-label="${c.id}">
-              <input type="radio" name="cat" value="${c.id}" ${i === 0 ? 'checked' : ''}>
-              ${c.icon} ${c.name}
-            </label>`).join('')}
-        </div>
-      </div>
+      <label class="field">
+        <span class="field-label">返佣金额（元）<i>*</i></span>
+        <input class="input" name="commission" type="number" min="0.01" step="0.01" required placeholder="例如：100.00">
+      </label>
 
       <div class="form-row">
         <label class="field">
-          <span class="field-label">单人赏金（元）<i>*</i></span>
-          <input class="input" name="budget" type="number" min="1" step="1"
-                 required placeholder="例如：800">
+          <span class="field-label">收款类型 <i>*</i></span>
+          <select class="input" name="payType" required>
+            <option value="支付宝固定小额">支付宝固定小额</option>
+            <option value="银行转账">银行转账</option>
+            <option value="微信收款码">微信收款码</option>
+            <option value="其他方式">其他方式</option>
+          </select>
         </label>
         <label class="field">
-          <span class="field-label">招募名额 <i>*</i></span>
-          <input class="input" name="slots" type="number" min="1" max="50" step="1"
-                 value="1" required>
+          <span class="field-label">订单号</span>
+          <input class="input" name="orderNo" value="系统自动生成" disabled>
         </label>
       </div>
 
       <label class="field">
-        <span class="field-label">截止时间</span>
-        <input class="input" name="deadline" type="date" value="${defDate}">
+        <span class="field-label">订单备注</span>
+        <textarea class="input" name="desc" rows="3" placeholder="补充说明，例如操作要求、注意事项等"></textarea>
       </label>
 
-      <label class="field">
-        <span class="field-label">任务描述 <i>*</i></span>
-        <textarea class="input" name="desc" rows="6" required maxlength="800"
-                  placeholder="说说具体要做什么、交付什么成果、有什么要求…&#10;写得越清楚，抢单的人越靠谱。"></textarea>
-        <span class="field-hint">建议包含：工作内容、交付物、时间要求、验收标准</span>
-      </label>
-
-      <label class="field">
-        <span class="field-label">联系方式</span>
-        <input class="input" name="contact" maxlength="60"
-               placeholder="微信 / 手机 / 邮箱（仅对接单者可见）">
-      </label>
-
-      <button class="btn btn-primary btn-block" type="submit">发布任务</button>
-    </form>
+      <button class="btn btn-primary btn-block" type="submit" data-action="submit-post">确认发布</button>
+    </div>
   </div>`;
 }
 
 /* =========================================================
-   视图：我的任务（接单方）
+   视图：我的接单
    ========================================================= */
 function viewMine() {
-  const me = state.user.id;
+  const all = state.orders.filter(o => myTaker(o));
+  const working = all.filter(o => myTaker(o).status === 'working');
+  const done = all.filter(o => myTaker(o).status === 'done');
 
-  const all = state.tasks.filter(t => myTaker(t));
-  const working = all.filter(t => myTaker(t).status === 'working');
-  const reviewing = all.filter(t => myTaker(t).status === 'reviewing');
-  const done = all.filter(t => myTaker(t).status === 'done');
-
-  const listMap = { working, reviewing, done };
+  const listMap = { working, done };
   const list = listMap[state.mineTab] || working;
 
   let listHtml;
   if (!list.length) {
-    const tips = {
-      working: ['🛠️', '还没有进行中的任务', '去任务大厅抢一单试试', 'go-hall', '去抢单'],
-      reviewing: ['⏳', '没有待验收的任务', '提交完成的任务会出现在这里'],
-      done: ['✅', '还没有已完成的任务', '完成任务并通过验收后会显示在这里'],
-    };
-    const [ico, ti, sub, act, lb] = tips[state.mineTab];
-    listHtml = emptyState(ico, ti, sub, act, lb);
+    listHtml = `
+      <div class="empty">
+        <div class="empty-ico">📥</div>
+        <h3>暂无记录</h3>
+        <p>${state.mineTab === 'working' ? '去订单大厅抢一单试试' : '完成的订单会显示在这里'}</p>
+      </div>`;
   } else {
-    listHtml = `<div class="list">${list.map(mineItem).join('')}</div>`;
+    listHtml = `<div class="order-list">${list.map(mineOrderCard).join('')}</div>`;
   }
 
   return `
   <div class="page">
-    <div class="page-head">
-      <h1 class="page-title">我的任务</h1>
-      <p class="page-sub">累计完成收入 ¥${state.user.income}</p>
+    <div class="order-tabs">
+      <button class="order-tab${state.mineTab === 'working' ? ' active' : ''}" data-action="mine-tab" data-tab="working">进行中 ${working.length}</button>
+      <button class="order-tab${state.mineTab === 'done' ? ' active' : ''}" data-action="mine-tab" data-tab="done">已完成 ${done.length}</button>
     </div>
-
-    <div class="stats">
-      <div class="stat">
-        <div class="stat-k">进行中</div>
-        <div class="stat-v">${working.length}<small>单</small></div>
-      </div>
-      <div class="stat">
-        <div class="stat-k">待验收</div>
-        <div class="stat-v">${reviewing.length}<small>单</small></div>
-      </div>
-      <div class="stat">
-        <div class="stat-k">已完成</div>
-        <div class="stat-v hl">${done.length}<small>单</small></div>
-      </div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab${state.mineTab === 'working' ? ' active' : ''}" data-action="mine-tab" data-tab="working">进行中 ${working.length}</button>
-      <button class="tab${state.mineTab === 'reviewing' ? ' active' : ''}" data-action="mine-tab" data-tab="reviewing">待验收 ${reviewing.length}</button>
-      <button class="tab${state.mineTab === 'done' ? ' active' : ''}" data-action="mine-tab" data-tab="done">已完成 ${done.length}</button>
-    </div>
-
-    <div id="mine-list">${listHtml}</div>
+    ${listHtml}
   </div>`;
 }
 
-function mineItem(t) {
-  const c = catOf(t.cat);
-  const tk = myTaker(t);
-
-  const statusChipMap = {
-    working: `<span class="chip chip-working">进行中</span>`,
-    reviewing: `<span class="chip chip-reviewing">待验收</span>`,
-    done: `<span class="chip chip-done">已完成</span>`,
-  };
-
-  let action = '';
-  if (tk.status === 'working') {
-    const dl = deadlineInfo(t.deadline);
-    action = `<button class="btn btn-primary btn-sm" data-action="submit-work" data-id="${t.id}">提交完成</button>`;
-    if (dl.urgent && t.deadline < Date.now()) {
-      action = `<span class="chip chip-reviewing">已超时</span>`;
-    }
-  } else if (tk.status === 'reviewing') {
-    action = `<span class="chip chip-reviewing">等待验收</span>`;
-  } else {
-    action = `<span class="chip chip-done">已结算</span>`;
-  }
+function mineOrderCard(o) {
+  const tk = myTaker(o);
+  const st = statusOf(o.status);
+  const isDone = tk.status === 'done';
 
   return `
-  <div class="list-item">
-    <div class="li-main" data-action="open" data-id="${t.id}">
-      <div class="li-top">
-        <span class="cat-chip" style="background:${c.color}1a;color:${c.color}">${c.icon} ${c.name}</span>
-        ${statusChipMap[tk.status]}
+  <div class="order-card" data-action="open" data-id="${o.id}">
+    <div class="order-header">
+      <div class="order-no">订单号：${esc(o.orderNo)}</div>
+      <div class="order-status ${isDone ? 'status-paid' : 'status-confirm'}">${isDone ? '已完成' : '进行中'}</div>
+    </div>
+    <div class="order-amounts">
+      <div class="amount-item">
+        <span class="amount-label">收款金额：</span>
+        <span class="amount-value red">${Number(o.amount).toFixed(2)}</span>
       </div>
-      <h3 class="li-title">${esc(t.title)}</h3>
-      <div class="li-meta">
-        <span class="money">¥${t.budget}</span>
-        <span>发布者：${esc(t.publisherName)}</span>
-        <span>接单：${timeAgo(tk.at)}</span>
+      <div class="amount-item">
+        <span class="amount-label">返佣金额：</span>
+        <span class="amount-value gold">${Number(o.commission).toFixed(2)}</span>
       </div>
     </div>
-    <div class="li-side">${action}</div>
+    <div class="order-info">
+      <div class="order-info-row"><span class="label">收款类型：</span><span class="val">${esc(o.payType)}</span></div>
+      <div class="order-info-row"><span class="label">接单时间：</span><span class="val">${timeAgo(tk.at)}</span></div>
+    </div>
+    ${isDone
+      ? `<button class="order-btn done" disabled>已完成</button>`
+      : `<button class="order-btn" data-action="submit-work" data-id="${o.id}">提交完成</button>`}
   </div>`;
 }
 
 /* =========================================================
-   视图：我的发布（发包方）
+   视图：我的发布
    ========================================================= */
 function viewPosted() {
-  const mine = state.tasks
-    .filter(t => t.publisherId === state.user.id)
+  const mine = state.orders
+    .filter(o => o.publisherId === state.user.id)
     .sort((a, b) => b.createdAt - a.createdAt);
 
-  const pendingCount = mine.reduce((s, t) =>
-    s + t.takers.filter(x => x.status === 'reviewing').length, 0);
-
-  return `
-  <div class="page">
-    <div class="page-head">
-      <h1 class="page-title">我的发布</h1>
-      <p class="page-sub">共 ${mine.length} 个任务${pendingCount ? ` · ${pendingCount} 个待验收` : ''}</p>
-    </div>
-
-    ${mine.length
-      ? `<div class="list">${mine.map(postedItem).join('')}</div>`
-      : emptyState('📤', '还没有发布过任务', '有活儿要找人做？发个任务试试', 'go-post', '发布任务')}
-  </div>`;
-}
-
-function postedItem(t) {
-  const c = catOf(t.cat);
-  const rem = remaining(t);
-  const reviewing = t.takers.filter(x => x.status === 'reviewing');
-  const doneCount = t.takers.filter(x => x.status === 'done').length;
-
-  let action = '';
-  if (reviewing.length) {
-    action = `<button class="btn btn-primary btn-sm" data-action="open" data-id="${t.id}">验收 ${reviewing.length} 份</button>`;
-  } else if (t.status === 'open' && rem > 0) {
-    action = `<span class="chip chip-open">招募中 · 剩 ${rem}</span>`;
-  } else if (doneCount === t.slots) {
-    action = `<span class="chip chip-done">已完成</span>`;
-  } else {
-    action = `<span class="chip chip-working">进行中 ${t.takers.length}/${t.slots}</span>`;
+  if (!mine.length) {
+    return `
+    <div class="page">
+      <div class="empty" style="margin-top:20px">
+        <div class="empty-ico">📤</div>
+        <h3>还没有发布过订单</h3>
+        <p>点击下方按钮发布你的第一个订单</p>
+      </div>
+    </div>`;
   }
 
   return `
-  <div class="list-item">
-    <div class="li-main" data-action="open" data-id="${t.id}">
-      <div class="li-top">
-        <span class="cat-chip" style="background:${c.color}1a;color:${c.color}">${c.icon} ${c.name}</span>
-        ${t.status === 'open' ? `<span class="chip chip-open">招募中</span>` : `<span class="chip chip-working">进行中</span>`}
-      </div>
-      <h3 class="li-title">${esc(t.title)}</h3>
-      <div class="li-meta">
-        <span class="money">¥${t.budget}</span>
-        <span>名额 ${t.takers.length}/${t.slots}</span>
-        <span>${timeAgo(t.createdAt)} 发布</span>
-        ${t.deadline < Date.now() ? '<span style="color:#ef4444">已截止</span>' : `<span>${deadlineInfo(t.deadline).text}</span>`}
-      </div>
+  <div class="page">
+    <div class="order-list">
+      ${mine.map(o => {
+        const st = statusOf(o.status);
+        return `
+        <div class="order-card" data-action="open" data-id="${o.id}">
+          <div class="order-header">
+            <div class="order-no">订单号：${esc(o.orderNo)}</div>
+            <div class="order-status ${st.cls}">${st.text}</div>
+          </div>
+          <div class="order-amounts">
+            <div class="amount-item">
+              <span class="amount-label">收款金额：</span>
+              <span class="amount-value red">${Number(o.amount).toFixed(2)}</span>
+            </div>
+            <div class="amount-item">
+              <span class="amount-label">返佣金额：</span>
+              <span class="amount-value gold">${Number(o.commission).toFixed(2)}</span>
+            </div>
+          </div>
+          <div class="order-info">
+            <div class="order-info-row"><span class="label">创建时间：</span><span class="val">${fmtDateTime(o.createdAt)}</span></div>
+            <div class="order-info-row"><span class="label">收款类型：</span><span class="val">${esc(o.payType)}</span></div>
+          </div>
+          <button class="order-btn done" disabled>${o.status === 'pending' ? '等待抢单' : st.text}</button>
+        </div>`;
+      }).join('')}
     </div>
-    <div class="li-side">${action}</div>
   </div>`;
 }
 
@@ -1049,33 +758,11 @@ function render() {
   const map = { hall: viewHall, post: viewPost, mine: viewMine, posted: viewPosted };
   view.innerHTML = (map[state.view] || viewHall)();
 
-  if (state.view === 'hall') renderGrid();
-
   $$('[data-action="nav"]').forEach(el => {
     el.classList.toggle('active', el.dataset.view === state.view);
   });
 
-  updateBadges();
   window.scrollTo({ top: 0 });
-}
-
-function updateBadges() {
-  const available = state.tasks.filter(t => canGrab(t)).length;
-  const mineWorking = state.tasks.filter(t => {
-    const tk = myTaker(t);
-    return tk && tk.status === 'working';
-  }).length;
-
-  const bh = $('#badge-hall');
-  if (bh) {
-    bh.hidden = available === 0;
-    bh.textContent = available > 99 ? '99+' : available;
-  }
-  const bm = $('#badge-mine');
-  if (bm) {
-    bm.hidden = mineWorking === 0;
-    bm.textContent = mineWorking > 99 ? '99+' : mineWorking;
-  }
 }
 
 function go(view) {
@@ -1094,13 +781,12 @@ function updateUserUI() {
   if (mhA) mhA.textContent = ch;
   if (sbS) sbS.textContent = `信用分 ${state.user.credit} · 收入 ¥${state.user.income}`;
 }/* =========================================================
-   弹窗
+   弹窗基础
    ========================================================= */
 function openModal(html) {
   $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">${html}</div></div>`;
   document.body.style.overflow = 'hidden';
 }
-
 function closeModal() {
   $('#modal-root').innerHTML = '';
   document.body.style.overflow = '';
@@ -1109,11 +795,11 @@ function closeModal() {
 /* ---------- 欢迎 ---------- */
 function showWelcome() {
   openModal(`
-    <div class="welcome">
-      <div class="welcome-emoji">👋</div>
-      <h2>欢迎加入众包接单</h2>
-      <p>先起个名字，方便发布者认识你</p>
-      <input class="input" id="welcome-name" maxlength="12" placeholder="你的昵称" autocomplete="off">
+    <div style="padding:30px 24px;text-align:center">
+      <div style="font-size:40px;margin-bottom:12px">👋</div>
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:8px">欢迎加入众包接单</h2>
+      <p style="font-size:13.5px;color:var(--ink3);margin-bottom:20px">先起个名字，方便发布者认识你</p>
+      <input class="input" id="welcome-name" maxlength="12" placeholder="你的昵称" autocomplete="off" style="text-align:center;margin-bottom:14px">
       <button class="btn btn-primary btn-block" data-action="save-name">开始接单</button>
     </div>
   `);
@@ -1146,7 +832,7 @@ function editName() {
       <div class="detail-grid" style="margin:6px 0 0">
         <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${state.user.credit}</div></div>
         <div class="dg-item"><div class="dg-k">累计收入</div><div class="dg-v">¥${state.user.income}</div></div>
-        <div class="dg-item"><div class="dg-k">接单总数</div><div class="dg-v">${state.tasks.filter(t => myTaker(t)).length}</div></div>
+        <div class="dg-item"><div class="dg-k">接单总数</div><div class="dg-v">${state.orders.filter(o => myTaker(o)).length}</div></div>
       </div>
     </div>
     <div class="modal-foot">
@@ -1159,17 +845,12 @@ function editName() {
 
 /* ---------- 抢单确认 ---------- */
 function openGrabModal(id) {
-  const t = getTask(id);
-  if (!t) return;
-
-  if (!canGrab(t)) {
-    toast('这个任务已经不能抢了');
+  const o = getOrder(id);
+  if (!o) return;
+  if (o.status !== 'pending' || myTaker(o) || o.publisherId === state.user.id) {
+    toast('这个订单已经不能抢了');
     return;
   }
-
-  const c = catOf(t.cat);
-  const rem = remaining(t);
-  const dl = deadlineInfo(t.deadline);
 
   openModal(`
     <div class="modal-head">
@@ -1177,168 +858,115 @@ function openGrabModal(id) {
       <button class="icon-btn" data-action="close-modal">✕</button>
     </div>
     <div class="modal-body">
-      <div class="grab-box">
-        <span class="cat-chip" style="background:${c.color}1a;color:${c.color}">${c.icon} ${c.name}</span>
-        <h3>${esc(t.title)}</h3>
-        <div class="gp">¥${t.budget}<small>${t.slots > 1 ? '/ 人' : '任务赏金'}</small></div>
+      <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:16px;text-align:center;margin-bottom:16px">
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div>
+        <div style="font-size:28px;font-weight:850;color:var(--red);letter-spacing:-1px">${Number(o.amount).toFixed(2)}</div>
+        <div style="font-size:13px;color:var(--brand);font-weight:700;margin-top:4px">返佣 ${Number(o.commission).toFixed(2)}</div>
       </div>
 
-      <div class="grab-rows">
-        <div class="grab-row"><span class="k">发布者</span><span class="v">${esc(t.publisherName)} · 信用 ${t.credit ?? 100}</span></div>
-        <div class="grab-row"><span class="k">截止时间</span><span class="v" style="${dl.urgent ? 'color:#ef4444' : ''}">${fmtDateTime(t.deadline)}（${dl.text}）</span></div>
-        <div class="grab-row"><span class="k">剩余名额</span><span class="v">${rem} / ${t.slots}</span></div>
-        <div class="grab-row"><span class="k">联系方式</span><span class="v">${t.contact ? esc(t.contact) : '抢单后可见'}</span></div>
+      <div class="detail-grid" style="margin:0 0 14px">
+        <div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div>
+        <div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${esc(o.publisherName)}</div></div>
+        <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${o.credit ?? 100}</div></div>
+        <div class="dg-item"><div class="dg-k">创建时间</div><div class="dg-v">${fmtDateTime(o.createdAt)}</div></div>
       </div>
 
-      <div class="notice">
-        ⚡ 抢单后任务立即进入「进行中」，请在截止时间前完成并提交验收
-      </div>
+      <div class="notice">⚡ 抢单后请尽快完成，审核通过后返佣自动结算</div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" data-action="close-modal">再想想</button>
-      <button class="btn btn-primary" data-action="submit-grab" data-id="${t.id}">确认抢单</button>
+      <button class="btn btn-primary" data-action="submit-grab" data-id="${o.id}">确认抢单</button>
     </div>
   `);
 }
 
 function submitGrab(id) {
-  const t = getTask(id);
-  if (!t) return;
-
-  if (!canGrab(t)) {
-    toast('手慢了，这个任务已经不能抢了');
-    closeModal();
-    render();
-    return;
+  const o = getOrder(id);
+  if (!o) return;
+  if (o.status !== 'pending' || myTaker(o)) {
+    toast('手慢了，订单已被抢');
+    closeModal(); render(); return;
   }
 
-  t.takers.push({
+  o.takers = o.takers || [];
+  o.takers.push({
     userId: state.user.id,
     userName: state.user.name || '我',
     at: Date.now(),
     status: 'working',
   });
-
-  if (t.takers.length >= t.slots) t.status = 'working';
+  o.status = 'confirm';
 
   save();
   closeModal();
   state.mineTab = 'working';
   render();
-  openDetail(id);
-  toast('抢单成功，开工吧！');
+  toast('抢单成功，请尽快完成');
 }
 
-/* ---------- 任务详情 ---------- */
+/* ---------- 订单详情 ---------- */
 function openDetail(id) {
-  const t = getTask(id);
-  if (!t) return;
+  const o = getOrder(id);
+  if (!o) return;
 
-  const c = catOf(t.cat);
-  const me = state.user.id;
-  const isOwner = t.publisherId === me;
-  const tk = myTaker(t);
-  const rem = remaining(t);
-  const dl = deadlineInfo(t.deadline);
-  const grabbable = canGrab(t);
+  const st = statusOf(o.status);
+  const tk = myTaker(o);
+  const isOwner = o.publisherId === state.user.id;
+  const canGrab = o.status === 'pending' && !tk && !isOwner;
 
   let takersHtml = '';
-  if (t.takers.length) {
+  if (o.takers && o.takers.length) {
     takersHtml = `
-      <div class="section-title" style="margin-top:22px">接单者 <span class="cnt">${t.takers.length}/${t.slots}</span></div>
-      ${t.takers.map(x => {
-        const isMe = x.userId === me;
-        const stMap = {
-          working: `<span class="chip chip-working">进行中</span>`,
-          reviewing: `<span class="chip chip-reviewing">待验收</span>`,
-          done: `<span class="chip chip-done">已完成</span>`,
-        };
-        const canApprove = isOwner && x.status === 'reviewing';
-        return `
-        <div class="taker${isMe ? ' me' : ''}">
-          <div class="avatar">${esc((x.userName || '?').slice(0, 1))}</div>
-          <div class="tk-main">
-            <div class="tk-name">
-              ${esc(x.userName)}${isMe ? ' <span style="color:#ff6a00;font-size:12px">(我)</span>' : ''}
-              ${stMap[x.status]}
-            </div>
-            <div class="tk-time">${timeAgo(x.at)} 接单${x.submittedAt ? ' · ' + timeAgo(x.submittedAt) + ' 提交' : ''}</div>
+      <div style="font-size:13px;font-weight:800;color:var(--ink3);letter-spacing:.5px;margin:18px 0 10px">接单者</div>
+      ${o.takers.map(x => `
+        <div style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px">
+          <div class="avatar">${esc((x.userName||'?').slice(0,1))}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13.5px;font-weight:700">${esc(x.userName)}</div>
+            <div style="font-size:11.5px;color:var(--ink3);margin-top:3px">${timeAgo(x.at)} 接单</div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto">
-            <span class="tk-price">¥${t.budget}</span>
-            ${canApprove ? `<button class="btn btn-primary btn-sm" data-action="approve" data-id="${t.id}" data-uid="${x.userId}">通过验收</button>` : ''}
-          </div>
-        </div>`;
-      }).join('')}
+          <div style="font-size:13px;font-weight:800;color:var(--brand)">¥${Number(o.commission).toFixed(2)}</div>
+        </div>
+      `).join('')}
     `;
   }
 
   let foot = '';
-  if (isOwner) {
-    const hasPending = t.takers.some(x => x.status === 'reviewing');
-    foot = `
-      <button class="btn btn-danger" data-action="delete" data-id="${t.id}">删除任务</button>
-      <div style="flex:1"></div>
-      ${hasPending
-        ? `<button class="btn btn-primary" data-action="approve-all" data-id="${t.id}">全部通过验收</button>`
-        : `<button class="btn btn-ghost" data-action="close-modal">关闭</button>`}
-    `;
-  } else if (tk) {
-    if (tk.status === 'working') {
-      foot = `
-        <div style="flex:1"></div>
-        <button class="btn btn-ghost" data-action="close-modal">关闭</button>
-        <button class="btn btn-primary" data-action="submit-work" data-id="${t.id}">提交完成</button>`;
-    } else if (tk.status === 'reviewing') {
-      foot = `
-        <div class="notice" style="flex:1">⏳ 已提交，等待发布者验收结算</div>
-        <button class="btn btn-ghost" data-action="close-modal">关闭</button>`;
-    } else {
-      foot = `
-        <div class="notice" style="flex:1">✅ 任务已完成，赏金 ¥${t.budget} 已结算</div>
-        <button class="btn btn-ghost" data-action="close-modal">关闭</button>`;
-    }
-  } else if (grabbable) {
-    foot = `
-      <div style="flex:1"></div>
-      <button class="btn btn-ghost" data-action="close-modal">关闭</button>
-      <button class="btn btn-primary" data-action="grab" data-id="${t.id}">立即抢单</button>`;
+  if (canGrab) {
+    foot = `<button class="btn btn-ghost" data-action="close-modal">关闭</button>
+            <button class="btn btn-primary" data-action="grab" data-id="${o.id}">立即抢单</button>`;
+  } else if (tk && tk.status === 'working') {
+    foot = `<button class="btn btn-ghost" data-action="close-modal">关闭</button>
+            <button class="btn btn-primary" data-action="submit-work" data-id="${o.id}">提交完成</button>`;
+  } else if (tk && tk.status === 'done') {
+    foot = `<div class="notice" style="flex:1">✅ 订单已完成，返佣 ¥${Number(o.commission).toFixed(2)} 已结算</div>
+            <button class="btn btn-ghost" data-action="close-modal">关闭</button>`;
   } else {
     foot = `<div style="flex:1"></div><button class="btn btn-ghost" data-action="close-modal">关闭</button>`;
   }
 
-  const showContact = isOwner || !!tk;
-  const contactHtml = showContact && t.contact
-    ? `<div class="dg-item"><div class="dg-k">联系方式</div><div class="dg-v">${esc(t.contact)}</div></div>`
-    : '';
-
   openModal(`
     <div class="modal-head">
-      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-        <span class="cat-chip" style="background:${c.color}1a;color:${c.color}">${c.icon} ${c.name}</span>
-        ${rem > 0 && t.status === 'open'
-          ? `<span class="chip chip-open">招募中 · 剩 ${rem}</span>`
-          : `<span class="chip chip-working">名额已满</span>`}
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="order-status ${st.cls}" style="font-size:13px">${st.text}</span>
       </div>
       <button class="icon-btn" data-action="close-modal">✕</button>
     </div>
 
     <div class="modal-body">
-      <h2 style="font-size:20px;font-weight:800;line-height:1.4;letter-spacing:-.3px">${esc(t.title)}</h2>
+      <div style="font-size:12.5px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div>
 
-      <div class="detail-price">¥${t.budget}<small>${t.slots > 1 ? '/ 人' : '任务赏金'}</small></div>
+      <div class="detail-price">${Number(o.amount).toFixed(2)}<small>收款金额</small></div>
+      <div style="font-size:14px;font-weight:800;color:var(--brand)">返佣 ${Number(o.commission).toFixed(2)}</div>
 
       <div class="detail-grid">
-        <div class="dg-item"><div class="dg-k">截止时间</div><div class="dg-v" style="${dl.urgent ? 'color:#ef4444' : ''}">${fmtDateTime(t.deadline)}</div></div>
-        <div class="dg-item"><div class="dg-k">剩余时间</div><div class="dg-v">${dl.text}</div></div>
-        <div class="dg-item"><div class="dg-k">招募名额</div><div class="dg-v">${t.takers.length} / ${t.slots}</div></div>
-        <div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${isOwner ? '我' : esc(t.publisherName)}</div></div>
-        ${contactHtml}
+        <div class="dg-item"><div class="dg-k">创建时间</div><div class="dg-v">${fmtDateTime(o.createdAt)}</div></div>
+        <div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div>
+        <div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${isOwner ? '我' : esc(o.publisherName)}</div></div>
+        <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${o.credit ?? 100}</div></div>
       </div>
 
-      <div class="section-title" style="margin-top:0">任务描述</div>
-      <div class="detail-desc">${esc(t.desc)}</div>
-
+      ${o.desc ? `<div class="detail-desc">${esc(o.desc)}</div>` : ''}
       ${takersHtml}
     </div>
 
@@ -1348,65 +976,54 @@ function openDetail(id) {
 
 /* ---------- 提交完成 ---------- */
 function submitWork(id) {
-  const t = getTask(id);
-  if (!t) return;
-  const tk = myTaker(t);
+  const o = getOrder(id);
+  if (!o) return;
+  const tk = myTaker(o);
   if (!tk || tk.status !== 'working') return;
-
-  tk.status = 'reviewing';
-  tk.submittedAt = Date.now();
-
-  save();
-  closeModal();
-  state.mineTab = 'reviewing';
-  render();
-  toast('已提交，等待发布者验收');
-}
-
-/* ---------- 验收通过 ---------- */
-function approve(id, uidVal) {
-  const t = getTask(id);
-  if (!t || t.publisherId !== state.user.id) return;
-
-  const tk = uidVal ? t.takers.find(x => x.userId === uidVal) : null;
-  if (!tk || tk.status !== 'reviewing') return;
 
   tk.status = 'done';
   tk.doneAt = Date.now();
+  o.status = 'paid';
 
+  state.user.income += Number(o.commission);
   save();
   closeModal();
+  state.mineTab = 'done';
   render();
-  openDetail(id);
-  toast(`已验收通过，${tk.userName} 的赏金 ¥${t.budget} 已结算`);
+  toast(`订单完成，返佣 ¥${Number(o.commission).toFixed(2)} 已到账`);
 }
 
-function approveAll(id) {
-  const t = getTask(id);
-  if (!t || t.publisherId !== state.user.id) return;
+/* ---------- 发布订单 ---------- */
+function submitPost(form) {
+  const fd = new FormData(form);
+  const amount = Number(fd.get('amount')) || 0;
+  const commission = Number(fd.get('commission')) || 0;
+  const payType = String(fd.get('payType') || '');
+  const desc = String(fd.get('desc') || '').trim();
 
-  const pending = t.takers.filter(x => x.status === 'reviewing');
-  if (!pending.length) return;
+  if (amount <= 0 || commission <= 0 || !payType) {
+    toast('请填写完整的订单信息');
+    return;
+  }
 
-  pending.forEach(x => { x.status = 'done'; x.doneAt = Date.now(); });
+  const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
+
+  state.orders.unshift({
+    id: uid(),
+    orderNo,
+    amount, commission, payType, desc,
+    createdAt: Date.now(),
+    status: 'pending',
+    publisherId: state.user.id,
+    publisherName: state.user.name || '我',
+    credit: state.user.credit,
+    takers: [],
+  });
 
   save();
-  closeModal();
+  state.view = 'posted';
   render();
-  toast(`已验收 ${pending.length} 份，共计 ¥${pending.length * t.budget}`);
-}
-
-/* ---------- 删除任务 ---------- */
-function deleteTask(id) {
-  const t = getTask(id);
-  if (!t || t.publisherId !== state.user.id) return;
-  if (!confirm('确定要删除这个任务吗？删除后无法恢复。')) return;
-
-  state.tasks = state.tasks.filter(x => x.id !== id);
-  save();
-  closeModal();
-  render();
-  toast('任务已删除');
+  toast('订单发布成功 🎉');
 }/* =========================================================
    Toast
    ========================================================= */
@@ -1426,12 +1043,11 @@ function toast(msg) {
 }
 
 /* =========================================================
-   事件
+   事件绑定
    ========================================================= */
 document.addEventListener('click', e => {
   if (e.target.classList && e.target.classList.contains('overlay')) {
-    closeModal();
-    return;
+    closeModal(); return;
   }
 
   const el = e.target.closest('[data-action]');
@@ -1446,20 +1062,9 @@ document.addEventListener('click', e => {
     case 'grab': openGrabModal(id); break;
     case 'submit-grab': submitGrab(id); break;
     case 'submit-work': submitWork(id); break;
-    case 'approve': approve(id, el.dataset.uid); break;
-    case 'approve-all': approveAll(id); break;
-    case 'delete': deleteTask(id); break;
-    case 'go-post': go('post'); break;
-    case 'go-hall': go('hall'); break;
-    case 'reset-filter':
-      state.filters = { q: '', cat: 'all', sort: 'new', onlyAvailable: true };
+    case 'order-tab':
+      state.orderTab = el.dataset.tab;
       render();
-      break;
-    case 'set-cat':
-      state.filters.cat = el.dataset.cat;
-      renderGrid();
-      $$('[data-action="set-cat"]').forEach(x =>
-        x.classList.toggle('active', x.dataset.cat === el.dataset.cat));
       break;
     case 'mine-tab':
       state.mineTab = el.dataset.tab;
@@ -1470,71 +1075,11 @@ document.addEventListener('click', e => {
   }
 });
 
-/* 搜索 */
-document.addEventListener('input', e => {
-  if (e.target.id === 'search-input') {
-    state.filters.q = e.target.value;
-    renderGrid();
-  }
-});
-
-/* 排序 */
-document.addEventListener('change', e => {
-  if (e.target.id === 'sort-select') {
-    state.filters.sort = e.target.value;
-    renderGrid();
-  }
-});
-
-/* 发布表单 */
+/* 发布表单提交 */
 document.addEventListener('submit', e => {
-  if (e.target.id !== 'post-form') return;
-  e.preventDefault();
-
-  const fd = new FormData(e.target);
-  const title = String(fd.get('title') || '').trim();
-  const desc = String(fd.get('desc') || '').trim();
-  const budget = Number(fd.get('budget')) || 0;
-  const slots = Math.max(1, Math.min(50, Number(fd.get('slots')) || 1));
-  const cat = String(fd.get('cat') || 'other');
-  const contact = String(fd.get('contact') || '').trim();
-  const dlRaw = String(fd.get('deadline') || '');
-
-  if (!title || !desc || budget <= 0) {
-    toast('请填写完整的任务信息');
-    return;
-  }
-
-  let deadline = dlRaw
-    ? new Date(dlRaw + 'T23:59:59').getTime()
-    : Date.now() + 7 * 86400000;
-  if (isNaN(deadline) || deadline < Date.now()) {
-    deadline = Date.now() + 7 * 86400000;
-  }
-
-  const task = {
-    id: uid(),
-    title, cat, budget, slots, desc, deadline, contact,
-    createdAt: Date.now(),
-    publisherId: state.user.id,
-    publisherName: state.user.name || '我',
-    credit: state.user.credit,
-    status: 'open',
-    takers: [],
-  };
-
-  state.tasks.unshift(task);
-  save();
-  go('posted');
-  toast('任务发布成功 🎉');
-});
-
-/* 分类标签点击态（表单内） */
-document.addEventListener('change', e => {
-  if (e.target.name === 'cat' && e.target.type === 'radio') {
-    $$('[data-cat-label]').forEach(l => {
-      l.classList.toggle('active', l.dataset.catLabel === e.target.value);
-    });
+  if (e.target.closest('.form-card')) {
+    e.preventDefault();
+    submitPost(e.target);
   }
 });
 
