@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>众包接单 · 管理后台</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#f5f6fa;--card:#fff;--ink:#12141d;--ink2:#5b6070;--ink3:#8d93a6;
+    --line:#e8eaf1;--brand:#f0a020;--brand-dark:#d98a10;--brand-soft:#fff9ec;
+    --red:#e02020;--ok:#10b981;--r:12px;
+  }
+  body{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55;padding:20px;}
+  button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;outline:none}
+  button{cursor:pointer;border:none;background:none}
+  .login-wrap{max-width:400px;margin:80px auto;background:#fff;border-radius:16px;padding:30px;box-shadow:0 20px 60px rgba(15,17,26,.12);text-align:center;}
+  .login-wrap h2{font-size:22px;font-weight:800;margin-bottom:6px}
+  .login-wrap p{font-size:13.5px;color:var(--ink3);margin-bottom:20px}
+  .input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14.5px;transition:.16s;margin-bottom:14px;}
+  .input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(240,160,32,.12)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 18px;border-radius:10px;border:1px solid transparent;font-size:14.5px;font-weight:700;transition:.16s;}
+  .btn-primary{background:var(--brand);color:#fff}
+  .btn-primary:hover{background:var(--brand-dark)}
+  .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink2)}
+  .btn-ghost:hover{border-color:#c9cddc;color:var(--ink)}
+  .btn-danger{background:#fff;border-color:#fecaca;color:#dc2626}
+  .btn-danger:hover{background:#fef2f2}
+  .btn-block{width:100%}
+  .app-header{max-width:900px;margin:0 auto 20px;display:flex;align-items:center;justify-content:space-between;}
+  .app-header h1{font-size:20px;font-weight:800}
+  .app-header h1 span{font-size:12px;background:#12141d;color:#fff;padding:3px 10px;border-radius:20px;margin-left:8px;vertical-align:middle;}
+  .tabs{display:flex;gap:8px;max-width:900px;margin:0 auto 20px;flex-wrap:wrap;}
+  .tab{padding:10px 18px;border-radius:10px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:600;color:var(--ink2);transition:.16s;cursor:pointer;}
+  .tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .container{max-width:900px;margin:0 auto;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px;}
+  .card h3{font-size:15px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .card h3::before{content:'';width:3px;height:14px;border-radius:2px;background:var(--brand)}
+  .table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .table th,.table td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);}
+  .table th{color:var(--ink3);font-weight:600;font-size:12.5px;}
+  .table td{color:var(--ink);}
+  .badge{padding:3px 8px;border-radius:6px;font-size:11.5px;font-weight:700;}
+  .badge-pending{background:#fff9ec;color:#c27800;}
+  .badge-success{background:#f0fdf4;color:#16a34a;}
+  .badge-danger{background:#fef2f2;color:#dc2626;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .field-label{display:block;font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:6px;}
+  .field-label i{color:#ef4444;font-style:normal}
+  .empty{text-align:center;padding:40px 20px;color:var(--ink3);font-size:14px;}
+  .toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,18px);background:#12141d;color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:.28s;z-index:300;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.25);}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  @media (max-width:600px){
+    .form-row{grid-template-columns:1fr;}
+    .table th:nth-child(3), .table td:nth-child(3) { display:none; } /* 移动端隐藏部分列 */
+  }
+</style>
+</head>
+<body>
+
+<div id="login-view" class="login-wrap">
+  <h2>管理员登录</h2>
+  <p>请输入管理密码以进入后台</p>
+  <input type="password" id="admin-pwd" class="input" placeholder="请输入管理密码" value="admin888">
+  <button class="btn btn-primary btn-block" onclick="adminLogin()">登录</button>
+</div>
+
+<div id="admin-app" style="display:none">
+  <header class="app-header">
+    <h1>⚙️ 管理后台 <span>ADMIN</span></h1>
+    <button class="btn btn-ghost" onclick="adminLogout()">退出登录</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="orders" onclick="switchTab('orders')">📋 订单管理</button>
+    <button class="tab" data-tab="publish" onclick="switchTab('publish')">✏️ 发布订单</button>
+    <button class="tab" data-tab="refunds" onclick="switchTab('refunds')">💸 退款审批</button>
+    <button class="tab" data-tab="settings" onclick="switchTab('settings')">⚙️ 系统设置</button>
+  </div>
+
+  <div class="container" id="admin-content"></div>
+</div>
+
+<div id="toast-root"></div>
+
+<script>
+const LS_KEY = 'order.v10';
+const CFG_KEY = 'order.v10.config';
+const $ = (s, r = document) => r.querySelector(s);
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function fmtDateTime(ts) {
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+let state = { orders: [], refunds: [], user: {} };
+let CONFIG = {
+  trc20: 'TXk7YbWcWnQPNhSCXC3p4aFb5tHKqMgRzA',
+  ratio: 0.1,
+  minDeposit: 10,
+  notice: '请务必使用 TRC20 网络充值，转账到其他网络将无法到账',
+  support: '客服微信：support_usdt',
+};
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      state.user = d.user || {};
+      state.orders = d.orders || [];
+      state.refunds = d.refunds || [];
+    }
+  } catch(e) {}
+  try {
+    const raw = localStorage.getItem(CFG_KEY);
+    if (raw) CONFIG = Object.assign(CONFIG, JSON.parse(raw));
+  } catch(e) {}
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ user: state.user, orders: state.orders, refunds: state.refunds }));
+  } catch(e) {}
+}
+
+function saveConfig() {
+  try { localStorage.setItem(CFG_KEY, JSON.stringify(CONFIG)); } catch(e) {}
+}
+
+// ---------------- 登录 ----------------
+function adminLogin() {
+  const pwd = $('#admin-pwd').value;
+  if (pwd === 'admin888') {
+    document.getElementById('login-view').style.display = 'none';
+    document.getElementById('admin-app').style.display = 'block';
+    loadData();
+    renderTab('orders');
+  } else {
+    toast('密码错误');
+  }
+}
+function adminLogout() {
+  location.reload();
+}
+
+// ---------------- 标签切换 ----------------
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+  loadData();
+  renderTab(tab);
+}
+
+function renderTab(tab) {
+  const el = document.getElementById('admin-content');
+  if (tab === 'orders') renderOrders(el);
+  if (tab === 'publish') renderPublish(el);
+  if (tab === 'refunds') renderRefunds(el);
+  if (tab === 'settings') renderSettings(el);
+}
+
+// ---------------- 订单管理 ----------------
+function renderOrders(el) {
+  const list = state.orders.sort((a,b) => b.createdAt - a.createdAt);
+  if (!list.length) { el.innerHTML = `<div class="card"><div class="empty">暂无订单</div></div>`; return; }
+  el.innerHTML = `
+    <div class="card">
+      <h3>所有订单</h3>
+      <table class="table">
+        <thead><tr><th>订单号</th><th>金额/佣金</th><th>发布者</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>
+          ${list.map(o => `
+            <tr>
+              <td style="font-size:12px;word-break:break-all;">${esc(o.orderNo)}</td>
+              <td><span style="color:#e02020;font-weight:700">${o.amount}</span> / <span style="color:#f0a020;font-weight:700">${o.commission}</span></td>
+              <td>${esc(o.publisherName)}</td>
+              <td><span class="badge ${o.status === 'pending' ? 'badge-pending' : o.status === 'paid' ? 'badge-success' : 'badge-danger'}">${o.status}</span></td>
+              <td>
+                ${o.status !== 'paid' ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="updateOrderStatus('${o.id}','paid')">标记已收款</button>` : ''}
+                ${o.status !== 'cancelled' ? `<button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="updateOrderStatus('${o.id}','cancelled')">取消</button>` : ''}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function updateOrderStatus(id, status) {
+  const o = state.orders.find(x => x.id === id);
+  if (o) { o.status = status; saveData(); toast('状态已更新'); renderTab('orders'); }
+}
+
+// ---------------- 发布订单 ----------------
+function renderPublish(el) {
+  el.innerHTML = `
+    <div class="card">
+      <h3>发布新订单</h3>
+      <label class="field-label">收款金额（元）<i>*</i></label>
+      <input class="input" id="pub-amount" type="number" min="0.01" step="0.01" placeholder="例如：1000.00">
+      <label class="field-label">返佣金额（元）<i>*</i></label>
+      <input class="input" id="pub-commission" type="number" min="0.01" step="0.01" placeholder="例如：100.00">
+      <div class="form-row">
+        <div>
+          <label class="field-label">收款类型 <i>*</i></label>
+          <select class="input" id="pub-paytype">
+            <option value="支付宝固定小额">支付宝固定小额</option>
+            <option value="银行转账">银行转账</option>
+            <option value="微信收款码">微信收款码</option>
+            <option value="其他方式">其他方式</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">订单号</label>
+          <input class="input" value="系统自动生成" disabled>
+        </div>
+      </div>
+      <label class="field-label">订单备注</label>
+      <textarea class="input" id="pub-desc" rows="3" placeholder="补充说明..."></textarea>
+      <button class="btn btn-primary btn-block" onclick="adminSubmitPost()" style="margin-top:16px;">确认发布</button>
+    </div>
+  `;
+}
+
+function adminSubmitPost() {
+  const amount = Number($('#pub-amount')?.value) || 0;
+  const commission = Number($('#pub-commission')?.value) || 0;
+  const payType = $('#pub-paytype')?.value || '';
+  const desc = $('#pub-desc')?.value.trim() || '';
+
+  if (amount <= 0 || commission <= 0) { toast('请填写完整信息'); return; }
+  const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
+  state.orders.unshift({
+    id: Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4),
+    orderNo, amount, commission, payType, desc,
+    createdAt: Date.now(), status: 'pending',
+    publisherId: 'admin', publisherName: '官方发布',
+    credit: 100, takers: [],
+  });
+  saveData();
+  toast('订单发布成功 🎉');
+  switchTab('orders');
+}
+
+// ---------------- 退款审批 ----------------
+function renderRefunds(el) {
+  const list = (state.refunds || []).sort((a,b) => b.createdAt - a.createdAt);
+  if (!list.length) { el.innerHTML = `<div class="card"><div class="empty">暂无退款申请</div></div>`; return; }
+  el.innerHTML = `
+    <div class="card">
+      <h3>退款审批</h3>
+      <table class="table">
+        <thead><tr><th>用户</th><th>金额</th><th>接收地址</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>
+          ${list.map(r => `
+            <tr>
+              <td>${esc(r.userName)}</td>
+              <td style="font-weight:700;color:var(--brand)">${r.amount} USDT</td>
+              <td style="font-size:12px;word-break:break-all;">${esc(r.address)}</td>
+              <td><span class="badge ${r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-success' : 'badge-danger'}">${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已同意' : '已拒绝'}</span></td>
+              <td>
+                ${r.status === 'pending' ? `
+                  <button class="btn btn-primary" style="padding:4px 10px;font-size:12px;" onclick="approveRefund('${r.id}')">同意打款</button>
+                  <button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="rejectRefund('${r.id}')">拒绝</button>
+                ` : ''}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function approveRefund(id) {
+  const r = state.refunds.find(x => x.id === id);
+  if (!r || r.status !== 'pending') return;
+  if (!confirm(`确认向 ${r.address} 打款 ${r.amount} USDT 吗？`)) return;
+  r.status = 'approved';
+  saveData();
+  toast('已同意退款，请尽快打款');
+  renderTab('refunds');
+}
+
+function rejectRefund(id) {
+  const r = state.refunds.find(x => x.id === id);
+  if (!r || r.status !== 'pending') return;
+  if (!confirm('确定拒绝该退款申请吗？')) return;
+  r.status = 'rejected';
+  // 拒绝后，押金理论上应退回给用户。因为前端没有真实账户系统，这里仅改状态。
+  // 真实场景下，必须调用后端 API 将用户冻结的押金解冻。
+  saveData();
+  toast('已拒绝退款');
+  renderTab('refunds');
+}
+
+// ---------------- 系统设置 ----------------
+function renderSettings(el) {
+  el.innerHTML = `
+    <div class="card">
+      <h3>押金收款地址</h3>
+      <label class="field-label">TRC20 地址（波场网络）</label>
+      <input class="input" id="cfg-trc20" value="${esc(CONFIG.trc20)}">
+    </div>
+    <div class="card">
+      <h3>押金规则</h3>
+      <div class="form-row">
+        <div>
+          <label class="field-label">押金比例（%）</label>
+          <input class="input" id="cfg-ratio" type="number" value="${Math.round(CONFIG.ratio * 100)}">
+        </div>
+        <div>
+          <label class="field-label">最低押金（USDT）</label>
+          <input class="input" id="cfg-min" type="number" value="${CONFIG.minDeposit}">
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>提示文案</h3>
+      <label class="field-label">充值页提示</label>
+      <input class="input" id="cfg-notice" value="${esc(CONFIG.notice)}">
+      <label class="field-label">客服信息</label>
+      <input class="input" id="cfg-support" value="${esc(CONFIG.support)}">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="saveAdminConfig()">保存配置</button>
+  `;
+}
+
+function saveAdminConfig() {
+  CONFIG.trc20 = $('#cfg-trc20')?.value.trim() || CONFIG.trc20;
+  CONFIG.ratio = (Number($('#cfg-ratio')?.value) || 10) / 100;
+  CONFIG.minDeposit = Number($('#cfg-min')?.value) || 10;
+  CONFIG.notice = $('#cfg-notice')?.value.trim() || CONFIG.notice;
+  CONFIG.support = $('#cfg-support')?.value.trim() || CONFIG.support;
+  saveConfig();
+  toast('配置已保存，用户端刷新后生效');
+}
+
+// ---------------- 工具 ----------------
+let toastTimer = null;
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(el => el.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 320); }, 2200);
+}
+
+// 初始检查
+loadData();
+</script>
+</body>
+</html>
