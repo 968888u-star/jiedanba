@@ -22,7 +22,7 @@
   .auth-tabs{display:flex;background:#f5f6fa;border-radius:10px;padding:4px;margin-bottom:22px}
   .auth-tab{flex:1;padding:10px;border-radius:8px;font-size:14px;font-weight:600;color:var(--ink2);transition:.16s}
   .auth-tab.active{background:#fff;color:var(--ink);box-shadow:0 2px 6px rgba(15,17,26,.06)}
-  .pm-tabs{display:flex;gap:8px;margin-bottom:20px}
+  .pm-tabs{display:flex;gap:8px;margin-bottom:16px}
   .pm-tab{flex:1;padding:12px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13.5px;font-weight:700;color:var(--ink2);transition:.16s}
   .pm-tab.active{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
   .app{display:flex;min-height:100vh}
@@ -293,8 +293,6 @@ function render() {
   const app = $('#app');
   if (!state.user) {
     app.innerHTML = renderAuth();
-  } else if (!state.user.payMethod) {
-    app.innerHTML = renderPayMethodForm();
   } else {
     app.innerHTML = renderMainApp();
   }
@@ -337,35 +335,6 @@ function renderAuth() {
 }
 
 /* =========================================================
-   收款方式填写页（强制）
-   ========================================================= */
-function renderPayMethodForm() {
-  const isAlipay = state.pmType === 'alipay';
-  const pm = state.user?.payMethod || {};
-  return `
-  <div class="auth-wrap">
-    <div class="auth-card" style="max-width:460px">
-      <div class="auth-logo">💰</div>
-      <h1>填写收款方式</h1>
-      <p class="auth-sub">填写后方可开始接单</p>
-      <div class="pm-tabs">
-        <button class="pm-tab${isAlipay ? ' active' : ''}" data-action="pm-type" data-type="alipay">💙 支付宝</button>
-        <button class="pm-tab${!isAlipay ? ' active' : ''}" data-action="pm-type" data-type="bank">🏦 银行卡</button>
-      </div>
-      <label class="field"><span class="field-label">真实姓名 <i>*</i></span>
-        <input class="input" id="pm-realname" maxlength="20" placeholder="用于核对收款人身份" value="${esc(pm.realName || '')}"></label>
-      <label class="field"><span class="field-label">${isAlipay ? '支付宝账号' : '银行卡号'} <i>*</i></span>
-        <input class="input" id="pm-account" maxlength="40" placeholder="${isAlipay ? '手机号或邮箱' : '请输入完整银行卡号'}" value="${esc(pm.account || '')}"></label>
-      ${!isAlipay ? `<label class="field"><span class="field-label">开户银行 <i>*</i></span>
-        <input class="input" id="pm-bank" maxlength="30" placeholder="例如：中国工商银行" value="${esc(pm.bank || '')}"></label>` : ''}
-      <div class="notice" style="margin-bottom:16px">⚠️ 请确保信息真实有效，接单后订单款项将结算至此账户</div>
-      <button class="btn btn-primary btn-block" data-action="save-paymethod">确认保存，开始接单</button>
-      <button class="btn btn-ghost btn-block" data-action="logout" style="margin-top:10px;background:#fff;border-color:var(--line);color:var(--ink2)">退出登录</button>
-    </div>
-  </div>`;
-}
-
-/* =========================================================
    主应用
    ========================================================= */
 function renderMainApp() {
@@ -378,6 +347,18 @@ function renderMainApp() {
     deposit: viewDeposit,
     refund: viewRefund,
   }[state.view] || viewHall)();
+
+  const bindBanner = !u.payMethod ? `
+    <div data-action="open-paymethod" style="
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      background:#fff4ec;border:1px solid #ffe0b2;border-radius:12px;
+      padding:12px 14px;margin-bottom:14px;cursor:pointer;">
+      <div style="font-size:13px;color:#c2410c;font-weight:600;line-height:1.5">
+        ⚠️ 你还没绑定收款方式<br>
+        <span style="font-size:12px;color:#9a3412;opacity:.8">绑定后才能抢单并收款</span>
+      </div>
+      <div style="font-size:12.5px;font-weight:800;color:#fff;background:#f0a020;padding:7px 14px;border-radius:8px;white-space:nowrap">立即绑定</div>
+    </div>` : '';
 
   return `
   <div class="app">
@@ -406,6 +387,7 @@ function renderMainApp() {
         <div class="brand"><div class="brand-logo">单</div><div class="brand-name">订单大厅</div></div>
         <button class="avatar" data-action="open-profile">${esc(initial)}</button>
       </header>
+      ${bindBanner}
       <div id="view">${viewHtml}</div>
     </main>
 
@@ -615,14 +597,86 @@ function closeModal() {
 }
 
 /* =========================================================
+   收款方式绑定弹窗（含输入框提示）
+   ========================================================= */
+let currentPmForce = false;
+
+function openPayMethodModal(isForce = false) {
+  currentPmForce = isForce;
+  const isAlipay = state.pmType === 'alipay';
+  const pm = state.user?.payMethod || {};
+  const canClose = !isForce;
+
+  openModal(`
+    <div class="modal-head">
+      <h2>${isForce ? '请先绑定收款方式' : '绑定收款方式'}</h2>
+      ${canClose ? `<button class="icon-btn" data-action="close-modal">✕</button>` : ''}
+    </div>
+    <div class="modal-body">
+      <div class="notice" style="margin-bottom:16px">
+        ${isForce ? '⚠️ 抢单前必须绑定收款方式，用于接收订单款项' : '⚠️ 请填写真实信息，绑定后才能抢单收款'}
+      </div>
+      <div class="pm-tabs">
+        <button class="pm-tab${isAlipay ? ' active' : ''}" data-action="pm-type" data-type="alipay">💙 支付宝</button>
+        <button class="pm-tab${!isAlipay ? ' active' : ''}" data-action="pm-type" data-type="bank">🏦 银行卡</button>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="pm-realname">收款姓名 <i>*</i></label>
+        <input class="input" id="pm-realname" maxlength="20"
+               placeholder="请输入你的真实姓名（与${isAlipay ? '支付宝' : '银行卡'}实名一致）"
+               value="${esc(pm.realName || '')}">
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:6px;line-height:1.6">
+          💡 必须与${isAlipay ? '支付宝账户' : '银行卡开户名'}的实名一致，否则无法结算款项
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="pm-account">${isAlipay ? '支付宝账号' : '银行卡号'} <i>*</i></label>
+        <input class="input" id="pm-account" maxlength="40"
+               placeholder="${isAlipay ? '请输入支付宝绑定的手机号或邮箱' : '请输入 16-19 位银行卡号（不空格）'}"
+               value="${esc(pm.account || '')}">
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:6px;line-height:1.6">
+          ${isAlipay
+            ? '💡 请填写支付宝绑定手机号或邮箱，用于收款'
+            : '💡 请填写完整银行卡号，不包含空格和横线'}
+        </div>
+      </div>
+
+      ${!isAlipay ? `
+      <div class="field">
+        <label class="field-label" for="pm-bank">开户银行 <i>*</i></label>
+        <input class="input" id="pm-bank" maxlength="30"
+               placeholder="例如：中国工商银行 / 建设银行 / 招商银行"
+               value="${esc(pm.bank || '')}">
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:6px;line-height:1.6">
+          💡 请填写开户行全称，可在银行卡正面找到
+        </div>
+      </div>` : ''}
+
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-top:4px">
+        <div style="font-size:12px;color:#16a34a;line-height:1.7">
+          ✅ 请确认以上信息无误<br>
+          <span style="opacity:.85">收款姓名与账号不一致会导致款项无法到账，请仔细核对</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      ${canClose ? `<button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">稍后再说</button>` : ''}
+      <button class="btn btn-primary" data-action="save-paymethod">确认保存</button>
+    </div>
+  `);
+}
+
+/* =========================================================
    个人资料
    ========================================================= */
 function openProfile() {
   const u = state.user;
   const pm = u.payMethod || {};
   const pmText = pm.type === 'alipay'
-    ? `支付宝 · ${esc(pm.account)}`
-    : `银行卡 · ${esc(pm.bank || '')} ${esc(pm.account)}`;
+    ? `支付宝 · ${esc(pm.account || '未绑定')}`
+    : pm.type === 'bank' ? `银行卡 · ${esc(pm.bank || '')} ${esc(pm.account || '')}` : '未绑定';
   openModal(`
     <div class="modal-head"><h2>个人资料</h2><button class="icon-btn" data-action="close-modal">✕</button></div>
     <div class="modal-body">
@@ -637,9 +691,9 @@ function openProfile() {
       <div style="margin-top:14px;padding:12px 14px;background:#f8f9fd;border-radius:10px">
         <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">收款方式</div>
         <div style="font-size:13.5px;font-weight:700;margin-bottom:4px">${pmText}</div>
-        <div style="font-size:12px;color:var(--ink3)">实名：${esc(pm.realName || '')}</div>
+        ${pm.realName ? `<div style="font-size:12px;color:var(--ink3)">收款姓名：${esc(pm.realName)}</div>` : ''}
       </div>
-      <button class="btn btn-ghost btn-block" data-action="change-paymethod" style="margin-top:12px;background:#fff;border-color:var(--line)">修改收款方式</button>
+      <button class="btn btn-ghost btn-block" data-action="open-paymethod" style="margin-top:12px;background:#fff;border-color:var(--line)">${u.payMethod ? '修改收款方式' : '绑定收款方式'}</button>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">取消</button>
@@ -655,6 +709,14 @@ function openGrabModal(id) {
   const o = state.orders.find(x => x.id === id);
   if (!o) return;
   if (o.status !== 'pending' || myTaker(o)) { toast('这个订单已经不能抢了'); return; }
+
+  // 未绑定收款方式 → 强制弹绑定框，并记住订单 ID
+  if (!state.user.payMethod) {
+    window.__pendingGrabId = id;
+    openPayMethodModal(true);
+    return;
+  }
+
   if (!hasEnoughDeposit(o)) { toast(`押金不足，需 ${depositRequired(o)} USDT`); return; }
 
   const pm = state.user.payMethod;
@@ -675,7 +737,7 @@ function openGrabModal(id) {
       <div style="padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:14px">
         <div style="font-size:12px;color:#16a34a;margin-bottom:4px">将使用以下收款方式</div>
         <div style="font-size:13.5px;font-weight:700;color:#166534">${esc(pmText)}</div>
-        <div style="font-size:12px;color:#16a34a;margin-top:4px">实名：${esc(pm.realName)}</div>
+        <div style="font-size:12px;color:#16a34a;margin-top:4px">收款姓名：${esc(pm.realName)}</div>
       </div>
       <div class="notice">⚡ 抢单后请尽快完成，审核通过后返佣自动结算</div>
     </div>
@@ -811,7 +873,7 @@ function openDetail(id) {
             <div style="font-size:13px;font-weight:800;color:var(--brand)">¥${Number(o.commission).toFixed(2)}</div>
           </div>
           ${isSelf ? `<div style="font-size:12px;color:var(--ink2);padding:8px 10px;background:#f8f9fd;border-radius:8px">
-            <div>${esc(pmText)}</div><div style="color:var(--ink3);margin-top:2px">实名：${esc(pm.realName || '')}</div>
+            <div>${esc(pmText)}</div><div style="color:var(--ink3);margin-top:2px">收款姓名：${esc(pm.realName || '')}</div>
           </div>` : `<div style="font-size:12px;color:var(--ink3);padding:8px 10px;background:#f8f9fd;border-radius:8px">仅本人可见</div>`}
         </div>`;
       }).join('')}`;
@@ -882,6 +944,9 @@ async function doLogin() {
     toast('登录成功');
     render();
     startPolling();
+    if (!state.user.payMethod) {
+      setTimeout(() => openPayMethodModal(false), 250);
+    }
   } catch (e) { toast(e.message); }
 }
 
@@ -899,9 +964,10 @@ async function doRegister() {
     state.user = r.user;
     state.orders = (await api('/orders')).orders || [];
     state.refunds = [];
-    toast('注册成功，请填写收款方式');
+    toast('注册成功，请绑定收款方式');
     render();
     startPolling();
+    setTimeout(() => openPayMethodModal(false), 250);
   } catch (e) { toast(e.message); }
 }
 
@@ -927,7 +993,7 @@ async function savePayMethod() {
   const account = ($('#pm-account')?.value || '').trim();
   const bank = ($('#pm-bank')?.value || '').trim();
   const type = state.pmType;
-  if (!realName) { toast('请输入真实姓名'); return; }
+  if (!realName) { toast('请输入收款姓名'); return; }
   if (!account) { toast(`请输入${type === 'alipay' ? '支付宝账号' : '银行卡号'}`); return; }
   if (type === 'bank' && !bank) { toast('请输入开户银行'); return; }
   const payMethod = { type, account, realName, bank: type === 'bank' ? bank : '' };
@@ -935,7 +1001,14 @@ async function savePayMethod() {
     const r = await api('/me', { method: 'PATCH', body: { payMethod } });
     state.user = r.user;
     toast('收款方式已保存');
+    closeModal();
     render();
+    // 如果之前是想抢单被拦下来的，保存后自动继续抢单流程
+    if (currentPmForce && window.__pendingGrabId) {
+      const gid = window.__pendingGrabId;
+      window.__pendingGrabId = null;
+      setTimeout(() => openGrabModal(gid), 300);
+    }
   } catch (e) { toast(e.message); }
 }
 
@@ -954,14 +1027,16 @@ document.addEventListener('click', async e => {
       case 'do-login': await doLogin(); break;
       case 'do-register': await doRegister(); break;
       case 'logout': await doLogout(); break;
-      case 'pm-type': state.pmType = el.dataset.type; render(); break;
-      case 'save-paymethod': await savePayMethod(); break;
-      case 'change-paymethod':
-        closeModal();
-        state.user.payMethod = null;
-        state.pmType = 'alipay';
-        render();
+
+      case 'pm-type':
+        state.pmType = el.dataset.type;
+        openPayMethodModal(currentPmForce);
         break;
+      case 'open-paymethod':
+        openPayMethodModal(false);
+        break;
+      case 'save-paymethod': await savePayMethod(); break;
+
       case 'nav': state.view = el.dataset.view; closeModal(); render(); break;
       case 'open-profile': openProfile(); break;
       case 'save-profile': {
