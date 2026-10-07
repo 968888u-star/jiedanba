@@ -381,7 +381,7 @@ function fmtDateTime(ts) {
 }
 
 /* =========================================================
-   USDT 合约地址（用于 imToken 支付链接）
+   USDT 合约地址
    ========================================================= */
 const USDT_CONTRACT = {
   TRC20: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
@@ -422,7 +422,7 @@ const state = {
   orderTab: 'all',
   mineTab: 'working',
   depositNet: 'TRC20',
-  depositWallet: 'manual',   // manual | imtoken
+  depositWallet: 'manual',
 };
 
 function save() {
@@ -796,7 +796,7 @@ function viewPosted() {
 }
 
 /* =========================================================
-   视图：充值押金（含钱包选择 + imToken 一键支付）
+   视图：充值押金
    ========================================================= */
 function viewDeposit() {
   const net = state.depositNet;
@@ -1055,56 +1055,96 @@ function qrFallback(el, text) {
 }
 
 /* =========================================================
-   imToken 一键支付
+   imToken 一键支付（修复版）
    ========================================================= */
+
+// imToken 官方 DeepLink
+function buildImTokenUri(net, to, amount) {
+  const contract = USDT_CONTRACT[net];
+  const network = net === 'TRC20' ? 'trx' : 'ethereum';
+  return `imtokenv2://navigate/Transfer?symbol=USDT&contract=${contract}&to=${to}&amount=${amount}&decimals=6&network=${network}`;
+}
+
+// 标准协议链接（兜底）
+function buildStandardUri(net, to, amount) {
+  const contract = USDT_CONTRACT[net];
+  const amountUnits = Math.floor(amount * 1e6).toString();
+  if (net === 'TRC20') {
+    return `tron:${contract}/transfer?address=${to}&amount=${amountUnits}`;
+  }
+  return `ethereum:${contract}/transfer?address=${to}&uint256=${amountUnits}`;
+}
+
 function payWithImToken() {
   const net = state.depositNet;
   const to = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
-
   const amount = Number($('#deposit-amount')?.value) || 0;
 
-  if (!to) { toast('收款地址未配置'); return; }
+  if (!to) { toast('收款地址未配置，请联系管理员'); return; }
   if (amount < 1) { toast('请输入支付金额'); return; }
 
-  // USDT 精度 6 位小数
-  const amountUnits = Math.floor(amount * 1e6).toString();
-  const contract = USDT_CONTRACT[net];
+  const imtokenUri = buildImTokenUri(net, to, amount);
+  const standardUri = buildStandardUri(net, to, amount);
 
-  // 使用 EIP-681 标准的支付 URI（imToken 会自动识别并打开转账页）
-  let uri;
-  if (net === 'TRC20') {
-    // Tron 网络
-    uri = `tron:${contract}/transfer?address=${to}&amount=${amountUnits}`;
-  } else {
-    // 以太坊网络
-    uri = `ethereum:${contract}@1/transfer?address=${to}&uint256=${amountUnits}`;
-  }
+  let jumped = false;
+  const markJumped = () => { jumped = true; };
 
-  // 判断是否成功唤起的信号
-  let pageHidden = false;
-  const onVis = () => { if (document.hidden) pageHidden = true; };
+  const onVis = () => { if (document.hidden) markJumped(); };
+
+  window.addEventListener('blur', markJumped);
+  window.addEventListener('pagehide', markJumped);
   document.addEventListener('visibilitychange', onVis);
 
-  // 执行跳转
-  try { window.location.href = uri; } catch (e) {}
+  const tryOpen = (url) => {
+    try {
+      const a = document.createElement('a');
+      a.href = url;
+      a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => a.remove(), 120);
+    } catch (e) {}
+    try { window.location.href = url; } catch (e) {}
+  };
 
-  // 2 秒后若页面没隐藏，大概率未安装 imToken
+  // 1. 先尝试 imToken 官方 scheme
+  tryOpen(imtokenUri);
+
+  // 2. 700ms 后没反应再试标准协议
   setTimeout(() => {
+    if (!jumped) tryOpen(standardUri);
+  }, 700);
+
+  // 3. 2.5s 后仍未跳转，提示 + 复制地址
+  setTimeout(() => {
+    window.removeEventListener('blur', markJumped);
+    window.removeEventListener('pagehide', markJumped);
     document.removeEventListener('visibilitychange', onVis);
-    if (!pageHidden) {
-      toast('未检测到 imToken，已复制地址到剪贴板');
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(to).catch(() => {});
-      } else {
-        const tmp = document.createElement('textarea');
-        tmp.value = to;
-        document.body.appendChild(tmp);
-        tmp.select();
-        try { document.execCommand('copy'); } catch (e) {}
-        tmp.remove();
+
+    if (!jumped) {
+      toast('未自动跳转，请手动打开 imToken 扫码支付');
+
+      const copy = () => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(to).catch(() => {});
+        } else {
+          const tmp = document.createElement('textarea');
+          tmp.value = to;
+          tmp.style.cssText = 'position:fixed;left:-9999px';
+          document.body.appendChild(tmp);
+          tmp.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          tmp.remove();
+        }
+      };
+      copy();
+
+      const ua = navigator.userAgent.toLowerCase();
+      if (ua.includes('micromessenger') || ua.includes('qq/')) {
+        setTimeout(() => toast('请点击右上角「···」→ 在浏览器中打开'), 1200);
       }
     }
-  }, 2000);
+  }, 2500);
 }
 
 /* =========================================================
@@ -1238,7 +1278,7 @@ function submitGrab(id) {
 }
 
 /* =========================================================
-   充值押金弹窗（含 imToken 一键支付）
+   充值押金弹窗
    ========================================================= */
 let currentDepositOrder = null;
 
@@ -1534,25 +1574,21 @@ document.addEventListener('click', e => {
       setTimeout(() => openDepositModal(null), 100);
       break;
 
-    /* 客户端切换钱包 */
     case 'wallet':
       state.depositWallet = el.dataset.wallet;
       if (state.view === 'deposit') render();
       break;
 
-    /* 客户端切换网络 */
     case 'net':
       state.depositNet = el.dataset.net;
       if (state.view === 'deposit') render();
       break;
 
-    /* 弹窗内切换网络：重开弹窗 */
     case 'modal-net':
       state.depositNet = el.dataset.net;
       openDepositModal(currentDepositOrder);
       break;
 
-    /* imToken 一键支付 */
     case 'pay-imtoken':
       payWithImToken();
       break;
@@ -1576,7 +1612,6 @@ document.addEventListener('click', e => {
       submitDeposit(el.dataset.id || '');
       break;
 
-    /* 管理后台 */
     case 'admin':
       closeModal();
       state.view = 'admin';
