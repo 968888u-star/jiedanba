@@ -13,85 +13,39 @@
     --red:#e02020;--ok:#10b981;--r:12px;
   }
   html,body{height:100%}
-  body{
-    font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
-    background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55;
-  }
+  body{font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55;}
   button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
   button{cursor:pointer;border:none;background:none}
   input,select,textarea{outline:none}
-
   .app{display:flex;min-height:100vh}
-
-  .sidebar{
-    position:fixed;top:0;left:0;bottom:0;width:220px;
-    background:var(--card);border-right:1px solid var(--line);
-    padding:22px 16px;display:flex;flex-direction:column;z-index:20;
-  }
+  .sidebar{position:fixed;top:0;left:0;bottom:0;width:220px;background:var(--card);border-right:1px solid var(--line);padding:22px 16px;display:flex;flex-direction:column;z-index:20;}
   .brand{display:flex;align-items:center;gap:11px;padding:0 6px 20px}
-  .brand-logo{
-    width:36px;height:36px;border-radius:10px;flex:0 0 auto;
-    background:linear-gradient(135deg,#ffc107,#f0a020);
-    display:grid;place-items:center;color:#fff;font-size:16px;font-weight:800;
-  }
+  .brand-logo{width:36px;height:36px;border-radius:10px;flex:0 0 auto;background:linear-gradient(135deg,#ffc107,#f0a020);display:grid;place-items:center;color:#fff;font-size:16px;font-weight:800;}
   .brand-name{font-size:15px;font-weight:800}
   .brand-sub{font-size:11px;color:var(--ink3);margin-top:1px}
-
   .nav{display:flex;flex-direction:column;gap:4px}
-  .nav-item{
-    display:flex;align-items:center;gap:10px;
-    padding:11px 12px;border-radius:10px;
-    color:var(--ink2);font-size:14px;font-weight:500;
-    text-align:left;width:100%;transition:.16s;
-  }
+  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:var(--ink2);font-size:14px;font-weight:500;text-align:left;width:100%;transition:.16s;}
   .nav-item .ico{font-size:16px;width:18px;text-align:center}
   .nav-item:hover{background:#f4f5fa;color:var(--ink)}
   .nav-item.active{background:var(--brand-soft);color:var(--brand);font-weight:700}
-
   .sidebar-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
-  .user-box{
-    display:flex;align-items:center;gap:10px;width:100%;
-    padding:8px;border-radius:10px;transition:.16s;text-align:left;
-  }
+  .user-box{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border-radius:10px;transition:.16s;text-align:left;}
   .user-box:hover{background:#f4f5fa}
-  .avatar{
-    width:32px;height:32px;border-radius:50%;flex:0 0 auto;
-    background:linear-gradient(135deg,#ffc107,#f0a020);
-    color:#fff;display:grid;place-items:center;
-    font-size:13px;font-weight:700;
-  }
+  .avatar{width:32px;height:32px;border-radius:50%;flex:0 0 auto;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;}
   .user-name{font-size:13px;font-weight:700}
   .user-sub{font-size:11px;color:var(--ink3)}
-
   .main{margin-left:220px;flex:1;padding:20px 24px 80px;max-width:900px}
   .page{animation:fadeUp .3s ease}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-
   .mhead{display:none}
-
-  .order-tabs{
-    display:flex;background:#fff;border-radius:12px 12px 0 0;
-    padding:0 16px;border-bottom:1px solid var(--line);
-    overflow-x:auto;scrollbar-width:none;
-  }
+  .order-tabs{display:flex;background:#fff;border-radius:12px 12px 0 0;padding:0 16px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;}
   .order-tabs::-webkit-scrollbar{display:none}
-  .order-tab{
-    flex:0 0 auto;padding:15px 16px;font-size:14px;font-weight:600;
-    color:var(--ink2);position:relative;white-space:nowrap;transition:.16s;
-  }
+  .order-tab{flex:0 0 auto;padding:15px 16px;font-size:14px;font-weight:600;color:var(--ink2);position:relative;white-space:nowrap;transition:.16s;}
   .order-tab:hover{color:var(--ink)}
   .order-tab.active{color:var(--brand);font-weight:800}
-  .order-tab.active::after{
-    content:'';position:absolute;bottom:0;left:16px;right:16px;
-    height:3px;border-radius:3px 3px 0 0;background:var(--brand);
-  }
-
+  .order-tab.active::after{content:'';position:absolute;bottom:0;left:16px;right:16px;height:3px;border-radius:3px 3px 0 0;background:var(--brand);}
   .order-list{background:#fff;border-radius:0 0 12px 12px;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
-  .order-card{
-    border:1px solid var(--line);border-radius:12px;
-    padding:14px 16px;background:#fff;transition:.18s;
-    display:flex;flex-direction:column;cursor:pointer;
-  }
+  .order-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff;transition:.18s;display:flex;flex-direction:column;cursor:pointer;}
   .order-card:hover{border-color:#ffe0b2;box-shadow:0 4px 16px rgba(240,160,32,.08)}
   .order-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
   .order-no{font-size:12.5px;color:var(--ink2);line-height:1.4;word-break:break-all}
@@ -101,61 +55,36 @@
   .status-paid{color:#10b981}
   .status-paused{color:#8d93a6}
   .status-cancel{color:#c9cddc}
-
   .order-amounts{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
   .amount-item{display:flex;align-items:baseline;gap:2px}
   .amount-label{font-size:12.5px;color:var(--ink3);margin-right:2px}
   .amount-value{font-size:16px;font-weight:800;letter-spacing:-.3px}
   .amount-value.red{color:var(--red)}
   .amount-value.gold{color:var(--brand)}
-
-  .deposit-tip{
-    font-size:12px;color:#c2410c;background:#fff9ec;border:1px dashed #ffe0b2;
-    border-radius:8px;padding:7px 10px;margin-bottom:10px;
-  }
-
+  .deposit-tip{font-size:12px;color:#c2410c;background:#fff9ec;border:1px dashed #ffe0b2;border-radius:8px;padding:7px 10px;margin-bottom:10px;}
   .order-info{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
   .order-info-row{font-size:12.5px;color:var(--ink2);display:flex;gap:6px}
   .order-info-row .label{color:var(--ink3);flex:0 0 auto;min-width:62px}
   .order-info-row .val{color:var(--ink);font-weight:500}
-
-  .order-btn{
-    display:block;width:100%;padding:11px 0;
-    border-radius:10px;font-size:15px;font-weight:800;
-    background:#ffc107;color:#5b4200;transition:.16s;
-    text-align:center;letter-spacing:.5px;
-  }
+  .order-btn{display:block;width:100%;padding:11px 0;border-radius:10px;font-size:15px;font-weight:800;background:#ffc107;color:#5b4200;transition:.16s;text-align:center;letter-spacing:.5px;}
   .order-btn:hover{background:#f0a020;color:#fff}
   .order-btn:active{transform:scale(.98)}
   .order-btn.done{background:#f1f2f7;color:var(--ink3);cursor:default;transform:none}
   .order-btn.done:hover{background:#f1f2f7;color:var(--ink3)}
   .order-btn.need-deposit{background:#fff4ec;color:#c2410c;border:1px dashed #f0a020}
   .order-btn.need-deposit:hover{background:#ffe9d6;color:#9a3412}
-
-  .empty{
-    text-align:center;padding:60px 20px;background:#fff;border-radius:12px;
-    border:1px dashed var(--line);margin-top:12px;
-  }
+  .empty{text-align:center;padding:60px 20px;background:#fff;border-radius:12px;border:1px dashed var(--line);margin-top:12px;}
   .empty-ico{font-size:36px;margin-bottom:12px;opacity:.6}
   .empty h3{font-size:15px;font-weight:700;margin-bottom:6px}
   .empty p{font-size:13px;color:var(--ink3)}
-
   .form-card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:22px;max-width:680px}
   .field{display:block;margin-bottom:16px}
   .field-label{display:block;font-size:13.5px;font-weight:700;color:var(--ink2);margin-bottom:8px}
   .field-label i{color:#ef4444;font-style:normal}
-  .input{
-    width:100%;padding:12px 14px;border-radius:10px;
-    border:1px solid var(--line);background:#fff;font-size:14.5px;transition:.16s;
-  }
+  .input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14.5px;transition:.16s;}
   .input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(240,160,32,.12)}
   .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-
-  .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:7px;
-    padding:11px 18px;border-radius:10px;border:1px solid transparent;
-    font-size:14.5px;font-weight:700;transition:.16s;white-space:nowrap;
-  }
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 18px;border-radius:10px;border:1px solid transparent;font-size:14.5px;font-weight:700;transition:.16s;white-space:nowrap;}
   .btn-primary{background:var(--brand);color:#fff}
   .btn-primary:hover{background:var(--brand-dark)}
   .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink2)}
@@ -164,124 +93,41 @@
   .btn-danger:hover{background:#fef2f2}
   .btn-block{width:100%}
   .btn-sm{padding:8px 14px;font-size:13px;border-radius:9px}
-  .btn-imtoken{
-    background:linear-gradient(135deg,#2c2c2c,#12141d);color:#fff;
-    box-shadow:0 4px 14px rgba(18,20,29,.25);
-  }
+  .btn-imtoken{background:linear-gradient(135deg,#2c2c2c,#12141d);color:#fff;box-shadow:0 4px 14px rgba(18,20,29,.25);}
   .btn-imtoken:hover{background:linear-gradient(135deg,#3a3a3a,#202124)}
-
   .tabbar{display:none}
-
-  .overlay{
-    position:fixed;inset:0;background:rgba(15,17,26,.5);
-    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
-    z-index:100;display:flex;align-items:center;justify-content:center;
-    padding:20px;animation:fadeIn .2s ease;
-  }
+  .overlay{position:fixed;inset:0;background:rgba(15,17,26,.5);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease;}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  .modal{
-    background:#fff;border-radius:16px;width:min(500px,100%);
-    max-height:88vh;display:flex;flex-direction:column;
-    animation:pop .24s cubic-bezier(.2,.9,.3,1.2);
-    box-shadow:0 24px 60px rgba(15,17,26,.3);overflow:hidden;
-  }
+  .modal{background:#fff;border-radius:16px;width:min(500px,100%);max-height:88vh;display:flex;flex-direction:column;animation:pop .24s cubic-bezier(.2,.9,.3,1.2);box-shadow:0 24px 60px rgba(15,17,26,.3);overflow:hidden;}
   @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
   .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;flex:0 0 auto}
   .modal-head h2{font-size:17px;font-weight:800}
   .icon-btn{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--ink3);font-size:15px;transition:.16s}
   .icon-btn:hover{background:#f1f2f7;color:var(--ink)}
   .modal-body{padding:0 20px 18px;overflow-y:auto;flex:1}
-  .modal-foot{
-    display:flex;gap:10px;justify-content:flex-end;align-items:center;
-    padding:14px 20px;border-top:1px solid var(--line);
-    background:#fbfbfe;flex:0 0 auto;
-  }
-
+  .modal-foot{display:flex;gap:10px;justify-content:flex-end;align-items:center;padding:14px 20px;border-top:1px solid var(--line);background:#fbfbfe;flex:0 0 auto;}
   .detail-price{font-size:28px;font-weight:850;color:var(--red);letter-spacing:-1px;margin:12px 0 4px}
   .detail-price small{font-size:13px;font-weight:600;color:var(--ink3);margin-left:5px;letter-spacing:0}
-  .detail-grid{
-    display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;
-    padding:14px;background:#f8f9fd;border-radius:12px;margin:14px 0;
-  }
+  .detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;padding:14px;background:#f8f9fd;border-radius:12px;margin:14px 0;}
   .dg-item .dg-k{font-size:11.5px;color:var(--ink3);margin-bottom:3px}
   .dg-item .dg-v{font-size:13.5px;font-weight:700;word-break:break-all}
-  .detail-desc{
-    font-size:13.5px;color:var(--ink2);line-height:1.7;
-    padding:14px;background:#f8f9fd;border-radius:12px;margin-bottom:14px;white-space:pre-wrap;
-  }
-
-  .notice{
-    padding:12px 14px;border-radius:10px;font-size:13px;
-    background:#fff9ec;color:#c27800;border:1px solid #ffe0b2;
-    display:flex;align-items:center;gap:8px;line-height:1.5;
-  }
+  .detail-desc{font-size:13.5px;color:var(--ink2);line-height:1.7;padding:14px;background:#f8f9fd;border-radius:12px;margin-bottom:14px;white-space:pre-wrap;}
+  .notice{padding:12px 14px;border-radius:10px;font-size:13px;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2;display:flex;align-items:center;gap:8px;line-height:1.5;}
   .notice-dark{background:#f5f6fa;color:#12141d;border-color:#e8eaf1}
-
-  .chip-cat{
-    flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;
-    padding:8px 14px;border-radius:10px;border:1px solid var(--line);
-    background:#fff;font-size:13.5px;font-weight:600;color:var(--ink2);
-    white-space:nowrap;transition:.16s;
-  }
+  .chip-cat{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13.5px;font-weight:600;color:var(--ink2);white-space:nowrap;transition:.16s;}
   .chip-cat.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-
-  .qr-wrap{
-    display:flex;justify-content:center;align-items:center;
-    padding:12px;background:#fff;border:1px solid var(--line);
-    border-radius:12px;width:180px;height:180px;margin:0 auto;
-    position:relative;overflow:hidden;
-  }
-  .qr-wrap img{width:100%;height:100%;display:block;object-fit:contain}
-  .qr-wrap .qr-loading{
-    position:absolute;inset:0;display:grid;place-items:center;
-    font-size:12px;color:var(--ink3);background:#fff;
-  }
-
-  .admin-head{display:flex;align-items:center;gap:10px;margin-bottom:20px}
-  .admin-badge{
-    display:inline-flex;align-items:center;gap:5px;
-    background:#12141d;color:#fff;font-size:11px;font-weight:700;
-    padding:3px 10px;border-radius:20px;letter-spacing:.5px;
-  }
-  .admin-sec{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px}
-  .admin-sec h3{font-size:14px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-  .admin-sec h3::before{content:'';width:3px;height:14px;border-radius:2px;background:var(--brand)}
-
-  .toast{
-    position:fixed;left:50%;bottom:104px;transform:translate(-50%,18px);
-    background:#12141d;color:#fff;padding:12px 20px;border-radius:10px;
-    font-size:13.5px;font-weight:600;opacity:0;transition:.28s;
-    z-index:300;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.25);
-    max-width:calc(100vw - 40px);text-align:center;
-  }
+  .toast{position:fixed;left:50%;bottom:104px;transform:translate(-50%,18px);background:#12141d;color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:.28s;z-index:300;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.25);max-width:calc(100vw - 40px);text-align:center;}
   .toast.show{opacity:1;transform:translate(-50%,0)}
-
   @media (max-width:900px){
     .sidebar{display:none}
     .main{margin-left:0;padding:0 12px 80px;max-width:100%}
-    .mhead{
-      display:flex;align-items:center;justify-content:space-between;
-      padding:12px 0 14px;position:sticky;top:0;z-index:15;
-      background:rgba(245,246,250,.95);
-      -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
-    }
+    .mhead{display:flex;align-items:center;justify-content:space-between;padding:12px 0 14px;position:sticky;top:0;z-index:15;background:rgba(245,246,250,.95);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);}
     .mhead .brand{padding:0}
     .mhead .brand-logo{width:32px;height:32px;border-radius:9px;font-size:15px}
     .mhead .brand-name{font-size:15px}
-
-    .tabbar{
-      display:flex;position:fixed;bottom:0;left:0;right:0;z-index:30;
-      background:rgba(255,255,255,.97);
-      -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
-      border-top:1px solid var(--line);
-      padding:6px 4px calc(6px + env(safe-area-inset-bottom));
-    }
-    .tabbar .nav-item{
-      flex:1;flex-direction:column;gap:2px;font-size:10px;
-      padding:5px 2px;border-radius:8px;justify-content:center;
-    }
+    .tabbar{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:30;background:rgba(255,255,255,.97);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom));}
+    .tabbar .nav-item{flex:1;flex-direction:column;gap:2px;font-size:10px;padding:5px 2px;border-radius:8px;justify-content:center;}
     .tabbar .nav-item .ico{font-size:18px}
-
     .order-card{padding:12px 14px}
     .order-amounts{margin-bottom:8px}
     .amount-value{font-size:15px}
@@ -305,11 +151,9 @@
     </div>
     <nav class="nav">
       <button class="nav-item active" data-action="nav" data-view="hall"><span class="ico">📋</span>订单大厅</button>
-      <button class="nav-item" data-action="nav" data-view="post"><span class="ico">✏️</span>发布订单</button>
       <button class="nav-item" data-action="nav" data-view="mine"><span class="ico">📥</span>我的接单</button>
-      <button class="nav-item" data-action="nav" data-view="posted"><span class="ico">📤</span>我的发布</button>
       <button class="nav-item" data-action="nav" data-view="deposit"><span class="ico">💰</span>充值押金</button>
-      <button class="nav-item" data-action="admin"><span class="ico">⚙️</span>管理后台</button>
+      <button class="nav-item" data-action="nav" data-view="refund"><span class="ico">💸</span>押金退款</button>
     </nav>
     <div class="sidebar-foot">
       <button class="user-box" data-action="edit-name">
@@ -336,15 +180,15 @@
   <nav class="tabbar">
     <button class="nav-item active" data-action="nav" data-view="hall"><span class="ico">📋</span>大厅</button>
     <button class="nav-item" data-action="nav" data-view="mine"><span class="ico">📥</span>接单</button>
-    <button class="nav-item" data-action="nav" data-view="deposit"><span class="ico">💰</span>押金</button>
-    <button class="nav-item" data-action="nav" data-view="posted"><span class="ico">📤</span>发布</button>
-    <button class="nav-item" data-action="admin"><span class="ico">⚙️</span>管理</button>
+    <button class="nav-item" data-action="nav" data-view="deposit"><span class="ico">💰</span>充值</button>
+    <button class="nav-item" data-action="nav" data-view="refund"><span class="ico">💸</span>退款</button>
   </nav>
 </div>
 
 <div id="modal-root"></div>
 
-<script>const LS_KEY = 'order.v10';
+<script>
+const LS_KEY = 'order.v10';
 const CFG_KEY = 'order.v10.config';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -374,10 +218,9 @@ function fmtDateTime(ts) {
 
 const DEFAULT_CONFIG = {
   trc20: 'TXk7YbWcWnQPNhSCXC3p4aFb5tHKqMgRzA',
-  erc20: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
   ratio: 0.1,
   minDeposit: 10,
-  notice: '请务必使用所选网络充值，转账到其他网络将无法到账',
+  notice: '请务必使用 TRC20 网络充值，转账到其他网络将无法到账',
   support: '客服微信：support_usdt',
 };
 
@@ -395,15 +238,14 @@ function saveConfig() {
 const state = {
   user: { id: '', name: '', credit: 100, income: 0, deposit: 0 },
   orders: [],
+  refunds: [], // 新增退款记录
   view: 'hall',
   orderTab: 'all',
   mineTab: 'working',
-  depositNet: 'TRC20',
-  depositWallet: 'manual',
 };
 
 function save() {
-  try { localStorage.setItem(LS_KEY, JSON.stringify({ user: state.user, orders: state.orders })); } catch (e) {}
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ user: state.user, orders: state.orders, refunds: state.refunds })); } catch (e) {}
 }
 const getOrder = id => state.orders.find(o => o.id === id);
 const myTaker = o => (o.takers || []).find(x => x.userId === state.user.id) || null;
@@ -430,10 +272,6 @@ function seedOrders() {
   return [
     mk({ id: 'o1', orderNo: '20261007025226586812', status: 'pending', amount: 1000, commission: 100, payType: '支付宝固定小额', createdAt: now - 2 * H, publisherName: '林经理', credit: 98, desc: '需确认收款账户状态，操作简单，完成后截图提交审核。' }),
     mk({ id: 'o2', orderNo: '20261007025226586660', status: 'pending', amount: 100, commission: 10, payType: '银行转账', createdAt: now - 6 * H, publisherName: '王财务', credit: 95, desc: '小额银行转账测试，完成后上传转账凭证即可。' }),
-    mk({ id: 'o3', orderNo: '20261007025226586123', status: 'confirm', amount: 500, commission: 50, payType: '微信收款码', createdAt: now - 12 * H, publisherName: '赵主管', credit: 100, takers: [{ userId: 'u_li', userName: '李同学', at: now - 10 * H, status: 'working' }] }),
-    mk({ id: 'o4', orderNo: '20261007025226585555', status: 'paid', amount: 2000, commission: 200, payType: '支付宝固定小额', createdAt: now - 24 * H, publisherName: '孙总', credit: 99, takers: [{ userId: 'u_ma', userName: '马师傅', at: now - 20 * H, status: 'done', doneAt: now - 18 * H }] }),
-    mk({ id: 'o5', orderNo: '20261007025226584444', status: 'paused', amount: 300, commission: 30, payType: '银行转账', createdAt: now - 30 * H, publisherName: '周经理', credit: 92 }),
-    mk({ id: 'o6', orderNo: '20261007025226583333', status: 'cancelled', amount: 150, commission: 15, payType: '微信收款码', createdAt: now - 40 * H, publisherName: '吴老板', credit: 90 }),
   ];
 }
 
@@ -444,16 +282,19 @@ function boot() {
   if (data && data.user && Array.isArray(data.orders)) {
     state.user = Object.assign({ credit: 100, income: 0, deposit: 0 }, data.user);
     state.orders = data.orders;
+    state.refunds = data.refunds || [];
   } else {
     state.user = { id: uid(), name: '', credit: 100, income: 0, deposit: 0 };
     state.orders = seedOrders();
+    state.refunds = [];
     save();
   }
-  if (location.hash === '#admin') state.view = 'admin';
   render();
   updateUserUI();
   if (!state.user.name) showWelcome();
-}const STATUS_MAP = {
+}
+
+const STATUS_MAP = {
   pending:   { text: '待审核', cls: 'status-pending' },
   confirm:   { text: '待确认', cls: 'status-confirm' },
   paid:      { text: '已收款', cls: 'status-paid' },
@@ -476,19 +317,10 @@ function viewHall() {
   return `
   <div class="page">
     <div class="order-tabs">
-      ${tabs.map(t => `
-        <button class="order-tab${state.orderTab === t.id ? ' active' : ''}"
-                data-action="order-tab" data-tab="${t.id}">${t.name}</button>
-      `).join('')}
+      ${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${t.name}</button>`).join('')}
     </div>
     <div class="order-list">
-      ${list.length ? list.map(orderCard).join('') : `
-        <div class="empty">
-          <div class="empty-ico">📭</div>
-          <h3>暂无订单</h3>
-          <p>该分类下还没有订单，稍后再来看看吧</p>
-        </div>
-      `}
+      ${list.length ? list.map(orderCard).join('') : `<div class="empty"><div class="empty-ico">📭</div><h3>暂无订单</h3><p>该分类下还没有订单</p></div>`}
     </div>
   </div>`;
 }
@@ -509,8 +341,7 @@ function orderCard(o) {
   else if (!enough) { btnText = `需押金 ${required} USDT · 去充值`; btnClass = 'order-btn need-deposit'; btnAction = 'deposit'; }
 
   const btnAttr = btnAction ? `data-action="${btnAction}" data-id="${o.id}"` : 'disabled';
-  const depositTip = (canGrab && !enough)
-    ? `<div class="deposit-tip">🔒 当前押金 ${state.user.deposit} USDT，抢此单需 ${required} USDT</div>` : '';
+  const depositTip = (canGrab && !enough) ? `<div class="deposit-tip">🔒 当前押金 ${state.user.deposit} USDT，抢此单需 ${required} USDT</div>` : '';
 
   return `
   <div class="order-card" data-action="open" data-id="${o.id}">
@@ -531,43 +362,6 @@ function orderCard(o) {
   </div>`;
 }
 
-function viewPost() {
-  return `
-  <div class="page">
-    <div class="form-card">
-      <h2 style="font-size:18px;font-weight:800;margin-bottom:20px;">发布订单</h2>
-      <label class="field">
-        <span class="field-label">收款金额（元）<i>*</i></span>
-        <input class="input" name="amount" type="number" min="0.01" step="0.01" required placeholder="例如：1000.00">
-      </label>
-      <label class="field">
-        <span class="field-label">返佣金额（元）<i>*</i></span>
-        <input class="input" name="commission" type="number" min="0.01" step="0.01" required placeholder="例如：100.00">
-      </label>
-      <div class="form-row">
-        <label class="field">
-          <span class="field-label">收款类型 <i>*</i></span>
-          <select class="input" name="payType" required>
-            <option value="支付宝固定小额">支付宝固定小额</option>
-            <option value="银行转账">银行转账</option>
-            <option value="微信收款码">微信收款码</option>
-            <option value="其他方式">其他方式</option>
-          </select>
-        </label>
-        <label class="field">
-          <span class="field-label">订单号</span>
-          <input class="input" name="orderNo" value="系统自动生成" disabled>
-        </label>
-      </div>
-      <label class="field">
-        <span class="field-label">订单备注</span>
-        <textarea class="input" name="desc" rows="3" placeholder="补充说明，例如操作要求、注意事项等"></textarea>
-      </label>
-      <button class="btn btn-primary btn-block" type="submit" data-action="submit-post">确认发布</button>
-    </div>
-  </div>`;
-}
-
 function viewMine() {
   const all = state.orders.filter(o => myTaker(o));
   const working = all.filter(o => myTaker(o).status === 'working');
@@ -577,12 +371,7 @@ function viewMine() {
 
   let listHtml;
   if (!list.length) {
-    listHtml = `
-      <div class="empty">
-        <div class="empty-ico">📥</div>
-        <h3>暂无记录</h3>
-        <p>${state.mineTab === 'working' ? '去订单大厅抢一单试试' : '完成的订单会显示在这里'}</p>
-      </div>`;
+    listHtml = `<div class="empty"><div class="empty-ico">📥</div><h3>暂无记录</h3><p>${state.mineTab === 'working' ? '去订单大厅抢一单试试' : '完成的订单会显示在这里'}</p></div>`;
   } else {
     listHtml = `<div class="order-list">${list.map(mineOrderCard).join('')}</div>`;
   }
@@ -618,156 +407,64 @@ function mineOrderCard(o) {
   </div>`;
 }
 
-function viewPosted() {
-  const mine = state.orders.filter(o => o.publisherId === state.user.id).sort((a, b) => b.createdAt - a.createdAt);
-  if (!mine.length) {
-    return `
-    <div class="page">
-      <div class="empty" style="margin-top:20px">
-        <div class="empty-ico">📤</div>
-        <h3>还没有发布过订单</h3>
-        <p>点击下方按钮发布你的第一个订单</p>
-      </div>
-    </div>`;
-  }
-  return `
-  <div class="page">
-    <div class="order-list">
-      ${mine.map(o => {
-        const st = statusOf(o.status);
-        return `
-        <div class="order-card" data-action="open" data-id="${o.id}">
-          <div class="order-header">
-            <div class="order-no">订单号：${esc(o.orderNo)}</div>
-            <div class="order-status ${st.cls}">${st.text}</div>
-          </div>
-          <div class="order-amounts">
-            <div class="amount-item"><span class="amount-label">收款金额：</span><span class="amount-value red">${Number(o.amount).toFixed(2)}</span></div>
-            <div class="amount-item"><span class="amount-label">返佣金额：</span><span class="amount-value gold">${Number(o.commission).toFixed(2)}</span></div>
-          </div>
-          <div class="order-info">
-            <div class="order-info-row"><span class="label">创建时间：</span><span class="val">${fmtDateTime(o.createdAt)}</span></div>
-            <div class="order-info-row"><span class="label">收款类型：</span><span class="val">${esc(o.payType)}</span></div>
-          </div>
-          <button class="order-btn done" disabled>${o.status === 'pending' ? '等待抢单' : st.text}</button>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`;
-}
-
+// 充值押金（移除手动转账和 ERC20）
 function viewDeposit() {
-  const net = state.depositNet;
-  const wallet = state.depositWallet;
-  const addr = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
+  const addr = CONFIG.trc20;
   return `
   <div class="page">
     <div class="form-card">
       <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">充值押金</h2>
-      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">使用 USDT 充值，抢单前需缴纳押金</p>
+      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">使用 USDT (TRC20) 充值，抢单前需缴纳押金</p>
+      
       <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:16px;margin-bottom:18px">
         <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
         <div style="font-size:24px;font-weight:800;color:var(--brand);margin-top:2px">${state.user.deposit} <span style="font-size:13px">USDT</span></div>
       </div>
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div>
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <button class="chip-cat${wallet === 'imtoken' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="wallet" data-wallet="imtoken">🦊 imToken</button>
-        <button class="chip-cat${wallet === 'manual' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="wallet" data-wallet="manual">✍️ 手动转账</button>
+
+      <div class="notice notice-dark" style="margin-bottom:14px">
+        🦊 点击「一键支付」将在 imToken 内置浏览器打开支付页面，自动填充收款地址和金额
       </div>
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择网络</div>
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <button class="chip-cat${net === 'TRC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="net" data-net="TRC20">TRC20（推荐）</button>
-        <button class="chip-cat${net === 'ERC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="net" data-net="ERC20">ERC20</button>
-      </div>
-      ${wallet === 'imtoken' ? `
-        <div class="notice notice-dark" style="margin-bottom:14px">
-          🦊 点击「一键支付」将在 imToken 内置浏览器打开支付页面，自动填充收款地址和金额
-        </div>
-        <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">收款地址（${net}）</div>
-        <div style="background:#f8f9fd;border-radius:10px;padding:10px 14px;font-size:12px;word-break:break-all;color:var(--ink2);margin-bottom:14px">${esc(addr)}</div>
-        <label class="field" style="margin-bottom:12px">
-          <span class="field-label">支付金额（USDT）</span>
-          <input class="input" id="deposit-amount" type="number" min="${CONFIG.minDeposit}" step="1" value="100">
-        </label>
-        <button class="btn btn-imtoken btn-block" data-action="pay-imtoken">🦊 一键支付 · 打开 imToken</button>
-      ` : `
-        <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">充值地址（${net}）</div>
-        <div style="display:flex;gap:8px;margin-bottom:14px">
-          <input class="input" id="usdt-addr" value="${esc(addr)}" readonly style="font-size:12px;flex:1">
-          <button class="btn btn-ghost" data-action="copy-addr" style="padding:0 14px;flex:0 0 auto">复制</button>
-        </div>
-        <div style="display:flex;justify-content:center;margin:14px 0">
-          <div id="qr-box" class="qr-wrap"><div class="qr-loading">二维码加载中…</div></div>
-        </div>
-        <label class="field" style="margin-bottom:12px">
-          <span class="field-label">充值金额（USDT）</span>
-          <input class="input" id="deposit-amount" type="number" min="${CONFIG.minDeposit}" step="1" value="100">
-        </label>
-        <div class="notice" style="margin-bottom:14px">⚠️ ${esc(CONFIG.notice)}</div>
-        <button class="btn btn-primary btn-block" data-action="confirm-deposit" data-id="">我已完成支付</button>
-      `}
+      
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">收款地址（TRC20）</div>
+      <div style="background:#f8f9fd;border-radius:10px;padding:10px 14px;font-size:12px;word-break:break-all;color:var(--ink2);margin-bottom:14px">${esc(addr)}</div>
+      
+      <label class="field" style="margin-bottom:12px">
+        <span class="field-label">支付金额（USDT）</span>
+        <input class="input" id="deposit-amount" type="number" min="${CONFIG.minDeposit}" step="1" value="100">
+      </label>
+      
+      <button class="btn btn-imtoken btn-block" data-action="pay-imtoken">🦊 一键支付 · 打开 imToken</button>
       <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(CONFIG.support)}</div>
     </div>
   </div>`;
 }
 
-function viewAdmin() {
-  const net = state.depositNet;
-  const addr = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
+// 新增押金退款页面
+function viewRefund() {
   return `
   <div class="page">
-    <div class="admin-head">
-      <span class="admin-badge">⚙️ 管理后台</span>
-      <span style="font-size:12.5px;color:var(--ink3)">修改后自动保存并同步到客户端</span>
-    </div>
-    <div class="admin-sec">
-      <h3>押金收款地址</h3>
-      <label class="field">
-        <span class="field-label">TRC20 地址（波场网络）</span>
-        <input class="input" id="cfg-trc20" maxlength="80" value="${esc(CONFIG.trc20)}">
-      </label>
-      <label class="field" style="margin-bottom:0">
-        <span class="field-label">ERC20 地址（以太坊网络）</span>
-        <input class="input" id="cfg-erc20" maxlength="80" value="${esc(CONFIG.erc20)}">
-      </label>
-    </div>
-    <div class="admin-sec">
-      <h3>押金规则</h3>
-      <div class="form-row">
-        <label class="field">
-          <span class="field-label">押金比例（%）</span>
-          <input class="input" id="cfg-ratio" type="number" min="1" max="100" step="1" value="${Math.round(CONFIG.ratio * 100)}">
-        </label>
-        <label class="field">
-          <span class="field-label">最低押金（USDT）</span>
-          <input class="input" id="cfg-min" type="number" min="1" step="1" value="${CONFIG.minDeposit}">
-        </label>
+    <div class="form-card">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">押金退款</h2>
+      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">申请退还押金，审核通过后将退回至您的钱包</p>
+      
+      <div style="background:#f8f9fd;border:1px solid #e8eaf1;border-radius:12px;padding:16px;margin-bottom:18px">
+        <div style="font-size:12.5px;color:var(--ink3)">当前可退押金</div>
+        <div style="font-size:24px;font-weight:800;color:var(--ink);margin-top:2px">${state.user.deposit} <span style="font-size:13px">USDT</span></div>
       </div>
-    </div>
-    <div class="admin-sec">
-      <h3>提示文案</h3>
+
       <label class="field">
-        <span class="field-label">充值页提示</span>
-        <input class="input" id="cfg-notice" maxlength="120" value="${esc(CONFIG.notice)}">
+        <span class="field-label">退款金额（USDT）<i>*</i></span>
+        <input class="input" id="refund-amount" type="number" min="1" step="1" max="${state.user.deposit}" placeholder="例如：100">
       </label>
-      <label class="field" style="margin-bottom:0">
-        <span class="field-label">客服信息</span>
-        <input class="input" id="cfg-support" maxlength="60" value="${esc(CONFIG.support)}">
+      
+      <label class="field">
+        <span class="field-label">接收退款的 TRC20 地址 <i>*</i></span>
+        <input class="input" id="refund-address" placeholder="请输入您的 TRC20 钱包地址">
       </label>
-    </div>
-    <div class="admin-sec">
-      <h3>二维码预览</h3>
-      <div style="display:flex;gap:8px;margin-bottom:14px">
-        <button class="chip-cat${net === 'TRC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="admin-net" data-net="TRC20">TRC20</button>
-        <button class="chip-cat${net === 'ERC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="admin-net" data-net="ERC20">ERC20</button>
-      </div>
-      <div class="qr-wrap" id="admin-qr"><div class="qr-loading">二维码加载中…</div></div>
-      <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:10px;word-break:break-all;padding:0 10px">${esc(addr)}</div>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn-primary" data-action="save-cfg">保存配置</button>
-      <button class="btn btn-ghost" data-action="reset-cfg">恢复默认</button>
-      <button class="btn btn-ghost" data-action="admin-close">返回订单大厅</button>
+
+      <div class="notice" style="margin-bottom:14px">⚠️ 请确保地址正确，提交后需管理员审核，审核通过后 24 小时内到账</div>
+      
+      <button class="btn btn-primary btn-block" data-action="submit-refund">提交退款申请</button>
     </div>
   </div>`;
 }
@@ -775,16 +472,8 @@ function viewAdmin() {
 function render() {
   const view = $('#view');
   if (!view) return;
-  const map = { hall: viewHall, post: viewPost, mine: viewMine, posted: viewPosted, deposit: viewDeposit, admin: viewAdmin };
+  const map = { hall: viewHall, mine: viewMine, deposit: viewDeposit, refund: viewRefund };
   view.innerHTML = (map[state.view] || viewHall)();
-  if (state.view === 'deposit' && state.depositWallet === 'manual') {
-    const addr = state.depositNet === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
-    renderQR($('#qr-box'), addr);
-  }
-  if (state.view === 'admin') {
-    const addr = state.depositNet === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
-    renderQR($('#admin-qr'), addr);
-  }
   $$('[data-action="nav"]').forEach(el => {
     el.classList.toggle('active', el.dataset.view === state.view);
   });
@@ -794,7 +483,6 @@ function render() {
 function go(view) {
   if (state.view === view) return;
   state.view = view;
-  if (view !== 'admin' && location.hash === '#admin') history.replaceState(null, '', '#');
   closeModal();
   render();
 }
@@ -807,7 +495,9 @@ function updateUserUI() {
   if (sbN) sbN.textContent = name;
   if (mhA) mhA.textContent = ch;
   if (sbS) sbS.textContent = `押金 ${state.user.deposit} USDT · 收入 ¥${state.user.income}`;
-}function openModal(html) {
+}
+
+function openModal(html) {
   $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">${html}</div></div>`;
   document.body.style.overflow = 'hidden';
 }
@@ -816,57 +506,20 @@ function closeModal() {
   document.body.style.overflow = '';
 }
 
-function renderQR(el, text) {
-  if (!el) return;
-  if (!text) { el.innerHTML = `<div class="qr-loading">地址为空</div>`; return; }
-  const size = 300;
-  const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=10&data=${encodeURIComponent(text)}`;
-  el.innerHTML = `
-    <img src="${url}" alt="二维码" crossorigin="anonymous"
-         onload="this.parentNode.querySelector('.qr-loading')?.remove()">
-    <div class="qr-loading">二维码加载中…</div>
-  `;
-}
-
-function copyText(text) {
-  if (!text) return;
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-  } else {
-    fallbackCopy(text);
-  }
-}
-function fallbackCopy(text) {
-  const tmp = document.createElement('textarea');
-  tmp.value = text;
-  tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
-  document.body.appendChild(tmp);
-  tmp.select();
-  try { document.execCommand('copy'); } catch (e) {}
-  tmp.remove();
-}
-
 /* =========================================================
-   🔥 一键支付 imToken（Universal Link 方案）
-   通过 https://connect.token.im/link/navigate/DappView?url=xxx
-   在 imToken 内置浏览器中打开支付页面 pay.html
+   一键支付 imToken（Universal Link 方案）
+   只保留 TRC20 网络
    ========================================================= */
 function payWithImToken() {
-  const net = state.depositNet;
-  const to = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
+  const to = CONFIG.trc20;
   const amount = Number($('#deposit-amount')?.value) || 0;
 
   if (!to) { toast('收款地址未配置'); return; }
   if (amount < 1) { toast('请输入支付金额'); return; }
 
-  // 构建支付页 URL（pay.html 部署在同目录）
-  const chain = net === 'TRC20' ? 'trx' : 'eth';
-  const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=${chain}`;
-
-  // imToken Universal Link
+  const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx`;
   const imtokenUniversalLink = `https://connect.token.im/link/navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
 
-  // 用 <a> 标签触发跳转
   const a = document.createElement('a');
   a.href = imtokenUniversalLink;
   a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
@@ -876,9 +529,6 @@ function payWithImToken() {
   setTimeout(() => { try { a.remove(); } catch (e) {} }, 500);
 }
 
-/* =========================================================
-   欢迎 & 个人资料
-   ========================================================= */
 function showWelcome() {
   openModal(`
     <div style="padding:30px 24px;text-align:center">
@@ -922,7 +572,6 @@ function editName() {
         <div class="dg-item"><div class="dg-k">押金余额</div><div class="dg-v" style="color:var(--brand)">${state.user.deposit} USDT</div></div>
       </div>
       <button class="btn btn-primary btn-block" data-action="open-deposit" style="margin-top:14px">充值押金（USDT）</button>
-      <button class="btn btn-ghost btn-block" data-action="admin" style="margin-top:8px">进入管理后台</button>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" data-action="close-modal">取消</button>
@@ -935,9 +584,7 @@ function editName() {
 function openGrabModal(id) {
   const o = getOrder(id);
   if (!o) return;
-  if (o.status !== 'pending' || myTaker(o) || o.publisherId === state.user.id) {
-    toast('这个订单已经不能抢了'); return;
-  }
+  if (o.status !== 'pending' || myTaker(o) || o.publisherId === state.user.id) { toast('这个订单已经不能抢了'); return; }
   if (!hasEnoughDeposit(o)) { openDepositModal(o); return; }
   openModal(`
     <div class="modal-head">
@@ -985,8 +632,7 @@ let currentDepositOrder = null;
 function openDepositModal(order) {
   currentDepositOrder = order;
   const required = order ? depositRequired(order) : 50;
-  const net = state.depositNet;
-  const addr = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
+  const addr = CONFIG.trc20;
 
   openModal(`
     <div class="modal-head">
@@ -999,18 +645,10 @@ function openDepositModal(order) {
         <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
         <div style="font-size:22px;font-weight:800;color:var(--brand);margin-top:2px">${state.user.deposit} <span style="font-size:13px">USDT</span></div>
       </div>
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择网络</div>
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <button class="chip-cat${net === 'TRC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="modal-net" data-net="TRC20">TRC20（推荐）</button>
-        <button class="chip-cat${net === 'ERC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="modal-net" data-net="ERC20">ERC20</button>
-      </div>
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">充值地址（${net}）</div>
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">充值地址（TRC20）</div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
         <input class="input" id="usdt-addr" value="${esc(addr)}" readonly style="font-size:12px;flex:1">
         <button class="btn btn-ghost" data-action="copy-addr" style="padding:0 14px;flex:0 0 auto">复制</button>
-      </div>
-      <div style="display:flex;justify-content:center;margin:14px 0">
-        <div id="qr-box" class="qr-wrap"><div class="qr-loading">二维码加载中…</div></div>
       </div>
       <label class="field" style="margin-bottom:12px">
         <span class="field-label">充值金额（USDT）</span>
@@ -1024,7 +662,6 @@ function openDepositModal(order) {
       <button class="btn btn-primary" data-action="confirm-deposit" data-id="${order ? order.id : ''}">我已完成支付</button>
     </div>
   `);
-  setTimeout(() => renderQR($('#qr-box'), addr), 30);
 }
 
 function submitDeposit(orderId) {
@@ -1038,6 +675,29 @@ function submitDeposit(orderId) {
   if (state.view === 'deposit') render();
   toast(`充值成功，当前押金 ${state.user.deposit} USDT`);
   if (orderId) setTimeout(() => openGrabModal(orderId), 400);
+}
+
+// 新增退款提交逻辑
+function submitRefund() {
+  const amount = Number($('#refund-amount')?.value) || 0;
+  const address = $('#refund-address')?.value.trim();
+
+  if (amount <= 0 || amount > state.user.deposit) { toast('退款金额不正确'); return; }
+  if (!address) { toast('请输入接收退款的地址'); return; }
+
+  state.refunds = state.refunds || [];
+  state.refunds.push({
+    id: uid(),
+    userId: state.user.id,
+    userName: state.user.name || '未命名用户',
+    amount: amount,
+    address: address,
+    status: 'pending',
+    createdAt: Date.now()
+  });
+  save();
+  toast('退款申请已提交，等待管理员审核');
+  go('hall');
 }
 
 function openDetail(id) {
@@ -1066,23 +726,18 @@ function openDetail(id) {
 
   let foot = '';
   if (canGrab) {
-    foot = `<button class="btn btn-ghost" data-action="close-modal">关闭</button>
-            <button class="btn btn-primary" data-action="grab" data-id="${o.id}">立即抢单</button>`;
+    foot = `<button class="btn btn-ghost" data-action="close-modal">关闭</button><button class="btn btn-primary" data-action="grab" data-id="${o.id}">立即抢单</button>`;
   } else if (tk && tk.status === 'working') {
-    foot = `<button class="btn btn-ghost" data-action="close-modal">关闭</button>
-            <button class="btn btn-primary" data-action="submit-work" data-id="${o.id}">提交完成</button>`;
+    foot = `<button class="btn btn-ghost" data-action="close-modal">关闭</button><button class="btn btn-primary" data-action="submit-work" data-id="${o.id}">提交完成</button>`;
   } else if (tk && tk.status === 'done') {
-    foot = `<div class="notice" style="flex:1">✅ 订单已完成，返佣 ¥${Number(o.commission).toFixed(2)} 已结算</div>
-            <button class="btn btn-ghost" data-action="close-modal">关闭</button>`;
+    foot = `<div class="notice" style="flex:1">✅ 订单已完成，返佣 ¥${Number(o.commission).toFixed(2)} 已结算</div><button class="btn btn-ghost" data-action="close-modal">关闭</button>`;
   } else {
     foot = `<div style="flex:1"></div><button class="btn btn-ghost" data-action="close-modal">关闭</button>`;
   }
 
   openModal(`
     <div class="modal-head">
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="order-status ${st.cls}" style="font-size:13px">${st.text}</span>
-      </div>
+      <div style="display:flex;align-items:center;gap:8px"><span class="order-status ${st.cls}" style="font-size:13px">${st.text}</span></div>
       <button class="icon-btn" data-action="close-modal">✕</button>
     </div>
     <div class="modal-body">
@@ -1119,52 +774,7 @@ function submitWork(id) {
   toast(`订单完成，返佣 ¥${Number(o.commission).toFixed(2)} 已到账`);
 }
 
-function submitPost(form) {
-  const fd = new FormData(form);
-  const amount = Number(fd.get('amount')) || 0;
-  const commission = Number(fd.get('commission')) || 0;
-  const payType = String(fd.get('payType') || '');
-  const desc = String(fd.get('desc') || '').trim();
-  if (amount <= 0 || commission <= 0 || !payType) { toast('请填写完整的订单信息'); return; }
-  const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
-  state.orders.unshift({
-    id: uid(), orderNo, amount, commission, payType, desc,
-    createdAt: Date.now(), status: 'pending',
-    publisherId: state.user.id, publisherName: state.user.name || '我',
-    credit: state.user.credit, takers: [],
-  });
-  save();
-  state.view = 'posted';
-  render();
-  toast('订单发布成功 🎉');
-}
-
-function saveAdminConfig() {
-  const trc20 = ($('#cfg-trc20')?.value || '').trim();
-  const erc20 = ($('#cfg-erc20')?.value || '').trim();
-  const ratioPct = Number($('#cfg-ratio')?.value) || 10;
-  const minD = Number($('#cfg-min')?.value) || 10;
-  const notice = ($('#cfg-notice')?.value || '').trim();
-  const support = ($('#cfg-support')?.value || '').trim();
-  if (!trc20 && !erc20) { toast('至少填写一个收款地址'); return; }
-  CONFIG.trc20 = trc20;
-  CONFIG.erc20 = erc20;
-  CONFIG.ratio = Math.max(0.01, Math.min(1, ratioPct / 100));
-  CONFIG.minDeposit = Math.max(1, minD);
-  CONFIG.notice = notice || DEFAULT_CONFIG.notice;
-  CONFIG.support = support;
-  saveConfig();
-  toast('配置已保存');
-  render();
-}
-
-function resetAdminConfig() {
-  if (!confirm('确定恢复默认配置吗？')) return;
-  CONFIG = Object.assign({}, DEFAULT_CONFIG);
-  saveConfig();
-  toast('已恢复默认');
-  render();
-}let toastTimer = null;
+let toastTimer = null;
 function toast(msg) {
   $$('.toast').forEach(el => el.remove());
   const el = document.createElement('div');
@@ -1181,10 +791,8 @@ function toast(msg) {
 
 document.addEventListener('click', e => {
   if (e.target.classList && e.target.classList.contains('overlay')) { closeModal(); return; }
-
   const el = e.target.closest('[data-action]');
   if (!el) return;
-
   const { action, id } = el.dataset;
 
   switch (action) {
@@ -1200,18 +808,6 @@ document.addEventListener('click', e => {
     case 'save-name': saveName(); break;
     case 'deposit': openDepositModal(getOrder(id)); break;
     case 'open-deposit': closeModal(); setTimeout(() => openDepositModal(null), 100); break;
-    case 'wallet':
-      state.depositWallet = el.dataset.wallet;
-      if (state.view === 'deposit') render();
-      break;
-    case 'net':
-      state.depositNet = el.dataset.net;
-      if (state.view === 'deposit') render();
-      break;
-    case 'modal-net':
-      state.depositNet = el.dataset.net;
-      openDepositModal(currentDepositOrder);
-      break;
     case 'pay-imtoken': payWithImToken(); break;
     case 'copy-addr': {
       const addr = $('#usdt-addr')?.value || '';
@@ -1224,37 +820,23 @@ document.addEventListener('click', e => {
       break;
     }
     case 'confirm-deposit': submitDeposit(el.dataset.id || ''); break;
-    case 'admin':
-      closeModal();
-      state.view = 'admin';
-      history.replaceState(null, '', '#admin');
-      render();
-      break;
-    case 'admin-close': history.replaceState(null, '', '#'); go('hall'); break;
-    case 'admin-net': state.depositNet = el.dataset.net; render(); break;
-    case 'save-cfg': saveAdminConfig(); break;
-    case 'reset-cfg': resetAdminConfig(); break;
+    case 'submit-refund': submitRefund(); break; // 新增
   }
 });
 
-document.addEventListener('submit', e => {
-  if (e.target.closest('.form-card') && e.target.querySelector('input[name="amount"]')) {
-    e.preventDefault();
-    submitPost(e.target);
-  }
-});
+function fallbackCopy(text) {
+  const tmp = document.createElement('textarea');
+  tmp.value = text;
+  tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+  document.body.appendChild(tmp);
+  tmp.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  tmp.remove();
+}
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
   if (e.key === 'Enter' && document.activeElement?.id === 'welcome-name') saveName();
-});
-
-window.addEventListener('hashchange', () => {
-  if (location.hash === '#admin') {
-    state.view = 'admin';
-    closeModal();
-    render();
-  }
 });
 
 boot();
