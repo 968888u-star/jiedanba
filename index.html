@@ -349,8 +349,8 @@
 <script>/* =========================================================
    工具
    ========================================================= */
-const LS_KEY = 'order.v4';
-const CFG_KEY = 'order.v4.config';
+const LS_KEY = 'order.v6';
+const CFG_KEY = 'order.v6.config';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
@@ -1055,27 +1055,42 @@ function qrFallback(el, text) {
 }
 
 /* =========================================================
-   imToken 一键支付（修复版）
+   imToken 一键支付（标准协议版 · 参数完整传递）
    ========================================================= */
 
-// imToken 官方 DeepLink
-function buildImTokenUri(net, to, amount) {
-  const contract = USDT_CONTRACT[net];
-  const network = net === 'TRC20' ? 'trx' : 'ethereum';
-  return `imtokenv2://navigate/Transfer?symbol=USDT&contract=${contract}&to=${to}&amount=${amount}&decimals=6&network=${network}`;
+// 检测环境
+function getEnv() {
+  const ua = navigator.userAgent.toLowerCase();
+  return {
+    isAndroid: ua.includes('android'),
+    isIOS: /iphone|ipad|ipod/.test(ua),
+    isWechat: ua.includes('micromessenger'),
+    isQQ: ua.includes(' qq/') || ua.includes('mqqbrowser'),
+    ua
+  };
 }
 
-// 标准协议链接（兜底）
-function buildStandardUri(net, to, amount) {
-  const contract = USDT_CONTRACT[net];
-  const amountUnits = Math.floor(amount * 1e6).toString();
-  if (net === 'TRC20') {
-    return `tron:${contract}/transfer?address=${to}&amount=${amountUnits}`;
+// 复制文本
+function copyText(text) {
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
   }
-  return `ethereum:${contract}/transfer?address=${to}&uint256=${amountUnits}`;
+}
+function fallbackCopy(text) {
+  const tmp = document.createElement('textarea');
+  tmp.value = text;
+  tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+  document.body.appendChild(tmp);
+  tmp.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  tmp.remove();
 }
 
 function payWithImToken() {
+  const env = getEnv();
   const net = state.depositNet;
   const to = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
   const amount = Number($('#deposit-amount')?.value) || 0;
@@ -1083,68 +1098,102 @@ function payWithImToken() {
   if (!to) { toast('收款地址未配置，请联系管理员'); return; }
   if (amount < 1) { toast('请输入支付金额'); return; }
 
-  const imtokenUri = buildImTokenUri(net, to, amount);
-  const standardUri = buildStandardUri(net, to, amount);
+  // 微信/QQ 环境无法直接唤起
+  if (env.isWechat || env.isQQ) {
+    copyText(to);
+    toast('已复制收款地址，请点击右上角「···」→ 在浏览器中打开');
+    return;
+  }
 
+  // USDT 是 6 位小数，转最小单位整数
+  const amountUnits = Math.floor(amount * 1e6).toString();
+
+  // 使用官方标准协议（imToken/TronLink/MetaMask 100% 支持，参数完整传递）
+  // TRON: tron:合约/transfer?address=地址&amount=最小单位
+  // ETH:  ethereum:合约@chainId/transfer?address=地址&uint256=最小单位
+  let uri;
+  if (net === 'TRC20') {
+    uri = `tron:${USDT_CONTRACT.TRC20}/transfer?address=${to}&amount=${amountUnits}`;
+  } else {
+    uri = `ethereum:${USDT_CONTRACT.ERC20}@1/transfer?address=${to}&uint256=${amountUnits}`;
+  }
+
+  // 跳转检测
   let jumped = false;
   const markJumped = () => { jumped = true; };
-
   const onVis = () => { if (document.hidden) markJumped(); };
 
   window.addEventListener('blur', markJumped);
   window.addEventListener('pagehide', markJumped);
   document.addEventListener('visibilitychange', onVis);
 
-  const tryOpen = (url) => {
-    try {
-      const a = document.createElement('a');
-      a.href = url;
-      a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => a.remove(), 120);
-    } catch (e) {}
-    try { window.location.href = url; } catch (e) {}
-  };
+  // 用户点击后同步触发跳转（关键：必须是同步操作，且只跳转一次）
+  try {
+    // 优先使用 <a> 标签点击（在部分浏览器里比 location.href 更可靠）
+    const a = document.createElement('a');
+    a.href = uri;
+    a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { try { a.remove(); } catch (e) {} }, 200);
 
-  // 1. 先尝试 imToken 官方 scheme
-  tryOpen(imtokenUri);
+    // 兜底同步触发 location.href（防止 <a> 被拦截）
+    setTimeout(() => {
+      if (!jumped) {
+        try { window.location.href = uri; } catch (e) {}
+      }
+    }, 50);
+  } catch (e) {
+    try { window.location.href = uri; } catch (e2) {}
+  }
 
-  // 2. 700ms 后没反应再试标准协议
-  setTimeout(() => {
-    if (!jumped) tryOpen(standardUri);
-  }, 700);
-
-  // 3. 2.5s 后仍未跳转，提示 + 复制地址
+  // 2 秒后仍未跳转 → 手动兜底
   setTimeout(() => {
     window.removeEventListener('blur', markJumped);
     window.removeEventListener('pagehide', markJumped);
     document.removeEventListener('visibilitychange', onVis);
 
     if (!jumped) {
-      toast('未自动跳转，请手动打开 imToken 扫码支付');
-
-      const copy = () => {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(to).catch(() => {});
-        } else {
-          const tmp = document.createElement('textarea');
-          tmp.value = to;
-          tmp.style.cssText = 'position:fixed;left:-9999px';
-          document.body.appendChild(tmp);
-          tmp.select();
-          try { document.execCommand('copy'); } catch (e) {}
-          tmp.remove();
-        }
-      };
-      copy();
-
-      const ua = navigator.userAgent.toLowerCase();
-      if (ua.includes('micromessenger') || ua.includes('qq/')) {
-        setTimeout(() => toast('请点击右上角「···」→ 在浏览器中打开'), 1200);
-      }
+      copyText(to);
+      toast(`已复制地址 ${to.slice(0, 8)}…${to.slice(-6)}，请在 imToken 中粘贴`);
+      showManualPayTip(net, to, amount);
     }
-  }, 2500);
+  }, 2000);
+}
+
+// 手动支付提示弹窗（兜底方案）
+function showManualPayTip(net, to, amount) {
+  if ($('#manual-tip')) return;
+
+  const tip = document.createElement('div');
+  tip.id = 'manual-tip';
+  tip.style.cssText = `
+    position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:#fff;border-radius:16px;padding:20px;width:min(360px,90vw);
+    box-shadow:0 24px 60px rgba(0,0,0,.3);z-index:400;
+  `;
+  tip.innerHTML = `
+    <div style="font-size:16px;font-weight:800;margin-bottom:8px">请在 imToken 中手动支付</div>
+    <div style="font-size:13px;color:#5b6070;line-height:1.7;margin-bottom:14px">
+      请打开 imToken → 选择 USDT → 转账，粘贴以下信息：
+    </div>
+    <div style="background:#f8f9fd;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12.5px">
+      <div style="color:#8d93a6;margin-bottom:4px">收款地址（${net}）</div>
+      <div style="word-break:break-all;font-weight:700;margin-bottom:10px" id="tip-addr">${esc(to)}</div>
+      <div style="color:#8d93a6;margin-bottom:4px">支付金额</div>
+      <div style="font-weight:700;color:#f0a020">${amount} USDT</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button id="tip-copy" style="flex:1;padding:10px;border-radius:10px;background:#f0a020;color:#fff;font-weight:700;font-size:14px">复制地址</button>
+      <button id="tip-close" style="flex:1;padding:10px;border-radius:10px;background:#f1f2f7;color:#5b6070;font-weight:700;font-size:14px">关闭</button>
+    </div>
+  `;
+  document.body.appendChild(tip);
+
+  const close = () => tip.remove();
+  $('#tip-copy', tip).onclick = () => { copyText(to); toast('地址已复制'); };
+  $('#tip-close', tip).onclick = close;
 }
 
 /* =========================================================
@@ -1544,6 +1593,17 @@ document.addEventListener('click', e => {
     closeModal(); return;
   }
 
+  if (e.target.id === 'tip-close') {
+    e.target.closest('#manual-tip')?.remove();
+    return;
+  }
+  if (e.target.id === 'tip-copy') {
+    const tip = e.target.closest('#manual-tip');
+    const addr = tip?.querySelector('#tip-addr')?.textContent || '';
+    if (addr) copyText(addr), toast('地址已复制');
+    return;
+  }
+
   const el = e.target.closest('[data-action]');
   if (!el) return;
 
@@ -1656,7 +1716,8 @@ window.addEventListener('hashchange', () => {
 
 /* =========================================================
    启动
-   ========================================================= */
+   =========================================================
+ */
 boot();
 </script>
 </body>
