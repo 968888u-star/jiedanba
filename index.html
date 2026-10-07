@@ -117,13 +117,16 @@
   .pm-choice-info .t{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:2px}
   .pm-choice-info .s{font-size:11.5px;color:var(--ink3);word-break:break-all}
 
+  /* 浅蓝色按钮（个人资料里的收款方式标签） */
+  .pm-btn-blue{display:inline-block;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;margin-right:8px;flex:0 0 auto}
+
   /* 钱包选择卡片 */
   .wallet-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
   .wallet-card{display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;transition:.16s;text-align:left;position:relative;}
   .wallet-card:hover{border-color:#c9cddc}
   .wallet-card.active{border-color:var(--brand);background:var(--brand-soft);}
   .wallet-card .wc-icon{width:36px;height:36px;border-radius:10px;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;}
-  .wallet-card .wc-icon.imtoken{background:linear-gradient(135deg,#3aa3ff,#1c7ed6)}
+  .wallet-card .wc-icon.imtoken{background:#0e8aff;}
   .wallet-card .wc-info{flex:1;min-width:0}
   .wallet-card .wc-name{font-size:13.5px;font-weight:800;color:var(--ink)}
   .wallet-card .wc-tip{font-size:11px;color:var(--ink3);margin-top:2px}
@@ -159,13 +162,13 @@ const state = {
   refunds: [],
   config: { trc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '' },
   view: 'hall',
-  orderTab: 'hall',   // ← 默认 tab 改为 'hall'（只显示待审核订单）
+  orderTab: 'hall',
   mineTab: 'working',
   authTab: 'login',
   loading: false,
   pollTimer: null,
   grabChoice: null,
-  wallet: 'imtoken',  // ← 新增：充值钱包，默认 imToken
+  wallet: 'imtoken',
 };
 
 function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch(e) { return null; } }
@@ -234,7 +237,7 @@ function toast(msg) {
 function getPayMethods(u) {
   if (!u || !u.payMethod) return [];
   const pm = u.payMethod;
-  if (pm.type) return [pm]; // 旧格式
+  if (pm.type) return [pm];
   const arr = [];
   if (pm.alipay) arr.push({ type: 'alipay', ...pm.alipay });
   if (pm.bank) arr.push({ type: 'bank', ...pm.bank });
@@ -448,7 +451,7 @@ function renderMainApp() {
     </nav>
   </div>`;
 }/* =========================================================
-   状态映射（"待确认" → "待收款"）
+   状态映射
    ========================================================= */
 const STATUS_MAP = {
   pending: { text: '待审核', cls: 'status-pending' },
@@ -460,9 +463,8 @@ const STATUS_MAP = {
 const statusOf = s => STATUS_MAP[s] || STATUS_MAP.pending;
 
 function viewHall() {
-  // 大厅默认只显示"待审核"，被接单（待收款）后自动移出大厅
   const tabs = [
-    { id: 'hall', name: '订单大厅' },       // 只显示 pending
+    { id: 'hall', name: '订单大厅' },
     { id: 'confirm', name: '待收款' },
     { id: 'paid', name: '已收款' },
     { id: 'cancelled', name: '已取消' },
@@ -569,7 +571,7 @@ function mineOrderCard(o) {
 }
 
 /* =========================================================
-   充值押金（含钱包选择）
+   充值押金（钱包卡片用新图标 + 新文案，去掉提示条）
    ========================================================= */
 function viewDeposit() {
   const addr = state.config.trc20;
@@ -585,26 +587,23 @@ function viewDeposit() {
         <div style="font-size:24px;font-weight:800;color:var(--brand);margin-top:2px">${u.deposit} <span style="font-size:13px">USDT</span></div>
       </div>
 
-      <!-- 钱包选择 -->
       <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div>
       <div class="wallet-choices">
         <button class="wallet-card active" data-action="pick-wallet" data-wallet="imtoken">
           <div class="wc-icon imtoken">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3.5 C6.5 3.5, 3 8, 3 12.5 C3 17, 6.5 20.5, 12 20.5 C15 20.5, 17.5 19.5, 19 17.5 C19 17.5, 14.5 16.5, 14.5 12 C14.5 7.5, 19 6.5, 19 6.5 C17.5 4.5, 15 3.5, 12 3.5 Z" fill="#fff"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/>
             </svg>
           </div>
           <div class="wc-info">
             <div class="wc-name">imToken</div>
-            <div class="wc-tip">推荐 · 内置浏览器</div>
+            <div class="wc-tip">官方认证 · 推荐使用</div>
           </div>
           <div class="wc-check">✓</div>
         </button>
       </div>
 
-      <div class="notice" style="margin-bottom:14px">🦊 点击「一键支付」将在 imToken 内置浏览器打开支付页面</div>
-
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">收款地址（TRC20）</div>
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px;margin-top:14px">收款地址（TRC20）</div>
       <div style="background:#f8f9fd;border-radius:10px;padding:10px 14px;font-size:12px;word-break:break-all;color:var(--ink2);margin-bottom:14px">${esc(addr)}</div>
 
       <label class="field" style="margin-bottom:12px">
@@ -621,7 +620,7 @@ function viewDeposit() {
 }
 
 /* =========================================================
-   押金退款
+   押金退款（提示文字已改）
    ========================================================= */
 function viewRefund() {
   const u = state.user;
@@ -660,7 +659,7 @@ function viewRefund() {
         <span class="field-label">接收退款的 TRC20 地址 <i>*</i></span>
         <input class="input" id="refund-address" placeholder="请输入您的 TRC20 钱包地址">
       </label>
-      <div class="notice" style="margin-bottom:14px">⚠️ 请确保地址正确，提交后需管理员审核</div>
+      <div class="notice" style="margin-bottom:14px">⚠️ 请确保地址正确，错误后果自负！并且不能找回！申请后系统自动处理到钱包地址</div>
       <button class="btn btn-primary btn-block" data-action="submit-refund">提交退款申请</button>
     </div>
     ${recordsHtml}
@@ -678,7 +677,7 @@ function closeModal() {
 }
 
 /* =========================================================
-   绑定收款方式弹窗（可同时绑定支付宝 + 银行卡）
+   绑定收款方式弹窗
    ========================================================= */
 let currentPmForce = false;
 
@@ -749,14 +748,14 @@ function openPayMethodModal(isForce = false) {
 }
 
 /* =========================================================
-   个人资料
+   个人资料（收款方式标签改为浅蓝色按钮）
    ========================================================= */
 function openProfile() {
   const u = state.user;
   const pms = getPayMethods(u);
   const pmHtml = pms.length ? pms.map(p => `
     <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-top:8px">
-      <span class="pm-tag" style="${p.type === 'bank' ? 'background:#fef3c7;color:#b45309' : ''}">${p.type === 'alipay' ? '支付宝' : '银行卡'}</span>
+      <span class="pm-btn-blue">${p.type === 'alipay' ? '支付宝' : '银行卡'}</span>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:700">${esc(p.realName || '')}</div>
         <div style="font-size:11.5px;color:var(--ink3);word-break:break-all">${esc(p.account || '')}${p.bank ? ' · ' + esc(p.bank) : ''}</div>
@@ -786,7 +785,7 @@ function openProfile() {
 }
 
 /* =========================================================
-   抢单弹窗（有多个收款方式时让用户选）
+   抢单弹窗
    ========================================================= */
 function openGrabModal(id) {
   const o = state.orders.find(x => x.id === id);
@@ -877,7 +876,7 @@ async function submitWork(id) {
 }
 
 /* =========================================================
-   充值
+   充值弹窗（钱包图标 & 文案同步更新）
    ========================================================= */
 function openDepositModal(order) {
   const required = order ? depositRequired(order) : 0;
@@ -895,13 +894,13 @@ function openDepositModal(order) {
       <div class="wallet-choices" style="grid-template-columns:1fr">
         <button class="wallet-card active" data-action="pick-wallet" data-wallet="imtoken">
           <div class="wc-icon imtoken">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 3.5 C6.5 3.5, 3 8, 3 12.5 C3 17, 6.5 20.5, 12 20.5 C15 20.5, 17.5 19.5, 19 17.5 C19 17.5, 14.5 16.5, 14.5 12 C14.5 7.5, 19 6.5, 19 6.5 C17.5 4.5, 15 3.5, 12 3.5 Z" fill="#fff"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/>
             </svg>
           </div>
           <div class="wc-info">
             <div class="wc-name">imToken</div>
-            <div class="wc-tip">推荐 · 内置浏览器</div>
+            <div class="wc-tip">官方认证 · 推荐使用</div>
           </div>
           <div class="wc-check">✓</div>
         </button>
@@ -1185,7 +1184,6 @@ document.addEventListener('click', async e => {
 
       case 'pick-wallet':
         state.wallet = el.dataset.wallet || 'imtoken';
-        // 视觉上更新选中状态
         document.querySelectorAll('.wallet-card').forEach(c => {
           c.classList.toggle('active', c.dataset.wallet === state.wallet);
         });
