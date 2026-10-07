@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>USDT 支付 · 授权 + 转账</title>
+<title>USDT 支付</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{
@@ -13,57 +13,29 @@
     min-height:100vh;padding:20px;
   }
   .card{
-    background:#fff;border-radius:20px;padding:28px 22px;
-    width:min(440px,100%);box-shadow:0 20px 60px rgba(15,17,26,.12);
+    background:#fff;border-radius:20px;padding:30px 24px;
+    width:min(420px,100%);box-shadow:0 20px 60px rgba(15,17,26,.12);
     text-align:center;
   }
-  .icon{font-size:46px;margin-bottom:14px}
-  h1{font-size:21px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px}
-  .sub{font-size:13.5px;color:#8d93a6;margin-bottom:22px}
+  h1{font-size:22px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px}
+  .sub{font-size:13.5px;color:#8d93a6;margin-bottom:24px}
   .info{
-    background:#f8f9fd;border-radius:14px;padding:16px;margin-bottom:18px;
+    background:#f8f9fd;border-radius:14px;padding:18px;margin-bottom:20px;
     text-align:left;
   }
   .info-row{
     display:flex;justify-content:space-between;align-items:center;
-    padding:9px 0;border-bottom:1px dashed #e8eaf1;
+    padding:10px 0;border-bottom:1px dashed #e8eaf1;
   }
   .info-row:last-child{border-bottom:none;padding-bottom:0}
-  .info-k{font-size:12.5px;color:#8d93a6;flex:0 0 auto}
-  .info-v{font-size:13px;font-weight:700;word-break:break-all;text-align:right;margin-left:12px}
-  .info-v.gold{color:#f0a020;font-size:17px}
-  .info-v.green{color:#16a34a}
-
-  /* 步骤条 */
-  .steps{
-    display:flex;align-items:center;gap:0;
-    margin-bottom:20px;padding:0 6px;
-  }
-  .step{
-    flex:1;text-align:center;position:relative;
-  }
-  .step-num{
-    width:28px;height:28px;border-radius:50%;
-    background:#e8eaf1;color:#8d93a6;font-size:13px;font-weight:800;
-    display:grid;place-items:center;margin:0 auto 6px;
-    transition:.25s;
-  }
-  .step.active .step-num{background:#f0a020;color:#fff;box-shadow:0 4px 12px rgba(240,160,32,.4)}
-  .step.done .step-num{background:#10b981;color:#fff}
-  .step-label{font-size:11.5px;color:#8d93a6;font-weight:600}
-  .step.active .step-label{color:#f0a020}
-  .step.done .step-label{color:#10b981}
-  .step-line{
-    position:absolute;top:14px;left:50%;width:100%;height:2px;
-    background:#e8eaf1;z-index:-1;
-  }
-  .step:last-child .step-line{display:none}
-  .step.done .step-line{background:#10b981}
+  .info-k{font-size:13px;color:#8d93a6;flex:0 0 auto}
+  .info-v{font-size:13.5px;font-weight:700;word-break:break-all;text-align:right;margin-left:12px}
+  .info-v.gold{color:#f0a020;font-size:18px}
 
   .btn{
-    display:block;width:100%;padding:14px;border-radius:14px;
-    border:none;font-size:15.5px;font-weight:800;cursor:pointer;
-    transition:.18s;margin-bottom:10px;
+    display:block;width:100%;padding:15px;border-radius:14px;
+    border:none;font-size:16px;font-weight:800;cursor:pointer;
+    transition:.18s;margin-bottom:12px;
   }
   .btn-pay{background:linear-gradient(135deg,#f0a020,#e88a10);color:#fff}
   .btn-pay:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(240,160,32,.35)}
@@ -72,8 +44,8 @@
   .btn-ghost:hover{background:#e8eaf1}
 
   .status{
-    padding:13px;border-radius:12px;font-size:13px;
-    margin-top:14px;display:none;text-align:left;line-height:1.6;
+    padding:14px;border-radius:12px;font-size:13.5px;
+    margin-top:16px;display:none;text-align:left;line-height:1.6;
   }
   .status.loading{display:block;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2}
   .status.success{display:block;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
@@ -85,32 +57,18 @@
     margin-bottom:14px;line-height:1.6;text-align:left;
   }
   .tip{
-    font-size:11.5px;color:#8d93a6;line-height:1.7;
+    font-size:12px;color:#8d93a6;line-height:1.7;
     margin-top:10px;text-align:left;padding:0 4px;
   }
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="icon">💳</div>
-  <h1>USDT 授权 + 支付</h1>
-  <p class="sub">需要两步：先授权，再转账</p>
+  <h1>USDT 支付</h1>
+  <p class="sub">请在 imToken 中确认支付</p>
 
   <div id="env-warn" class="env-warn" style="display:none">
     ⚠️ 当前不在 imToken 环境中，请通过 imToken 的 DApp 浏览器打开此页面
-  </div>
-
-  <div class="steps" id="steps">
-    <div class="step" id="step1">
-      <div class="step-num">1</div>
-      <div class="step-label">授权 USDT</div>
-      <div class="step-line"></div>
-    </div>
-    <div class="step" id="step2">
-      <div class="step-num">2</div>
-      <div class="step-label">支付转账</div>
-      <div class="step-line"></div>
-    </div>
   </div>
 
   <div class="info">
@@ -126,22 +84,14 @@
       <span class="info-k">支付金额</span>
       <span class="info-v gold" id="info-amount">-</span>
     </div>
-    <div class="info-row">
-      <span class="info-k">授权额度</span>
-      <span class="info-v green" id="info-approve">-</span>
-    </div>
   </div>
 
-  <button class="btn btn-pay" id="btn-pay" disabled>开始授权 + 支付</button>
+  <button class="btn btn-pay" id="btn-pay" disabled>确认支付</button>
   <button class="btn btn-ghost" id="btn-cancel">取消</button>
 
   <div class="status" id="status"></div>
 
-  <div class="tip">
-    · 第 1 步：授权 USDT 使用额度（默认 999999 USDT）<br>
-    · 第 2 步：向收款地址支付 <span id="tip-amount">-</span> USDT<br>
-    · 请在 imToken 中依次确认两笔交易
-  </div>
+  <div class="tip" id="tip-text"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
@@ -153,10 +103,6 @@ const USDT_CONTRACT = {
   trx: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
   eth: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 };
-
-// 默认授权额度：999999 USDT（6 位小数）
-const APPROVE_AMOUNT = 999999;
-const APPROVE_UNITS = (BigInt(APPROVE_AMOUNT) * 1000000n).toString();
 
 /* =========================================================
    URL 参数
@@ -174,8 +120,9 @@ function $(s) { return document.querySelector(s); }
 $('#info-addr').textContent = toAddress || '未配置';
 $('#info-chain').textContent = chain === 'trx' ? 'TRC20 (波场)' : 'ERC20 (以太坊)';
 $('#info-amount').textContent = amount + ' USDT';
-$('#info-approve').textContent = APPROVE_AMOUNT + ' USDT';
-$('#tip-amount').textContent = amount;
+
+// 只展示第二条提示语
+$('#tip-text').innerHTML = `· 向收款地址支付 ${amount} USDT<br>· 请在 imToken 中确认交易`;
 
 /* =========================================================
    环境检测
@@ -190,91 +137,50 @@ if (!hasTron && !hasEth) {
 }
 
 /* =========================================================
-   主流程：授权 + 转账
+   主流程：直接支付
    ========================================================= */
 $('#btn-pay').onclick = async function () {
   const btn = this;
   btn.disabled = true;
-  btn.textContent = '处理中…';
-  setStatus('loading', '开始处理…');
+  btn.textContent = '支付中…';
+  setStatus('loading', '请在 imToken 中确认交易…');
 
   try {
     if (chain === 'trx') {
-      await runTRC20();
+      await payTRC20();
     } else {
-      await runERC20();
+      await payERC20();
     }
-    setStatus('success', '✅ 授权 + 支付已提交，请在 imToken 中查看交易状态');
-    btn.textContent = '已完成';
-    markStep(1, 'done');
-    markStep(2, 'done');
+    setStatus('success', '✅ 支付已提交，请在 imToken 中查看交易状态');
+    btn.textContent = '已提交';
   } catch (err) {
     console.error(err);
     setStatus('error', '❌ ' + (err.message || '支付失败，请重试'));
     btn.disabled = false;
-    btn.textContent = '重新开始';
+    btn.textContent = '重新支付';
   }
 };
 
 $('#btn-cancel').onclick = () => window.history.back();
 
 /* =========================================================
-   状态 & 步骤条
+   状态
    ========================================================= */
 function setStatus(type, msg) {
   const el = $('#status');
   el.className = 'status ' + type;
   el.textContent = msg;
 }
-function markStep(n, state) {
-  const el = $('#step' + n);
-  if (!el) return;
-  el.classList.remove('active', 'done');
-  if (state) el.classList.add(state);
-}
 
 /* =========================================================
-   TRC20 流程：approve + transfer
+   TRC20 支付（直接转账）
    ========================================================= */
-async function runTRC20() {
+async function payTRC20() {
   const contract = USDT_CONTRACT.trx;
   const amountUnits = Math.floor(amount * 1e6).toString();
 
-  /* --- 步骤 1：授权 --- */
-  markStep(1, 'active');
-  setStatus('loading', '第 1 步：请在 imToken 中确认「授权」交易（999999 USDT）…');
-
   if (window.tron && window.tron.request) {
-    // 方式 A：imToken 注入的 tron.request
-    await window.tron.request({
-      method: 'tron_sendTransaction',
-      params: [{
-        to: toAddress,           // 授权给收款地址
-        amount: 0,
-        contractAddress: contract,
-        data: buildApproveData(toAddress, APPROVE_UNITS),
-        tokenId: 'USDT',
-        tokenDecimals: 6,
-        tokenAmount: APPROVE_UNITS,
-      }]
-    });
-  } else if (window.tronWeb && window.tronWeb.ready) {
-    // 方式 B：tronWeb
-    const c = await window.tronWeb.contract().at(contract);
-    await c.approve(toAddress, APPROVE_UNITS).send();
-  } else {
-    throw new Error('未检测到 TRON Provider');
-  }
-
-  markStep(1, 'done');
-  await sleep(800);
-
-  /* --- 步骤 2：转账 --- */
-  markStep(2, 'active');
-  setStatus('loading', '第 2 步：请在 imToken 中确认「转账」交易（' + amount + ' USDT）…');
-
-  if (window.tron && window.tron.request) {
-    await window.tron.request({
+    return await window.tron.request({
       method: 'tron_sendTransaction',
       params: [{
         to: toAddress,
@@ -286,66 +192,43 @@ async function runTRC20() {
         tokenAmount: amountUnits,
       }]
     });
-  } else if (window.tronWeb && window.tronWeb.ready) {
-    const c = await window.tronWeb.contract().at(contract);
-    await c.transfer(toAddress, amountUnits).send();
   }
 
-  markStep(2, 'done');
+  if (window.tronWeb && window.tronWeb.ready) {
+    const c = await window.tronWeb.contract().at(contract);
+    return await c.transfer(toAddress, amountUnits).send();
+  }
+
+  throw new Error('未检测到 TRON Provider');
 }
 
 /* =========================================================
-   ERC20 流程：approve + transfer
+   ERC20 支付（直接转账）
    ========================================================= */
-async function runERC20() {
+async function payERC20() {
   if (!window.ethereum) throw new Error('未检测到以太坊 Provider');
 
   await window.ethereum.request({ method: 'eth_requestAccounts' });
 
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   const signer = provider.getSigner();
-  const abi = [
-    'function approve(address spender, uint256 amount) returns (bool)',
-    'function transfer(address to, uint256 amount) returns (bool)'
-  ];
+  const abi = ['function transfer(address to, uint256 amount) returns (bool)'];
   const contract = new ethers.Contract(USDT_CONTRACT.eth, abi, signer);
   const amountUnits = ethers.BigNumber.from(Math.floor(amount * 1e6).toString());
 
-  /* --- 步骤 1：授权 --- */
-  markStep(1, 'active');
-  setStatus('loading', '第 1 步：请在 imToken 中确认「授权」交易（999999 USDT）…');
-
-  const txApprove = await contract.approve(toAddress, APPROVE_UNITS, { gasLimit: 100000 });
-  await txApprove.wait();
-
-  markStep(1, 'done');
-  await sleep(800);
-
-  /* --- 步骤 2：转账 --- */
-  markStep(2, 'active');
-  setStatus('loading', '第 2 步：请在 imToken 中确认「转账」交易（' + amount + ' USDT）…');
-
-  const txTransfer = await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
-  await txTransfer.wait();
-
-  markStep(2, 'done');
+  const tx = await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
+  await tx.wait();
+  return tx;
 }
 
 /* =========================================================
    ABI 编码工具
    ========================================================= */
-function buildApproveData(spender, amountUnits) {
-  const paddedSpender = spender.replace(/^0x/, '').padStart(64, '0');
-  const paddedAmount = BigInt(amountUnits).toString(16).padStart(64, '0');
-  return '095ea7b3' + paddedSpender + paddedAmount;
-}
 function buildTransferData(to, amountUnits) {
   const paddedTo = to.replace(/^0x/, '').padStart(64, '0');
   const paddedAmount = BigInt(amountUnits).toString(16).padStart(64, '0');
   return 'a9059cbb' + paddedTo + paddedAmount;
 }
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
