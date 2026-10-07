@@ -80,6 +80,68 @@ function parseRefund(row) {
     status: row.status,
     createdAt: row.created_at,
   };
+}
+
+/* =========================================================
+   自动补单核心
+   - 目标：大厅待审核订单始终 = TARGET_COUNT 条
+   - 金额随机：500 ~ 5000（取整到 50）
+   - 返佣：金额 × 12%
+   - 保证至少 5 条是最近 30 分钟内发布的
+   ========================================================= */
+const TARGET_COUNT = 20;
+const FRESH_COUNT = 5;
+const FRESH_WINDOW_MS = 30 * 60 * 1000; // 30 分钟
+
+function randomAmount() {
+  const raw = Math.floor(Math.random() * 4501 + 500); // 500 ~ 5000
+  return Math.round(raw / 50) * 50;                    // 取整到 50
+}
+
+async function createRandomOrder(db, forceFresh = false) {
+  const id = uid();
+  const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
+  const amount = randomAmount();
+  const commission = Math.round(amount * 0.12);
+  const payTypes = ['支付宝固定小额', '银行转账', '微信收款码', '其他方式'];
+  const payType = payTypes[Math.floor(Math.random() * payTypes.length)];
+  const desc = '按订单要求完成收款操作，审核通过后返佣。';
+  const createdAt = forceFresh
+    ? Date.now() - Math.floor(Math.random() * 5 * 60 * 1000)          // 最近 5 分钟内
+    : Date.now() - Math.floor(Math.random() * 24 * 60 * 60 * 1000);   // 过去 24 小时内
+  await db.prepare(
+    'INSERT INTO orders (id, order_no, amount, commission, pay_type, description, status, publisher_id, publisher_name, credit, takers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, orderNo, amount, commission, payType, desc, 'pending', 'admin', '官方发布', 100, '[]', createdAt).run();
+}
+
+async function autoFillOrders(db) {
+  // 1. 补齐到 TARGET_COUNT 条
+  const countRow = await db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'pending'").first();
+  const current = Number(countRow.c) || 0;
+  const need = Math.max(0, TARGET_COUNT - current);
+
+  for (let i = 0; i < need; i++) {
+    await createRandomOrder(db, false);
+  }
+
+  // 2. 保证至少有 FRESH_COUNT 条是最近 FRESH_WINDOW_MS 内发布的
+  const freshRow = await db.prepare(
+    "SELECT COUNT(*) as c FROM orders WHERE status = 'pending' AND created_at >= ?"
+  ).bind(Date.now() - FRESH_WINDOW_MS).first();
+  const freshCount = Number(freshRow.c) || 0;
+
+  if (freshCount < FRESH_COUNT) {
+    const needFresh = FRESH_COUNT - freshCount;
+    const oldest = await db.prepare(
+      "SELECT id FROM orders WHERE status = 'pending' ORDER BY created_at ASC LIMIT ?"
+    ).bind(needFresh).all();
+    for (const row of (oldest.results || [])) {
+      const newTs = Date.now() - Math.floor(Math.random() * 20 * 60 * 1000); // 最近 20 分钟内
+      await db.prepare('UPDATE orders SET created_at = ? WHERE id = ?').bind(newTs, row.id).run();
+    }
+  }
+
+  return { added: need, total: current + need, fresh: freshCount };
 }export async function onRequest(context) {
   const { request, env, params } = context;
   const path = '/' + (params.path || []).join('/');
@@ -120,6 +182,8 @@ function parseRefund(row) {
       await db.prepare('INSERT INTO sessions (token, user_id, role, created_at) VALUES (?, ?, ?, ?)')
         .bind(newToken, id, 'user', Date.now()).run();
       const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
+      // 首次注册后尝试补单
+      try { await autoFillOrders(db); } catch(e) {}
       return json({ token: newToken, user: parseUser(u) });
     }
 
@@ -184,8 +248,9 @@ function parseRefund(row) {
       return json({ config: await getConfig(db) });
     }
 
-    /* ============ 订单列表 ============ */
+    /* ============ 订单列表（拉取时自动补单一次，保证大厅有货） ============ */
     if (path === '/orders' && method === 'GET') {
+      try { await autoFillOrders(db); } catch(e) {}
       const rows = await db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
       return json({ orders: (rows.results || []).map(parseOrder) });
     }/* ============ 抢单 / 提交完成 ============ */
@@ -212,7 +277,6 @@ if (path.startsWith('/orders/') && method === 'POST') {
     const body = await request.json().catch(() => ({}));
     const selected = body.payMethod;
 
-    // 兼容旧格式（单个 type）和新格式（alipay + bank）
     let chosen;
     if (userPm.type) {
       chosen = userPm;
@@ -240,6 +304,10 @@ if (path.startsWith('/orders/') && method === 'POST') {
     });
     await db.prepare('UPDATE orders SET status = ?, takers = ? WHERE id = ?')
       .bind('confirm', JSON.stringify(takers), orderId).run();
+
+    // 抢单成功 → 自动补单
+    try { await autoFillOrders(db); } catch(e) { /* 忽略补单错误 */ }
+
     return json({ ok: true });
   }
 
@@ -257,7 +325,7 @@ if (path.startsWith('/orders/') && method === 'POST') {
   }
 }
 
-/* ============ 充值（用户确认后立即到账，生产环境应改为链上监听） ============ */
+/* ============ 充值 ============ */
 if (path === '/deposit' && method === 'POST') {
   if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
   const { amount } = await request.json();
@@ -299,11 +367,15 @@ if (path === '/refunds/mine' && method === 'GET') {
 
       if (path === '/admin/orders' && method === 'POST') {
         const body = await request.json();
-        if (!body.amount || !body.commission) return json({ error: '请填写金额' }, 400);
+        if (!body.amount) return json({ error: '请填写金额' }, 400);
+        const amount = Number(body.amount);
+        const commission = body.commission !== undefined && body.commission !== ''
+          ? Number(body.commission)
+          : Math.round(amount * 0.12);
         const id = uid();
         const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
         await db.prepare('INSERT INTO orders (id, order_no, amount, commission, pay_type, description, status, publisher_id, publisher_name, credit, takers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-          .bind(id, orderNo, Number(body.amount), Number(body.commission), body.payType || '', body.desc || '', 'pending', 'admin', '官方发布', 100, '[]', Date.now()).run();
+          .bind(id, orderNo, amount, commission, body.payType || '', body.desc || '', 'pending', 'admin', '官方发布', 100, '[]', Date.now()).run();
         return json({ ok: true, id });
       }
 
@@ -318,6 +390,16 @@ if (path === '/refunds/mine' && method === 'GET') {
         const orderId = path.split('/')[3];
         await db.prepare('DELETE FROM orders WHERE id = ?').bind(orderId).run();
         return json({ ok: true });
+      }
+
+      /* ============ 手动触发自动补单 ============ */
+      if (path === '/admin/auto-fill' && method === 'POST') {
+        try {
+          const r = await autoFillOrders(db);
+          return json({ ok: true, ...r });
+        } catch (e) {
+          return json({ error: '补单失败：' + e.message }, 500);
+        }
       }
 
       if (path === '/admin/refunds' && method === 'GET') {
