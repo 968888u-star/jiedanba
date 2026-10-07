@@ -224,7 +224,9 @@ function hasEnoughDeposit(o) {
 const myTaker = o => (o.takers || []).find(x => x.userId === state.user?.id) || null;
 
 /* =========================================================
-   数据刷新
+   数据刷新（已修复闪屏）
+   - 数据没变化 → 不重绘
+   - 用户正在输入 / 弹窗打开 → 不重绘
    ========================================================= */
 async function refreshAll(silent = false) {
   if (!getToken() || !state.user) return;
@@ -234,9 +236,24 @@ async function refreshAll(silent = false) {
       api('/orders'),
       api('/refunds/mine'),
     ]);
+
+    const oldJson = JSON.stringify({ u: state.user, o: state.orders, r: state.refunds });
+
     state.user = meRes.user;
     state.orders = ordersRes.orders || [];
     state.refunds = refundsRes.refunds || [];
+
+    const newJson = JSON.stringify({ u: state.user, o: state.orders, r: state.refunds });
+
+    if (!silent) { render(); return; }
+
+    if (oldJson === newJson) return;
+
+    const activeEl = document.activeElement;
+    const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+    const modalOpen = !!document.querySelector('.overlay');
+    if (isTyping || modalOpen) return;
+
     render();
   } catch (e) {
     if (!silent) toast(e.message);
@@ -273,16 +290,13 @@ async function bootstrap() {
   if (state.user) startPolling();
 }
 
-/* =========================================================
-   轮询同步（4 秒）
-   ========================================================= */
 function startPolling() {
   stopPolling();
   state.pollTimer = setInterval(() => {
     if (document.visibilityState === 'visible' && state.user) {
       refreshAll(true);
     }
-  }, 4000);
+  }, 5000);
 }
 function stopPolling() {
   if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
@@ -710,7 +724,6 @@ function openGrabModal(id) {
   if (!o) return;
   if (o.status !== 'pending' || myTaker(o)) { toast('这个订单已经不能抢了'); return; }
 
-  // 未绑定收款方式 → 强制弹绑定框，并记住订单 ID
   if (!state.user.payMethod) {
     window.__pendingGrabId = id;
     openPayMethodModal(true);
@@ -1003,7 +1016,6 @@ async function savePayMethod() {
     toast('收款方式已保存');
     closeModal();
     render();
-    // 如果之前是想抢单被拦下来的，保存后自动继续抢单流程
     if (currentPmForce && window.__pendingGrabId) {
       const gid = window.__pendingGrabId;
       window.__pendingGrabId = null;
