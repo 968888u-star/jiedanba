@@ -6,14 +6,11 @@
 <title>众包接单 · 管理后台</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{
-    --bg:#f5f6fa;--card:#fff;--ink:#12141d;--ink2:#5b6070;--ink3:#8d93a6;
-    --line:#e8eaf1;--brand:#f0a020;--brand-dark:#d98a10;--brand-soft:#fff9ec;
-    --red:#e02020;--ok:#10b981;--r:12px;
-  }
+  :root{--bg:#f5f6fa;--card:#fff;--ink:#12141d;--ink2:#5b6070;--ink3:#8d93a6;--line:#e8eaf1;--brand:#f0a020;--brand-dark:#d98a10;--brand-soft:#fff9ec;--red:#e02020;--r:12px;}
   body{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55;padding:20px;}
   button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit;outline:none}
   button{cursor:pointer;border:none;background:none}
+  .loading{position:fixed;inset:0;background:rgba(245,246,250,.8);display:grid;place-items:center;font-size:14px;color:var(--ink3);z-index:999}
   .login-wrap{max-width:400px;margin:80px auto;background:#fff;border-radius:16px;padding:30px;box-shadow:0 20px 60px rgba(15,17,26,.12);text-align:center;}
   .login-wrap h2{font-size:22px;font-weight:800;margin-bottom:6px}
   .login-wrap p{font-size:13.5px;color:var(--ink3);margin-bottom:20px}
@@ -27,33 +24,37 @@
   .btn-danger{background:#fff;border-color:#fecaca;color:#dc2626}
   .btn-danger:hover{background:#fef2f2}
   .btn-block{width:100%}
-  .app-header{max-width:900px;margin:0 auto 20px;display:flex;align-items:center;justify-content:space-between;}
+  .app-header{max-width:1000px;margin:0 auto 20px;display:flex;align-items:center;justify-content:space-between;}
   .app-header h1{font-size:20px;font-weight:800}
   .app-header h1 span{font-size:12px;background:#12141d;color:#fff;padding:3px 10px;border-radius:20px;margin-left:8px;vertical-align:middle;}
-  .tabs{display:flex;gap:8px;max-width:900px;margin:0 auto 20px;flex-wrap:wrap;}
+  .tabs{display:flex;gap:8px;max-width:1000px;margin:0 auto 20px;flex-wrap:wrap;}
   .tab{padding:10px 18px;border-radius:10px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:600;color:var(--ink2);transition:.16s;cursor:pointer;}
   .tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .container{max-width:900px;margin:0 auto;}
+  .container{max-width:1000px;margin:0 auto;}
   .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px;}
   .card h3{font-size:15px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
   .card h3::before{content:'';width:3px;height:14px;border-radius:2px;background:var(--brand)}
   .table{width:100%;border-collapse:collapse;font-size:13.5px;}
-  .table th,.table td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);}
+  .table th,.table td{padding:12px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;}
   .table th{color:var(--ink3);font-weight:600;font-size:12.5px;}
-  .table td{color:var(--ink);}
-  .badge{padding:3px 8px;border-radius:6px;font-size:11.5px;font-weight:700;}
+  .badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11.5px;font-weight:700;}
   .badge-pending{background:#fff9ec;color:#c27800;}
   .badge-success{background:#f0fdf4;color:#16a34a;}
   .badge-danger{background:#fef2f2;color:#dc2626;}
+  .badge-gray{background:#f1f2f7;color:#8d93a6;}
   .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .field-label{display:block;font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:6px;}
   .field-label i{color:#ef4444;font-style:normal}
   .empty{text-align:center;padding:40px 20px;color:var(--ink3);font-size:14px;}
+  .pm-tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11.5px;font-weight:700;background:#eff6ff;color:#2563eb;margin-right:6px}
+  .pm-tag.bank{background:#fef3c7;color:#b45309}
   .toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,18px);background:#12141d;color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:.28s;z-index:300;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.25);}
   .toast.show{opacity:1;transform:translate(-50%,0)}
-  @media (max-width:600px){
+  .sub-info{font-size:12px;color:var(--ink3);margin-top:4px;word-break:break-all;line-height:1.5}
+  @media (max-width:700px){
     .form-row{grid-template-columns:1fr;}
-    .table th:nth-child(3), .table td:nth-child(3) { display:none; } /* 移动端隐藏部分列 */
+    .table{font-size:12.5px}
+    .table th,.table td{padding:10px 6px}
   }
 </style>
 </head>
@@ -62,7 +63,7 @@
 <div id="login-view" class="login-wrap">
   <h2>管理员登录</h2>
   <p>请输入管理密码以进入后台</p>
-  <input type="password" id="admin-pwd" class="input" placeholder="请输入管理密码" value="admin888">
+  <input type="password" id="admin-pwd" class="input" placeholder="请输入管理密码">
   <button class="btn btn-primary btn-block" onclick="adminLogin()">登录</button>
 </div>
 
@@ -71,23 +72,26 @@
     <h1>⚙️ 管理后台 <span>ADMIN</span></h1>
     <button class="btn btn-ghost" onclick="adminLogout()">退出登录</button>
   </header>
-
   <div class="tabs">
-    <button class="tab active" data-tab="orders" onclick="switchTab('orders')">📋 订单管理</button>
-    <button class="tab" data-tab="publish" onclick="switchTab('publish')">✏️ 发布订单</button>
-    <button class="tab" data-tab="refunds" onclick="switchTab('refunds')">💸 退款审批</button>
-    <button class="tab" data-tab="settings" onclick="switchTab('settings')">⚙️ 系统设置</button>
+    <button class="tab active" data-tab="orders"   onclick="switchTab('orders')">📋 订单管理</button>
+    <button class="tab"        data-tab="publish"  onclick="switchTab('publish')">✏️ 发布订单</button>
+    <button class="tab"        data-tab="refunds"  onclick="switchTab('refunds')">💸 退款审批</button>
+    <button class="tab"        data-tab="users"    onclick="switchTab('users')">👥 用户管理</button>
+    <button class="tab"        data-tab="settings" onclick="switchTab('settings')">⚙️ 系统设置</button>
   </div>
-
   <div class="container" id="admin-content"></div>
 </div>
 
-<div id="toast-root"></div>
+<script>const TOKEN_KEY = 'jiedan.admin.token';
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
 
-<script>
-const LS_KEY = 'order.v10';
-const CFG_KEY = 'order.v10.config';
-const $ = (s, r = document) => r.querySelector(s);
+let state = { orders: [], refunds: [], users: [], config: {} };
+let pollTimer = null;
+
+function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch(e) { return null; } }
+function setToken(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch(e) {} }
+function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch(e) {} }
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -98,106 +102,138 @@ function fmtDateTime(ts) {
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-let state = { orders: [], refunds: [], user: {} };
-let CONFIG = {
-  trc20: 'TXk7YbWcWnQPNhSCXC3p4aFb5tHKqMgRzA',
-  ratio: 0.1,
-  minDeposit: 10,
-  notice: '请务必使用 TRC20 网络充值，转账到其他网络将无法到账',
-  support: '客服微信：support_usdt',
-};
-
-function loadData() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) {
-      const d = JSON.parse(raw);
-      state.user = d.user || {};
-      state.orders = d.orders || [];
-      state.refunds = d.refunds || [];
+async function api(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch('/api' + path, {
+    method: options.method || 'GET',
+    headers,
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+  let data = {};
+  try { data = await res.json(); } catch(e) {}
+  if (!res.ok) {
+    if (res.status === 403 || res.status === 401) {
+      clearToken();
+      document.getElementById('login-view').style.display = 'block';
+      document.getElementById('admin-app').style.display = 'none';
     }
-  } catch(e) {}
-  try {
-    const raw = localStorage.getItem(CFG_KEY);
-    if (raw) CONFIG = Object.assign(CONFIG, JSON.parse(raw));
-  } catch(e) {}
+    throw new Error(data.error || ('请求失败 ' + res.status));
+  }
+  return data;
 }
 
-function saveData() {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify({ user: state.user, orders: state.orders, refunds: state.refunds }));
-  } catch(e) {}
-}
-
-function saveConfig() {
-  try { localStorage.setItem(CFG_KEY, JSON.stringify(CONFIG)); } catch(e) {}
-}
-
-// ---------------- 登录 ----------------
-function adminLogin() {
+/* ============ 登录 ============ */
+async function adminLogin() {
   const pwd = $('#admin-pwd').value;
-  if (pwd === 'admin888') {
+  if (!pwd) { toast('请输入密码'); return; }
+  try {
+    const r = await api('/admin/login', { method: 'POST', body: { password: pwd } });
+    setToken(r.token);
     document.getElementById('login-view').style.display = 'none';
     document.getElementById('admin-app').style.display = 'block';
-    loadData();
+    await loadAll();
     renderTab('orders');
-  } else {
-    toast('密码错误');
-  }
+    startPolling();
+  } catch (e) { toast(e.message); }
 }
-function adminLogout() {
+
+async function adminLogout() {
+  clearToken();
+  stopPolling();
   location.reload();
 }
 
-// ---------------- 标签切换 ----------------
+/* ============ 数据加载 ============ */
+async function loadAll() {
+  const [ordersRes, refundsRes, usersRes, configRes] = await Promise.all([
+    api('/admin/orders'),
+    api('/admin/refunds'),
+    api('/admin/users'),
+    api('/config'),
+  ]);
+  state.orders = ordersRes.orders || [];
+  state.refunds = refundsRes.refunds || [];
+  state.users = usersRes.users || [];
+  state.config = configRes.config || {};
+}
+
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(async () => {
+    if (document.visibilityState !== 'visible') return;
+    try {
+      await loadAll();
+      const active = document.querySelector('.tab.active')?.dataset.tab || 'orders';
+      renderTab(active);
+    } catch(e) {}
+  }, 5000);
+}
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+/* ============ Tab ============ */
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
-  loadData();
+  $$('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   renderTab(tab);
 }
-
 function renderTab(tab) {
   const el = document.getElementById('admin-content');
-  if (tab === 'orders') renderOrders(el);
-  if (tab === 'publish') renderPublish(el);
-  if (tab === 'refunds') renderRefunds(el);
-  if (tab === 'settings') renderSettings(el);
-}
-
-// ---------------- 订单管理 ----------------
+  if (tab === 'orders')   return renderOrders(el);
+  if (tab === 'publish')  return renderPublish(el);
+  if (tab === 'refunds')  return renderRefunds(el);
+  if (tab === 'users')    return renderUsers(el);
+  if (tab === 'settings') return renderSettings(el);
+}/* ============ 订单管理 ============ */
 function renderOrders(el) {
-  const list = state.orders.sort((a,b) => b.createdAt - a.createdAt);
+  const list = state.orders.slice().sort((a,b) => b.createdAt - a.createdAt);
   if (!list.length) { el.innerHTML = `<div class="card"><div class="empty">暂无订单</div></div>`; return; }
   el.innerHTML = `
     <div class="card">
-      <h3>所有订单</h3>
+      <h3>所有订单（${list.length}）</h3>
       <table class="table">
-        <thead><tr><th>订单号</th><th>金额/佣金</th><th>发布者</th><th>状态</th><th>操作</th></tr></thead>
+        <thead><tr><th>订单号</th><th>金额/佣金</th><th>接单者 & 收款方式</th><th>状态</th><th>操作</th></tr></thead>
         <tbody>
-          ${list.map(o => `
+          ${list.map(o => {
+            const takers = (o.takers || []).map(t => {
+              const pm = t.payMethod || {};
+              const tag = pm.type === 'alipay' ? '支付宝' : pm.type === 'bank' ? '银行卡' : '未填';
+              const cls = pm.type === 'bank' ? 'pm-tag bank' : 'pm-tag';
+              return `<div style="margin-bottom:8px">
+                <span class="${cls}">${tag}</span>
+                <span style="font-weight:700;font-size:13px">${esc(t.userName)}</span>
+                <div class="sub-info">账号：${esc(pm.account || '-')}${pm.bank ? ' · ' + esc(pm.bank) : ''}<br>实名：${esc(pm.realName || '-')}</div>
+              </div>`;
+            }).join('') || '<span style="color:var(--ink3);font-size:12px">暂无接单</span>';
+            return `
             <tr>
               <td style="font-size:12px;word-break:break-all;">${esc(o.orderNo)}</td>
               <td><span style="color:#e02020;font-weight:700">${o.amount}</span> / <span style="color:#f0a020;font-weight:700">${o.commission}</span></td>
-              <td>${esc(o.publisherName)}</td>
-              <td><span class="badge ${o.status === 'pending' ? 'badge-pending' : o.status === 'paid' ? 'badge-success' : 'badge-danger'}">${o.status}</span></td>
+              <td style="max-width:240px">${takers}</td>
+              <td><span class="badge ${o.status === 'pending' ? 'badge-pending' : o.status === 'paid' ? 'badge-success' : o.status === 'cancelled' ? 'badge-gray' : 'badge-danger'}">${o.status}</span></td>
               <td>
-                ${o.status !== 'paid' ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;" onclick="updateOrderStatus('${o.id}','paid')">标记已收款</button>` : ''}
+                ${o.status !== 'paid' ? `<button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;margin-bottom:4px" onclick="updateOrderStatus('${o.id}','paid')">标记已收款</button><br>` : ''}
                 ${o.status !== 'cancelled' ? `<button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="updateOrderStatus('${o.id}','cancelled')">取消</button>` : ''}
               </td>
-            </tr>
-          `).join('')}
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>
     </div>
   `;
 }
-
-function updateOrderStatus(id, status) {
-  const o = state.orders.find(x => x.id === id);
-  if (o) { o.status = status; saveData(); toast('状态已更新'); renderTab('orders'); }
+async function updateOrderStatus(id, status) {
+  try {
+    await api('/admin/orders/' + id, { method: 'PATCH', body: { status } });
+    toast('状态已更新');
+    await loadAll();
+    renderTab('orders');
+  } catch(e) { toast(e.message); }
 }
 
-// ---------------- 发布订单 ----------------
+/* ============ 发布订单 ============ */
 function renderPublish(el) {
   el.innerHTML = `
     <div class="card">
@@ -227,43 +263,37 @@ function renderPublish(el) {
     </div>
   `;
 }
-
-function adminSubmitPost() {
+async function adminSubmitPost() {
   const amount = Number($('#pub-amount')?.value) || 0;
   const commission = Number($('#pub-commission')?.value) || 0;
   const payType = $('#pub-paytype')?.value || '';
   const desc = $('#pub-desc')?.value.trim() || '';
-
   if (amount <= 0 || commission <= 0) { toast('请填写完整信息'); return; }
-  const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
-  state.orders.unshift({
-    id: Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4),
-    orderNo, amount, commission, payType, desc,
-    createdAt: Date.now(), status: 'pending',
-    publisherId: 'admin', publisherName: '官方发布',
-    credit: 100, takers: [],
-  });
-  saveData();
-  toast('订单发布成功 🎉');
-  switchTab('orders');
+  try {
+    await api('/admin/orders', { method: 'POST', body: { amount, commission, payType, desc } });
+    toast('订单发布成功 🎉');
+    await loadAll();
+    switchTab('orders');
+  } catch(e) { toast(e.message); }
 }
 
-// ---------------- 退款审批 ----------------
+/* ============ 退款审批 ============ */
 function renderRefunds(el) {
-  const list = (state.refunds || []).sort((a,b) => b.createdAt - a.createdAt);
+  const list = state.refunds.slice().sort((a,b) => b.createdAt - a.createdAt);
   if (!list.length) { el.innerHTML = `<div class="card"><div class="empty">暂无退款申请</div></div>`; return; }
   el.innerHTML = `
     <div class="card">
-      <h3>退款审批</h3>
+      <h3>退款审批（${list.length}）</h3>
       <table class="table">
-        <thead><tr><th>用户</th><th>金额</th><th>接收地址</th><th>状态</th><th>操作</th></tr></thead>
+        <thead><tr><th>用户</th><th>金额</th><th>接收地址</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead>
         <tbody>
           ${list.map(r => `
             <tr>
               <td>${esc(r.userName)}</td>
               <td style="font-weight:700;color:var(--brand)">${r.amount} USDT</td>
               <td style="font-size:12px;word-break:break-all;">${esc(r.address)}</td>
-              <td><span class="badge ${r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-success' : 'badge-danger'}">${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已同意' : '已拒绝'}</span></td>
+              <td style="font-size:12px;color:var(--ink3)">${fmtDateTime(r.createdAt)}</td>
+              <td><span class="badge ${r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-success' : 'badge-gray'}">${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已同意' : '已拒绝'}</span></td>
               <td>
                 ${r.status === 'pending' ? `
                   <button class="btn btn-primary" style="padding:4px 10px;font-size:12px;" onclick="approveRefund('${r.id}')">同意打款</button>
@@ -277,72 +307,110 @@ function renderRefunds(el) {
     </div>
   `;
 }
-
-function approveRefund(id) {
+async function approveRefund(id) {
   const r = state.refunds.find(x => x.id === id);
-  if (!r || r.status !== 'pending') return;
-  if (!confirm(`确认向 ${r.address} 打款 ${r.amount} USDT 吗？`)) return;
-  r.status = 'approved';
-  saveData();
-  toast('已同意退款，请尽快打款');
-  renderTab('refunds');
+  if (!r) return;
+  if (!confirm(`确认向 ${r.address} 打款 ${r.amount} USDT 吗？（请务必先手动在链上完成转账再点击确认）`)) return;
+  try {
+    await api(`/admin/refunds/${id}/approve`, { method: 'POST' });
+    toast('已同意退款');
+    await loadAll();
+    renderTab('refunds');
+  } catch(e) { toast(e.message); }
+}
+async function rejectRefund(id) {
+  if (!confirm('确定拒绝该退款申请吗？用户押金将被退回')) return;
+  try {
+    await api(`/admin/refunds/${id}/reject`, { method: 'POST' });
+    toast('已拒绝退款，押金已返还用户');
+    await loadAll();
+    renderTab('refunds');
+  } catch(e) { toast(e.message); }
+}/* ============ 用户管理 ============ */
+function renderUsers(el) {
+  if (!state.users.length) { el.innerHTML = `<div class="card"><div class="empty">暂无注册用户</div></div>`; return; }
+  el.innerHTML = `
+    <div class="card">
+      <h3>注册用户（${state.users.length}）</h3>
+      <table class="table">
+        <thead><tr><th>用户名 / 昵称</th><th>收款方式</th><th>押金 / 收入</th><th>注册时间</th></tr></thead>
+        <tbody>
+          ${state.users.slice().sort((a,b) => (b.createdAt||0) - (a.createdAt||0)).map(u => {
+            const pm = u.payMethod || {};
+            const tag = pm.type === 'alipay' ? '支付宝' : pm.type === 'bank' ? '银行卡' : null;
+            const cls = pm.type === 'bank' ? 'pm-tag bank' : 'pm-tag';
+            const pmHtml = tag
+              ? `<span class="${cls}">${tag}</span><span style="font-weight:700">${esc(pm.realName || '')}</span>
+                 <div class="sub-info">账号：${esc(pm.account || '')}${pm.bank ? ' · ' + esc(pm.bank) : ''}</div>`
+              : '<span class="badge badge-gray">未填写</span>';
+            return `
+            <tr>
+              <td>
+                <div style="font-weight:700">${esc(u.nickname || '-')}</div>
+                <div class="sub-info">@${esc(u.username)}</div>
+              </td>
+              <td style="max-width:240px">${pmHtml}</td>
+              <td>
+                <div style="font-weight:700;color:var(--brand)">${u.deposit || 0} USDT</div>
+                <div class="sub-info">收入 ¥${u.income || 0}</div>
+              </td>
+              <td style="font-size:12px;color:var(--ink3)">${u.createdAt ? fmtDateTime(u.createdAt) : '-'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
-function rejectRefund(id) {
-  const r = state.refunds.find(x => x.id === id);
-  if (!r || r.status !== 'pending') return;
-  if (!confirm('确定拒绝该退款申请吗？')) return;
-  r.status = 'rejected';
-  // 拒绝后，押金理论上应退回给用户。因为前端没有真实账户系统，这里仅改状态。
-  // 真实场景下，必须调用后端 API 将用户冻结的押金解冻。
-  saveData();
-  toast('已拒绝退款');
-  renderTab('refunds');
-}
-
-// ---------------- 系统设置 ----------------
+/* ============ 系统设置 ============ */
 function renderSettings(el) {
+  const c = state.config || {};
   el.innerHTML = `
     <div class="card">
       <h3>押金收款地址</h3>
       <label class="field-label">TRC20 地址（波场网络）</label>
-      <input class="input" id="cfg-trc20" value="${esc(CONFIG.trc20)}">
+      <input class="input" id="cfg-trc20" value="${esc(c.trc20 || '')}">
     </div>
     <div class="card">
       <h3>押金规则</h3>
       <div class="form-row">
         <div>
           <label class="field-label">押金比例（%）</label>
-          <input class="input" id="cfg-ratio" type="number" value="${Math.round(CONFIG.ratio * 100)}">
+          <input class="input" id="cfg-ratio" type="number" value="${Math.round((Number(c.ratio)||0.1) * 100)}">
         </div>
         <div>
           <label class="field-label">最低押金（USDT）</label>
-          <input class="input" id="cfg-min" type="number" value="${CONFIG.minDeposit}">
+          <input class="input" id="cfg-min" type="number" value="${c.minDeposit || 10}">
         </div>
       </div>
     </div>
     <div class="card">
       <h3>提示文案</h3>
       <label class="field-label">充值页提示</label>
-      <input class="input" id="cfg-notice" value="${esc(CONFIG.notice)}">
+      <input class="input" id="cfg-notice" value="${esc(c.notice || '')}">
       <label class="field-label">客服信息</label>
-      <input class="input" id="cfg-support" value="${esc(CONFIG.support)}">
+      <input class="input" id="cfg-support" value="${esc(c.support || '')}">
     </div>
     <button class="btn btn-primary btn-block" onclick="saveAdminConfig()">保存配置</button>
   `;
 }
-
-function saveAdminConfig() {
-  CONFIG.trc20 = $('#cfg-trc20')?.value.trim() || CONFIG.trc20;
-  CONFIG.ratio = (Number($('#cfg-ratio')?.value) || 10) / 100;
-  CONFIG.minDeposit = Number($('#cfg-min')?.value) || 10;
-  CONFIG.notice = $('#cfg-notice')?.value.trim() || CONFIG.notice;
-  CONFIG.support = $('#cfg-support')?.value.trim() || CONFIG.support;
-  saveConfig();
-  toast('配置已保存，用户端刷新后生效');
+async function saveAdminConfig() {
+  const body = {
+    trc20: $('#cfg-trc20')?.value.trim() || '',
+    ratio: (Number($('#cfg-ratio')?.value) || 10) / 100,
+    minDeposit: Number($('#cfg-min')?.value) || 10,
+    notice: $('#cfg-notice')?.value.trim() || '',
+    support: $('#cfg-support')?.value.trim() || '',
+  };
+  try {
+    await api('/admin/config', { method: 'POST', body });
+    toast('配置已保存');
+    await loadAll();
+  } catch(e) { toast(e.message); }
 }
 
-// ---------------- 工具 ----------------
+/* ============ Toast ============ */
 let toastTimer = null;
 function toast(msg) {
   document.querySelectorAll('.toast').forEach(el => el.remove());
@@ -355,8 +423,29 @@ function toast(msg) {
   toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 320); }, 2200);
 }
 
-// 初始检查
-loadData();
+/* ============ 自动登录 ============ */
+(async () => {
+  if (getToken()) {
+    try {
+      await loadAll();
+      document.getElementById('login-view').style.display = 'none';
+      document.getElementById('admin-app').style.display = 'block';
+      renderTab('orders');
+      startPolling();
+    } catch(e) {
+      clearToken();
+    }
+  }
+})();
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && getToken()) {
+    loadAll().then(() => {
+      const active = document.querySelector('.tab.active')?.dataset.tab || 'orders';
+      renderTab(active);
+    }).catch(() => {});
+  }
+});
 </script>
 </body>
 </html>
