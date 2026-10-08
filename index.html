@@ -137,20 +137,21 @@
   .feature-header:hover{background:#f1f2f7;}
   .feature-header .arrow{font-size:12px;transition:transform 0.3s;color:var(--ink3);}
   .feature-content{display:none;padding:16px;font-size:13.5px;line-height:1.8;color:var(--ink2);white-space:pre-wrap;border-top:1px solid var(--line);}
-  /* ===== 订单大厅滚动轮播 ===== */
-  .marquee-box{background:#fff;border-radius:0 0 12px 12px;padding:12px 16px 14px;overflow:hidden;border-bottom:1px solid var(--line);}
-  .marquee-label{font-size:12px;color:#c27800;margin-bottom:8px;display:flex;align-items:center;gap:6px;font-weight:700;}
+  /* ===== 订单大厅横向滚动轮播 ===== */
+  .marquee-box{background:#fff;padding:12px 0 14px;overflow:hidden;border-bottom:1px solid var(--line);}
+  .marquee-label{font-size:12px;color:#c27800;margin:0 16px 8px;display:flex;align-items:center;gap:6px;font-weight:700;}
   .marquee-label .dot{width:6px;height:6px;border-radius:50%;background:#f0a020;animation:dotPulse 1.4s infinite;}
   @keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
-  .marquee-viewport{height:32px;overflow:hidden;position:relative;background:#fff9ec;border-radius:8px;padding:0 10px;}
-  .marquee-list{position:absolute;left:0;right:0;top:0;animation:marqueeScroll 40s linear infinite;}
-  .marquee-list:hover{animation-play-state:paused;}
-  .marquee-item{height:32px;line-height:32px;display:flex;align-items:center;gap:8px;font-size:13px;white-space:nowrap;overflow:hidden;}
+  .marquee-viewport{overflow:hidden;position:relative;background:#fff9ec;border-top:1px solid #ffe9c9;border-bottom:1px solid #ffe9c9;padding:8px 0;}
+  .marquee-track{display:flex;gap:40px;width:max-content;animation:marqueeH 80s linear infinite;}
+  .marquee-track:hover{animation-play-state:paused;}
+  @keyframes marqueeH{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  .marquee-item{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#5b6070;white-space:nowrap;padding:0 4px;}
   .marquee-item .m-avatar{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;flex:0 0 auto;}
   .marquee-item .m-name{color:#12141d;font-weight:700;}
   .marquee-item .m-text{color:#8d93a6;font-size:12px;}
   .marquee-item .m-amount{color:#e02020;font-weight:800;}
-  .marquee-item .m-time{color:#8d93a6;font-size:11px;margin-left:auto;}
+  .marquee-item .m-time{color:#8d93a6;font-size:11px;}
   @media (max-width:900px){
     .sidebar{display:none}
     .main{margin-left:0;padding:0 12px 80px;max-width:100%}
@@ -488,7 +489,7 @@ function viewHall() {
 
   const emptyText = state.orderTab === 'hall' ? '大厅里暂时没有可接订单' : '该分类下还没有订单';
 
-  /* ===== 轮播：取最近 15 条已完成订单 ===== */
+  /* ===== 横向轮播：取最近 15 条已完成订单 ===== */
   const marqueeOrders = state.orders
     .filter(o => o.status === 'paid')
     .sort((a, b) => b.createdAt - a.createdAt)
@@ -510,14 +511,15 @@ function viewHall() {
           <span class="m-amount">¥${amount}</span>
           <span class="m-text">，获得返佣</span>
           <span class="m-amount">¥${commission}</span>
-          <span class="m-time">${timeAgo(o.createdAt)}</span>
+          <span class="m-time">· ${timeAgo(o.createdAt)}</span>
         </div>`;
     }).join('');
+    // 横向滚动：内容复制两份，平移到 -50% 无缝循环
     marqueeHtml = `
       <div class="marquee-box">
         <div class="marquee-label"><span class="dot"></span>最新完成订单</div>
         <div class="marquee-viewport">
-          <div class="marquee-list">
+          <div class="marquee-track">
             ${itemsHtml}
             ${itemsHtml}
           </div>
