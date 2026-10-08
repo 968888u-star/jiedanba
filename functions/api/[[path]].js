@@ -1,6 +1,5 @@
 /* =========================================================
    Cloudflare Pages Functions - 众包接单 API
-   路由前缀：/api/*
    ========================================================= */
 
 async function sha256(text) {
@@ -40,12 +39,8 @@ async function setConfig(db, key, value) {
 function parseUser(row) {
   if (!row) return null;
   return {
-    id: row.id,
-    username: row.username,
-    nickname: row.nickname,
-    credit: row.credit,
-    income: row.income,
-    deposit: row.deposit,
+    id: row.id, username: row.username, nickname: row.nickname,
+    credit: row.credit, income: row.income, deposit: row.deposit,
     payMethod: row.pay_method ? JSON.parse(row.pay_method) : null,
     createdAt: row.created_at,
   };
@@ -54,17 +49,10 @@ function parseUser(row) {
 function parseOrder(row) {
   if (!row) return null;
   return {
-    id: row.id,
-    orderNo: row.order_no,
-    amount: row.amount,
-    commission: row.commission,
-    payType: row.pay_type,
-    desc: row.description,
-    status: row.status,
-    publisherId: row.publisher_id,
-    publisherName: row.publisher_name,
-    credit: row.credit,
-    takers: JSON.parse(row.takers || '[]'),
+    id: row.id, orderNo: row.order_no, amount: row.amount, commission: row.commission,
+    payType: row.pay_type, desc: row.description, status: row.status,
+    publisherId: row.publisher_id, publisherName: row.publisher_name,
+    credit: row.credit, takers: JSON.parse(row.takers || '[]'),
     createdAt: row.created_at,
   };
 }
@@ -72,30 +60,22 @@ function parseOrder(row) {
 function parseRefund(row) {
   if (!row) return null;
   return {
-    id: row.id,
-    userId: row.user_id,
-    userName: row.user_name,
-    amount: row.amount,
-    address: row.address,
-    status: row.status,
+    id: row.id, userId: row.user_id, userName: row.user_name,
+    amount: row.amount, address: row.address, status: row.status,
     createdAt: row.created_at,
   };
 }
 
 /* =========================================================
    自动补单核心
-   - 目标：大厅待审核订单始终 = TARGET_COUNT 条
-   - 金额随机：500 ~ 5000（取整到 50）
-   - 返佣：金额 × 12%
-   - 保证至少 5 条是最近 30 分钟内发布的
    ========================================================= */
 const TARGET_COUNT = 20;
 const FRESH_COUNT = 5;
-const FRESH_WINDOW_MS = 30 * 60 * 1000; // 30 分钟
+const FRESH_WINDOW_MS = 30 * 60 * 1000;
 
 function randomAmount() {
-  const raw = Math.floor(Math.random() * 4501 + 500); // 500 ~ 5000
-  return Math.round(raw / 50) * 50;                    // 取整到 50
+  const raw = Math.floor(Math.random() * 4501 + 500);
+  return Math.round(raw / 50) * 50;
 }
 
 async function createRandomOrder(db, forceFresh = false) {
@@ -107,40 +87,34 @@ async function createRandomOrder(db, forceFresh = false) {
   const payType = payTypes[Math.floor(Math.random() * payTypes.length)];
   const desc = '按订单要求完成收款操作，审核通过后返佣。';
   const createdAt = forceFresh
-    ? Date.now() - Math.floor(Math.random() * 5 * 60 * 1000)          // 最近 5 分钟内
-    : Date.now() - Math.floor(Math.random() * 24 * 60 * 60 * 1000);   // 过去 24 小时内
+    ? Date.now() - Math.floor(Math.random() * 5 * 60 * 1000)
+    : Date.now() - Math.floor(Math.random() * 24 * 60 * 60 * 1000);
   await db.prepare(
     'INSERT INTO orders (id, order_no, amount, commission, pay_type, description, status, publisher_id, publisher_name, credit, takers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   ).bind(id, orderNo, amount, commission, payType, desc, 'pending', 'admin', '官方发布', 100, '[]', createdAt).run();
 }
 
 async function autoFillOrders(db) {
-  // 1. 补齐到 TARGET_COUNT 条
   const countRow = await db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'pending'").first();
   const current = Number(countRow.c) || 0;
   const need = Math.max(0, TARGET_COUNT - current);
-
   for (let i = 0; i < need; i++) {
     await createRandomOrder(db, false);
   }
-
-  // 2. 保证至少有 FRESH_COUNT 条是最近 FRESH_WINDOW_MS 内发布的
   const freshRow = await db.prepare(
     "SELECT COUNT(*) as c FROM orders WHERE status = 'pending' AND created_at >= ?"
   ).bind(Date.now() - FRESH_WINDOW_MS).first();
   const freshCount = Number(freshRow.c) || 0;
-
   if (freshCount < FRESH_COUNT) {
     const needFresh = FRESH_COUNT - freshCount;
     const oldest = await db.prepare(
       "SELECT id FROM orders WHERE status = 'pending' ORDER BY created_at ASC LIMIT ?"
     ).bind(needFresh).all();
     for (const row of (oldest.results || [])) {
-      const newTs = Date.now() - Math.floor(Math.random() * 20 * 60 * 1000); // 最近 20 分钟内
+      const newTs = Date.now() - Math.floor(Math.random() * 20 * 60 * 1000);
       await db.prepare('UPDATE orders SET created_at = ? WHERE id = ?').bind(newTs, row.id).run();
     }
   }
-
   return { added: need, total: current + need, fresh: freshCount };
 }export async function onRequest(context) {
   const { request, env, params } = context;
@@ -165,6 +139,22 @@ async function autoFillOrders(db) {
   const session = token ? await getSession(db, token) : null;
 
   try {
+    /* ============ 视频代理（从 R2 读取） ============ */
+    if (path.startsWith('/video/') && method === 'GET') {
+      if (!env.VIDEO_BUCKET) return json({ error: '未绑定 R2 存储（VIDEO_BUCKET）' }, 500);
+      const key = path.slice('/video/'.length);
+      const obj = await env.VIDEO_BUCKET.get(key);
+      if (!obj) return json({ error: '视频不存在' }, 404);
+      return new Response(obj.body, {
+        headers: {
+          'Content-Type': obj.httpMetadata?.contentType || 'video/mp4',
+          'Cache-Control': 'public, max-age=31536000',
+          'Access-Control-Allow-Origin': '*',
+          'Accept-Ranges': 'bytes',
+        }
+      });
+    }
+
     /* ============ 用户认证 ============ */
     if (path === '/auth/register' && method === 'POST') {
       const { username, nickname, password } = await request.json();
@@ -182,7 +172,6 @@ async function autoFillOrders(db) {
       await db.prepare('INSERT INTO sessions (token, user_id, role, created_at) VALUES (?, ?, ?, ?)')
         .bind(newToken, id, 'user', Date.now()).run();
       const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
-      // 首次注册后尝试补单
       try { await autoFillOrders(db); } catch(e) {}
       return json({ token: newToken, user: parseUser(u) });
     }
@@ -248,7 +237,7 @@ async function autoFillOrders(db) {
       return json({ config: await getConfig(db) });
     }
 
-    /* ============ 订单列表（拉取时自动补单一次，保证大厅有货） ============ */
+    /* ============ 订单列表 ============ */
     if (path === '/orders' && method === 'GET') {
       try { await autoFillOrders(db); } catch(e) {}
       const rows = await db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
@@ -296,18 +285,12 @@ if (path.startsWith('/orders/') && method === 'POST') {
     const takers = JSON.parse(order.takers || '[]');
     if (takers.some(t => t.userId === session.user_id)) return json({ error: '你已接过此单' }, 400);
     takers.push({
-      userId: u.id,
-      userName: u.nickname || u.username,
-      payMethod: chosen,
-      at: Date.now(),
-      status: 'working',
+      userId: u.id, userName: u.nickname || u.username,
+      payMethod: chosen, at: Date.now(), status: 'working',
     });
     await db.prepare('UPDATE orders SET status = ?, takers = ? WHERE id = ?')
       .bind('confirm', JSON.stringify(takers), orderId).run();
-
-    // 抢单成功 → 自动补单
-    try { await autoFillOrders(db); } catch(e) { /* 忽略补单错误 */ }
-
+    try { await autoFillOrders(db); } catch(e) {}
     return json({ ok: true });
   }
 
@@ -392,7 +375,6 @@ if (path === '/refunds/mine' && method === 'GET') {
         return json({ ok: true });
       }
 
-      /* ============ 手动触发自动补单 ============ */
       if (path === '/admin/auto-fill' && method === 'POST') {
         try {
           const r = await autoFillOrders(db);
@@ -400,6 +382,20 @@ if (path === '/refunds/mine' && method === 'GET') {
         } catch (e) {
           return json({ error: '补单失败：' + e.message }, 500);
         }
+      }
+
+      /* ============ 视频上传到 R2 ============ */
+      if (path === '/admin/upload-video' && method === 'POST') {
+        if (!env.VIDEO_BUCKET) return json({ error: '未绑定 R2 存储（变量名需为 VIDEO_BUCKET）' }, 500);
+        const formData = await request.formData();
+        const file = formData.get('video');
+        if (!file || typeof file === 'string') return json({ error: '未选择文件' }, 400);
+        const ext = (file.name || 'video.mp4').split('.').pop().toLowerCase();
+        const key = `videos/${uid()}.${ext}`;
+        await env.VIDEO_BUCKET.put(key, file.stream(), {
+          httpMetadata: { contentType: file.type || 'video/mp4' }
+        });
+        return json({ ok: true, key, url: `/api/video/${key}` });
       }
 
       if (path === '/admin/refunds' && method === 'GET') {
