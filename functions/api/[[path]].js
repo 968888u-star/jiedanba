@@ -17,7 +17,14 @@ async function setConfig(db, key, value) {
 }
 function parseUser(row) {
   if (!row) return null;
-  return { id: row.id, username: row.username, nickname: row.nickname, credit: row.credit, income: row.income, deposit: row.deposit, payMethod: row.pay_method ? JSON.parse(row.pay_method) : null, createdAt: row.created_at };
+  return {
+    id: row.id, username: row.username, nickname: row.nickname,
+    credit: row.credit, income: row.income, deposit: row.deposit,
+    payMethod: row.pay_method ? JSON.parse(row.pay_method) : null,
+    inviteCode: row.invite_code || null,
+    invitedBy: row.invited_by || null,
+    createdAt: row.created_at
+  };
 }
 function parseOrder(row) {
   if (!row) return null;
@@ -28,13 +35,11 @@ function parseRefund(row) {
   return { id: row.id, userId: row.user_id, userName: row.user_name, amount: row.amount, address: row.address, status: row.status, createdAt: row.created_at };
 }
 
-/* =========================================================
-   自动补单核心（返佣 8%）
-   ========================================================= */
 const TARGET_COUNT = 30;
 const FRESH_COUNT = 10;
 const FRESH_WINDOW_MS = 30 * 60 * 1000;
 const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+const ROOT_INVITE_CODE = '888888';
 
 function randomAmount() {
   const raw = Math.floor(Math.random() * 4501 + 500);
@@ -104,13 +109,9 @@ async function autoFillOrders(db) {
   return { added: need, total: current + need, fresh: freshCount, paid: paidCount + needPaid };
 }
 
-/* =========================================================
-   链上到账检测：查询 TRC20 USDT 转账记录
-   ========================================================= */
 async function checkUsdtDeposit(db, toAddress, expectedAmount) {
   const minTimestamp = Date.now() - 30 * 60 * 1000;
   const url = `https://api.trongrid.io/v1/accounts/${toAddress}/transactions/trc20?limit=50&only_to=true&min_timestamp=${minTimestamp}`;
-
   let data = null;
   try {
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
@@ -118,10 +119,8 @@ async function checkUsdtDeposit(db, toAddress, expectedAmount) {
   } catch (e) {
     return { ok: false, error: '链上查询失败：' + e.message };
   }
-
   const list = (data && data.data) || [];
   const expectedUnits = Math.round(Number(expectedAmount) * 1e6);
-
   for (const tx of list) {
     if (tx.type !== 'Transfer') continue;
     if (!tx.token_info || tx.token_info.address !== USDT_CONTRACT) continue;
@@ -129,15 +128,18 @@ async function checkUsdtDeposit(db, toAddress, expectedAmount) {
     if (value !== expectedUnits) continue;
     const used = await db.prepare('SELECT tx_hash FROM deposits WHERE tx_hash = ?').bind(tx.transaction_id).first();
     if (used) continue;
-    return {
-      ok: true,
-      txHash: tx.transaction_id,
-      from: tx.from,
-      amount: value / 1e6,
-      timestamp: tx.block_timestamp,
-    };
+    return { ok: true, txHash: tx.transaction_id, from: tx.from, amount: value / 1e6, timestamp: tx.block_timestamp };
   }
   return { ok: false, error: '未检测到匹配的到账记录，请确认转账已完成或稍后再试' };
+}
+
+async function generateInviteCode(db) {
+  for (let i = 0; i < 20; i++) {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const exist = await db.prepare('SELECT id FROM users WHERE invite_code = ?').bind(code).first();
+    if (!exist) return code;
+  }
+  return null;
 }export async function onRequest(context) {
   const { request, env, params } = context;
   const path = '/' + (params.path || []).join('/');
@@ -163,16 +165,33 @@ async function checkUsdtDeposit(db, toAddress, expectedAmount) {
     }
 
     if (path === '/auth/register' && method === 'POST') {
-      const { username, nickname, password } = await request.json();
+      const { username, nickname, password, inviteCode } = await request.json();
       if (!username || !password) return json({ error: '参数不完整' }, 400);
+      if (!inviteCode) return json({ error: '请输入邀请码' }, 400);
       if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return json({ error: '用户名需为 3-20 位字母/数字' }, 400);
       if (password.length < 6) return json({ error: '密码至少 6 位' }, 400);
       const exist = await db.prepare('SELECT id FROM users WHERE username = ?').bind(username).first();
       if (exist) return json({ error: '用户名已被占用' }, 400);
+
+      let inviterId = null;
+      const code = String(inviteCode).trim();
+      if (code === ROOT_INVITE_CODE) {
+        inviterId = 'root';
+      } else {
+        const inviter = await db.prepare('SELECT id FROM users WHERE invite_code = ?').bind(code).first();
+        if (!inviter) return json({ error: '邀请码无效' }, 400);
+        inviterId = inviter.id;
+      }
+
       const id = uid();
       const hash = await sha256(password);
       const nick = String(nickname || username).slice(0, 12);
-      await db.prepare('INSERT INTO users (id, username, nickname, password, created_at) VALUES (?, ?, ?, ?, ?)').bind(id, username, nick, hash, Date.now()).run();
+      const newInviteCode = await generateInviteCode(db);
+      if (!newInviteCode) return json({ error: '邀请码生成失败，请重试' }, 500);
+
+      await db.prepare('INSERT INTO users (id, username, nickname, password, invite_code, invited_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .bind(id, username, nick, hash, newInviteCode, inviterId, Date.now()).run();
+
       const newToken = genToken();
       await db.prepare('INSERT INTO sessions (token, user_id, role, created_at) VALUES (?, ?, ?, ?)').bind(newToken, id, 'user', Date.now()).run();
       const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
@@ -283,7 +302,6 @@ async function checkUsdtDeposit(db, toAddress, expectedAmount) {
   }
 }
 
-/* ============ 充值：链上到账检测 ============ */
 if (path === '/deposit' && method === 'POST') {
   if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
   const { amount } = await request.json();
