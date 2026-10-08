@@ -137,6 +137,20 @@
   .feature-header:hover{background:#f1f2f7;}
   .feature-header .arrow{font-size:12px;transition:transform 0.3s;color:var(--ink3);}
   .feature-content{display:none;padding:16px;font-size:13.5px;line-height:1.8;color:var(--ink2);white-space:pre-wrap;border-top:1px solid var(--line);}
+  /* ===== 订单大厅滚动轮播 ===== */
+  .marquee-box{background:#fff;border-radius:0 0 12px 12px;padding:12px 16px 14px;overflow:hidden;border-bottom:1px solid var(--line);}
+  .marquee-label{font-size:12px;color:#c27800;margin-bottom:8px;display:flex;align-items:center;gap:6px;font-weight:700;}
+  .marquee-label .dot{width:6px;height:6px;border-radius:50%;background:#f0a020;animation:dotPulse 1.4s infinite;}
+  @keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+  .marquee-viewport{height:32px;overflow:hidden;position:relative;background:#fff9ec;border-radius:8px;padding:0 10px;}
+  .marquee-list{position:absolute;left:0;right:0;top:0;animation:marqueeScroll 40s linear infinite;}
+  .marquee-list:hover{animation-play-state:paused;}
+  .marquee-item{height:32px;line-height:32px;display:flex;align-items:center;gap:8px;font-size:13px;white-space:nowrap;overflow:hidden;}
+  .marquee-item .m-avatar{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;flex:0 0 auto;}
+  .marquee-item .m-name{color:#12141d;font-weight:700;}
+  .marquee-item .m-text{color:#8d93a6;font-size:12px;}
+  .marquee-item .m-amount{color:#e02020;font-weight:800;}
+  .marquee-item .m-time{color:#8d93a6;font-size:11px;margin-left:auto;}
   @media (max-width:900px){
     .sidebar{display:none}
     .main{margin-left:0;padding:0 12px 80px;max-width:100%}
@@ -148,6 +162,8 @@
     .overlay{padding:0;align-items:flex-end}
     .modal{width:100%;max-height:90vh;border-radius:16px 16px 0 0;}
     .wallet-choices{grid-template-columns:1fr}
+    .marquee-item{font-size:12px;}
+    .marquee-item .m-text{font-size:11px;}
   }
 </style>
 </head><body>
@@ -166,10 +182,10 @@ const state = {
   config: {
     trc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '',
     tabCancelName: '集团介绍', videoUrl: '', aboutTitle: '企业简介', aboutText: '',
-    featureList: [] // 数组结构：[{ title: '说明1', content: '内容1' }]
+    featureList: []
   },
   view: 'hall',
-  orderTab: 'cancelled',
+  orderTab: 'hall',
   mineTab: 'working',
   authTab: 'login',
   loading: false,
@@ -433,28 +449,20 @@ function viewHall() {
     { id: 'paid', name: '已收款' },
   ];
 
+  /* ============ 集团介绍 ============ */
   if (state.orderTab === 'cancelled') {
     const hasVideo = state.config.videoUrl && state.config.videoUrl.trim();
     const aboutTitle = state.config.aboutTitle || '企业简介';
     const hasAbout = state.config.aboutText && state.config.aboutText.trim();
     const featureList = state.config.featureList || [];
-
     return `
     <div class="page">
       <div class="order-tabs">
         ${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${t.name}</button>`).join('')}
       </div>
       <div class="empty-rich">
-        ${hasVideo ? `
-          <div class="media-box">
-            <video src="${esc(state.config.videoUrl)}" controls preload="metadata" playsinline></video>
-          </div>` : ''}
-        
-        ${hasAbout ? `
-          <div class="about-title">🏢 ${esc(aboutTitle)}</div>
-          <div class="about-text">${esc(state.config.aboutText)}</div>
-        ` : ''}
-
+        ${hasVideo ? `<div class="media-box"><video src="${esc(state.config.videoUrl)}" controls preload="metadata" playsinline></video></div>` : ''}
+        ${hasAbout ? `<div class="about-title">🏢 ${esc(aboutTitle)}</div><div class="about-text">${esc(state.config.aboutText)}</div>` : ''}
         ${featureList.length > 0 ? featureList.map((item, idx) => `
           <div class="feature-box">
             <div class="feature-header" data-action="toggle-feature" data-idx="${idx}">
@@ -464,12 +472,12 @@ function viewHall() {
             <div class="feature-content">${esc(item.content || '')}</div>
           </div>
         `).join('') : ''}
-
         ${!hasVideo && !hasAbout && featureList.length === 0 ? `<div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">暂无简介内容，管理员可在后台配置</div>` : ''}
       </div>
     </div>`;
   }
 
+  /* ============ 订单列表 ============ */
   let list = state.orders.slice();
   if (state.orderTab === 'hall') {
     list = list.filter(o => o.status === 'pending');
@@ -478,15 +486,51 @@ function viewHall() {
   }
   list.sort((a, b) => b.createdAt - a.createdAt);
 
-  const emptyText = state.orderTab === 'hall'
-    ? '大厅里暂时没有可接订单'
-    : '该分类下还没有订单';
+  const emptyText = state.orderTab === 'hall' ? '大厅里暂时没有可接订单' : '该分类下还没有订单';
+
+  /* ===== 轮播：取最近 15 条已完成订单 ===== */
+  const marqueeOrders = state.orders
+    .filter(o => o.status === 'paid')
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 15);
+
+  let marqueeHtml = '';
+  if (marqueeOrders.length > 0) {
+    const itemsHtml = marqueeOrders.map(o => {
+      const taker = (o.takers || []).find(t => t.status === 'done') || (o.takers || [])[0] || {};
+      const name = taker.userName || '用户**';
+      const initial = name.slice(0, 1);
+      const amount = Number(o.amount).toFixed(0);
+      const commission = Number(o.commission).toFixed(0);
+      return `
+        <div class="marquee-item">
+          <div class="m-avatar">${esc(initial)}</div>
+          <span class="m-name">${esc(name)}</span>
+          <span class="m-text">成功完成订单，收款</span>
+          <span class="m-amount">¥${amount}</span>
+          <span class="m-text">，获得返佣</span>
+          <span class="m-amount">¥${commission}</span>
+          <span class="m-time">${timeAgo(o.createdAt)}</span>
+        </div>`;
+    }).join('');
+    marqueeHtml = `
+      <div class="marquee-box">
+        <div class="marquee-label"><span class="dot"></span>最新完成订单</div>
+        <div class="marquee-viewport">
+          <div class="marquee-list">
+            ${itemsHtml}
+            ${itemsHtml}
+          </div>
+        </div>
+      </div>`;
+  }
 
   return `
   <div class="page">
     <div class="order-tabs">
       ${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${t.name}</button>`).join('')}
     </div>
+    ${marqueeHtml}
     <div class="order-list">
       ${list.length ? list.map(orderCard).join('') : `<div class="empty"><div class="empty-ico">📭</div><h3>暂无订单</h3><p>${emptyText}</p></div>`}
     </div>
@@ -1045,7 +1089,7 @@ async function doLogout() {
   state.orders = [];
   state.refunds = [];
   state.view = 'hall';
-  state.orderTab = 'cancelled';
+  state.orderTab = 'hall';
   state.authTab = 'login';
   stopPolling();
   closeModal();
@@ -1118,7 +1162,6 @@ document.addEventListener('click', async e => {
         });
         break;
       case 'toggle-feature': {
-        const idx = el.dataset.idx;
         const content = el.nextElementSibling;
         const arrow = el.querySelector('.arrow');
         if (content) {
