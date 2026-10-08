@@ -193,6 +193,7 @@ const state = {
   pollTimer: null,
   grabChoice: null,
   wallet: 'imtoken',
+  featureOpen: {},
 };
 
 function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch(e) { return null; } }
@@ -280,13 +281,21 @@ async function refreshAll(silent = false) {
     const [meRes, ordersRes, refundsRes] = await Promise.all([
       api('/me'), api('/orders'), api('/refunds/mine'),
     ]);
-    const oldJson = JSON.stringify({ u: state.user, o: state.orders, r: state.refunds, c: state.config });
+
+    const buildKey = () => JSON.stringify({
+      u: state.user ? [state.user.deposit, state.user.income] : null,
+      o: state.orders.map(o => o.id + '|' + o.status + '|' + (o.takers || []).length),
+      r: state.refunds.map(r => r.id + '|' + r.status),
+    });
+
+    const oldKey = buildKey();
     state.user = meRes.user;
     state.orders = ordersRes.orders || [];
     state.refunds = refundsRes.refunds || [];
-    const newJson = JSON.stringify({ u: state.user, o: state.orders, r: state.refunds, c: state.config });
+    const newKey = buildKey();
+
     if (!silent) { render(); return; }
-    if (oldJson === newJson) return;
+    if (oldKey === newKey) return;
     const activeEl = document.activeElement;
     const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
     const modalOpen = !!document.querySelector('.overlay');
@@ -464,15 +473,18 @@ function viewHall() {
       <div class="empty-rich">
         ${hasVideo ? `<div class="media-box"><video src="${esc(state.config.videoUrl)}" controls preload="metadata" playsinline></video></div>` : ''}
         ${hasAbout ? `<div class="about-title">🏢 ${esc(aboutTitle)}</div><div class="about-text">${esc(state.config.aboutText)}</div>` : ''}
-        ${featureList.length > 0 ? featureList.map((item, idx) => `
+        ${featureList.length > 0 ? featureList.map((item, idx) => {
+          const isOpen = !!state.featureOpen[idx];
+          return `
           <div class="feature-box">
             <div class="feature-header" data-action="toggle-feature" data-idx="${idx}">
               <span>📖 ${esc(item.title || '功能说明')}</span>
-              <span class="arrow">▼</span>
+              <span class="arrow" style="transform:rotate(${isOpen ? 180 : 0}deg)">▼</span>
             </div>
-            <div class="feature-content">${esc(item.content || '')}</div>
+            <div class="feature-content" style="display:${isOpen ? 'block' : 'none'}">${esc(item.content || '')}</div>
           </div>
-        `).join('') : ''}
+          `;
+        }).join('') : ''}
         ${!hasVideo && !hasAbout && featureList.length === 0 ? `<div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">暂无简介内容，管理员可在后台配置</div>` : ''}
       </div>
     </div>`;
@@ -514,7 +526,6 @@ function viewHall() {
           <span class="m-time">· ${timeAgo(o.createdAt)}</span>
         </div>`;
     }).join('');
-    // 横向滚动：内容复制两份，平移到 -50% 无缝循环
     marqueeHtml = `
       <div class="marquee-box">
         <div class="marquee-label"><span class="dot"></span>最新完成订单</div>
@@ -1164,13 +1175,12 @@ document.addEventListener('click', async e => {
         });
         break;
       case 'toggle-feature': {
+        const idx = el.dataset.idx;
+        state.featureOpen[idx] = !state.featureOpen[idx];
         const content = el.nextElementSibling;
         const arrow = el.querySelector('.arrow');
-        if (content) {
-          const isHidden = content.style.display === 'none' || content.style.display === '';
-          content.style.display = isHidden ? 'block' : 'none';
-          if (arrow) arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-        }
+        if (content) content.style.display = state.featureOpen[idx] ? 'block' : 'none';
+        if (arrow) arrow.style.transform = state.featureOpen[idx] ? 'rotate(180deg)' : 'rotate(0deg)';
         break;
       }
       case 'nav': state.view = el.dataset.view; closeModal(); render(); break;
