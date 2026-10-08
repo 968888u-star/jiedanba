@@ -391,7 +391,7 @@ async function rejectRefund(id) {
     <div class="card">
       <h3>注册用户（${state.users.length}）</h3>
       <table class="table">
-        <thead><tr><th>用户名</th><th>收款方式</th><th>押金 / 收入</th><th>注册时间</th></tr></thead>
+        <thead><tr><th>用户名</th><th>邀请码 / 邀请人</th><th>收款方式</th><th>押金 / 收入</th><th>注册时间</th></tr></thead>
         <tbody>
           ${state.users.slice().sort((a,b) => (b.createdAt||0) - (a.createdAt||0)).map(u => {
             const pms = [];
@@ -413,6 +413,10 @@ async function rejectRefund(id) {
             return `
             <tr>
               <td><div style="font-weight:700">@${esc(u.username)}</div></td>
+              <td>
+                <div style="font-weight:700;color:var(--brand);letter-spacing:1px">${esc(u.inviteCode || '-')}</div>
+                <div class="sub-info">邀请人：${esc(u.invitedBy === 'root' ? '一级(888888)' : (u.invitedBy || '-'))}</div>
+              </td>
               <td style="max-width:240px">${pmHtml}</td>
               <td>
                 <div style="font-weight:700;color:var(--brand)">${u.deposit || 0} USDT</div>
