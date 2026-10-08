@@ -426,7 +426,10 @@ async function rejectRefund(id) {
 function renderSettings(el) {
   const c = state.config || {};
   const videoUrl = c.videoUrl || '';
+  const aboutTitle = c.aboutTitle || '企业简介';
   const aboutText = c.aboutText || '';
+  const featureTitle = c.featureTitle || '功能说明';
+  const featureText = c.featureText || '';
   const tabCancelName = c.tabCancelName || '集团介绍';
 
   el.innerHTML = `
@@ -452,6 +455,7 @@ function renderSettings(el) {
       <h3>首页配置</h3>
       <label class="field-label">"集团介绍" Tab 显示名称</label>
       <input class="input" id="cfg-tab-cancel" maxlength="10" value="${esc(tabCancelName)}" placeholder="默认：集团介绍">
+      
       <label class="field-label" style="margin-top:6px">宣传视频</label>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
         <input type="file" id="video-file" accept="video/*" style="font-size:13px;flex:1;min-width:200px">
@@ -460,10 +464,21 @@ function renderSettings(el) {
       <div class="sub-info" style="margin-bottom:10px">上传需绑定 R2 存储（变量名 VIDEO_BUCKET）。若未绑定，可粘贴外部视频链接。</div>
       <input class="input" id="cfg-video-url" value="${esc(videoUrl)}" placeholder="视频链接（如 mp4 直链，或留空不显示）">
       ${videoUrl ? `<div class="video-preview"><video src="${esc(videoUrl)}" controls preload="metadata"></video></div>` : ''}
-      <label class="field-label" style="margin-top:14px">企业简介文案（显示在视频下方）</label>
-      <textarea class="input" id="cfg-about" rows="6" placeholder="支持多行，例如：\n我们是一家专注于……\n致力于为……">${esc(aboutText)}</textarea>
+
+      <label class="field-label" style="margin-top:14px">企业简介标题</label>
+      <input class="input" id="cfg-about-title" value="${esc(aboutTitle)}" placeholder="默认：企业简介">
+
+      <label class="field-label" style="margin-top:6px">企业简介文案</label>
+      <textarea class="input" id="cfg-about" rows="4" placeholder="支持多行文案">${esc(aboutText)}</textarea>
+
+      <label class="field-label" style="margin-top:14px">功能说明标题（可折叠）</label>
+      <input class="input" id="cfg-feature-title" value="${esc(featureTitle)}" placeholder="默认：功能说明">
+
+      <label class="field-label" style="margin-top:6px">功能说明内容（点击展开/收起）</label>
+      <textarea class="input" id="cfg-feature" rows="6" placeholder="支持多行文本，例如常见问题解答...">${esc(featureText)}</textarea>
+
       <div style="background:#f8f9fd;border-radius:10px;padding:12px 14px;margin-top:10px;font-size:12px;color:var(--ink3);line-height:1.7">
-        💡 视频与简介会显示在"集团介绍"标签下方。若两者都为空，则显示"暂无简介内容"。
+        💡 以上内容会显示在"集团介绍"标签页中。
       </div>
     </div>
     <div class="card">
@@ -511,7 +526,10 @@ async function saveAdminConfig() {
     support: $('#cfg-support')?.value.trim() || '',
     tabCancelName: $('#cfg-tab-cancel')?.value.trim() || '集团介绍',
     videoUrl: $('#cfg-video-url')?.value.trim() || '',
+    aboutTitle: $('#cfg-about-title')?.value.trim() || '企业简介',
     aboutText: $('#cfg-about')?.value || '',
+    featureTitle: $('#cfg-feature-title')?.value.trim() || '功能说明',
+    featureText: $('#cfg-feature')?.value || '',
   };
   try {
     await api('/admin/config', { method: 'POST', body });
