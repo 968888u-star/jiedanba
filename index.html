@@ -127,10 +127,9 @@
   .wallet-card .wc-name{font-size:13.5px;font-weight:800;color:var(--ink)}
   .wallet-card .wc-tip{font-size:11px;color:var(--ink3);margin-top:2px}
   .wallet-card .wc-check{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;display:grid;place-items:center;border:2px solid #fff;}
-  /* 空状态：视频 + 企业简介 */
   .empty-rich{background:#fff;border-radius:0 0 12px 12px;padding:20px;margin-top:0;}
   .empty-rich .media-box{border-radius:12px;overflow:hidden;background:#000;margin-bottom:14px;}
-  .empty-rich .media-box video{width:100%;display:block;max-height:360px;background:#000;}
+  .empty-rich .media-box video{width:100%;display:block;max-height:460px;background:#000;}
   .empty-rich .about-box{background:#f8f9fd;border-radius:12px;padding:16px;font-size:13.5px;color:var(--ink2);line-height:1.8;white-space:pre-wrap;}
   .empty-rich .about-box h4{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px}
   @media (max-width:900px){
@@ -161,7 +160,7 @@ const state = {
   refunds: [],
   config: {
     trc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '',
-    tabCancelName: '已取消', videoUrl: '', aboutText: '',
+    tabCancelName: '集团介绍', videoUrl: '', aboutText: '',
   },
   view: 'hall',
   orderTab: 'hall',
@@ -420,13 +419,41 @@ function renderMainApp() {
 const statusOf = s => STATUS_MAP[s] || STATUS_MAP.pending;
 
 function viewHall() {
-  const cancelTabName = state.config.tabCancelName || '已取消';
+  const cancelTabName = state.config.tabCancelName || '集团介绍';
   const tabs = [
     { id: 'hall', name: '订单大厅' },
     { id: 'confirm', name: '待收款' },
     { id: 'paid', name: '已收款' },
     { id: 'cancelled', name: cancelTabName },
   ];
+
+  /* ============ 集团介绍 tab：显示视频 + 企业简介 ============ */
+  if (state.orderTab === 'cancelled') {
+    const hasVideo = state.config.videoUrl && state.config.videoUrl.trim();
+    const hasAbout = state.config.aboutText && state.config.aboutText.trim();
+    return `
+    <div class="page">
+      <div class="order-tabs">
+        ${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${t.name}</button>`).join('')}
+      </div>
+      <div class="empty-rich">
+        ${hasVideo ? `
+          <div class="media-box">
+            <video src="${esc(state.config.videoUrl)}" controls preload="metadata" playsinline></video>
+          </div>` : ''}
+        ${hasAbout ? `
+          <div class="about-box">
+            <h4>🏢 企业简介</h4>
+            <div>${esc(state.config.aboutText)}</div>
+          </div>` : `
+          <div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">
+            暂无简介内容，管理员可在后台配置
+          </div>`}
+      </div>
+    </div>`;
+  }
+
+  /* ============ 其他 tab：显示订单列表 ============ */
   let list = state.orders.slice();
   if (state.orderTab === 'hall') {
     list = list.filter(o => o.status === 'pending');
@@ -439,38 +466,14 @@ function viewHall() {
     ? '大厅里暂时没有可接订单'
     : '该分类下还没有订单';
 
-  // 大厅 tab 为空时，若有视频或简介，则显示"视频 + 企业简介"
-  let emptyHtml = '';
-  if (list.length === 0) {
-    const hasVideo = state.config.videoUrl;
-    const hasAbout = state.config.aboutText && state.config.aboutText.trim();
-    if (state.orderTab === 'hall' && (hasVideo || hasAbout)) {
-      emptyHtml = `
-        <div class="empty-rich">
-          ${hasVideo ? `
-            <div class="media-box">
-              <video src="${esc(state.config.videoUrl)}" controls preload="metadata" playsinline></video>
-            </div>` : ''}
-          ${hasAbout ? `
-            <div class="about-box">
-              <h4>🏢 企业简介</h4>
-              <div>${esc(state.config.aboutText)}</div>
-            </div>` : ''}
-        </div>`;
-    } else {
-      emptyHtml = `<div class="empty"><div class="empty-ico">📭</div><h3>暂无订单</h3><p>${emptyText}</p></div>`;
-    }
-  }
-
   return `
   <div class="page">
     <div class="order-tabs">
       ${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${t.name}</button>`).join('')}
     </div>
-    ${list.length
-      ? `<div class="order-list">${list.map(orderCard).join('')}</div>`
-      : emptyHtml
-    }
+    <div class="order-list">
+      ${list.length ? list.map(orderCard).join('') : `<div class="empty"><div class="empty-ico">📭</div><h3>暂无订单</h3><p>${emptyText}</p></div>`}
+    </div>
   </div>`;
 }
 
