@@ -64,6 +64,19 @@ async function createFinishedOrder(db) {
   await db.prepare('INSERT INTO orders (id, order_no, amount, commission, pay_type, description, status, publisher_id, publisher_name, credit, takers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id, orderNo, amount, commission, '支付宝固定小额', '系统已完成订单', 'paid', 'admin', '官方发布', 100, takers, createdAt).run();
 }
 
+/* ===== 随机刷新已完成订单的时间（让轮播显示"刚刚/几分钟前"） ===== */
+async function refreshFinishedOrderTimes(db) {
+  const rows = await db.prepare("SELECT id FROM orders WHERE status = 'paid'").all();
+  const list = rows.results || [];
+  if (!list.length) return;
+  for (const row of list) {
+    if (Math.random() < 0.7) {
+      const newTs = Date.now() - Math.floor(Math.random() * 6 * 60 * 60 * 1000) - 60000;
+      await db.prepare('UPDATE orders SET created_at = ? WHERE id = ?').bind(newTs, row.id).run();
+    }
+  }
+}
+
 async function autoFillOrders(db) {
   const countRow = await db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'pending'").first();
   const current = Number(countRow.c) || 0;
@@ -86,6 +99,9 @@ async function autoFillOrders(db) {
   const paidCount = Number(paidRow.c) || 0;
   const needPaid = Math.max(0, 15 - paidCount);
   for (let i = 0; i < needPaid; i++) { await createFinishedOrder(db); }
+
+  // 随机刷新已完成订单的时间
+  try { await refreshFinishedOrderTimes(db); } catch(e) {}
 
   return { added: need, total: current + need, fresh: freshCount, paid: paidCount + needPaid };
 }export async function onRequest(context) {
