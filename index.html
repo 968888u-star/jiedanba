@@ -163,7 +163,7 @@ const state = {
     tabCancelName: '集团介绍', videoUrl: '', aboutText: '',
   },
   view: 'hall',
-  orderTab: 'hall',
+  orderTab: 'cancelled',
   mineTab: 'working',
   authTab: 'login',
   loading: false,
@@ -421,13 +421,12 @@ const statusOf = s => STATUS_MAP[s] || STATUS_MAP.pending;
 function viewHall() {
   const cancelTabName = state.config.tabCancelName || '集团介绍';
   const tabs = [
+    { id: 'cancelled', name: cancelTabName },
     { id: 'hall', name: '订单大厅' },
     { id: 'confirm', name: '待收款' },
     { id: 'paid', name: '已收款' },
-    { id: 'cancelled', name: cancelTabName },
   ];
 
-  /* ============ 集团介绍 tab：显示视频 + 企业简介 ============ */
   if (state.orderTab === 'cancelled') {
     const hasVideo = state.config.videoUrl && state.config.videoUrl.trim();
     const hasAbout = state.config.aboutText && state.config.aboutText.trim();
@@ -453,7 +452,6 @@ function viewHall() {
     </div>`;
   }
 
-  /* ============ 其他 tab：显示订单列表 ============ */
   let list = state.orders.slice();
   if (state.orderTab === 'hall') {
     list = list.filter(o => o.status === 'pending');
@@ -980,6 +978,7 @@ function payWithImToken() {
   a.click();
   setTimeout(() => { try { a.remove(); } catch (e) {} }, 500);
 }async function doLogin() {
+  await loadConfig();
   const username = ($('#login-username')?.value || '').trim();
   const password = $('#login-password')?.value || '';
   if (!username || !password) { toast('请输入用户名和密码'); return; }
@@ -1000,6 +999,7 @@ function payWithImToken() {
 }
 
 async function doRegister() {
+  await loadConfig();
   const username = ($('#reg-username')?.value || '').trim();
   const password = $('#reg-password')?.value || '';
   const password2 = $('#reg-password2')?.value || '';
@@ -1030,7 +1030,7 @@ async function doLogout() {
   state.orders = [];
   state.refunds = [];
   state.view = 'hall';
-  state.orderTab = 'hall';
+  state.orderTab = 'cancelled';
   state.authTab = 'login';
   stopPolling();
   closeModal();
