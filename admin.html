@@ -293,7 +293,7 @@ function renderPublish(el) {
       <h3>发布新订单</h3>
       <label class="field-label">收款金额（元）<i>*</i></label>
       <input class="input" id="pub-amount" type="number" min="0.01" step="0.01" placeholder="例如：1000.00">
-      <label class="field-label">返佣金额（元）<i>*</i> <span style="color:var(--ink3);font-weight:500;font-size:11.5px">默认按 12% 自动计算，可手动修改</span></label>
+      <label class="field-label">返佣金额（元）<i>*</i> <span style="color:var(--ink3);font-weight:500;font-size:11.5px">默认按 8% 自动计算，可手动修改</span></label>
       <input class="input" id="pub-commission" type="number" min="0.01" step="0.01" placeholder="自动计算">
       <div class="form-row">
         <div>
@@ -319,13 +319,13 @@ function renderPublish(el) {
   const commissionEl = $('#pub-commission');
   amountEl.addEventListener('input', () => {
     const amt = Number(amountEl.value) || 0;
-    if (amt > 0) commissionEl.value = Math.round(amt * 0.12 * 100) / 100;
+    if (amt > 0) commissionEl.value = Math.round(amt * 0.08 * 100) / 100;
     else commissionEl.value = '';
   });
 }
 async function adminSubmitPost() {
   const amount = Number($('#pub-amount')?.value) || 0;
-  const commission = Number($('#pub-commission')?.value) || Math.round(amount * 0.12);
+  const commission = Number($('#pub-commission')?.value) || Math.round(amount * 0.08);
   const payType = $('#pub-paytype')?.value || '';
   const desc = $('#pub-desc')?.value.trim() || '';
   if (amount <= 0) { toast('请填写金额'); return; }
