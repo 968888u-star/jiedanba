@@ -15,6 +15,7 @@
   .login-wrap p{font-size:13.5px;color:var(--ink3);margin-bottom:20px}
   .input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14.5px;transition:.16s;margin-bottom:14px;}
   .input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(240,160,32,.12)}
+  textarea.input{resize:vertical;min-height:80px;font-family:inherit;line-height:1.6}
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 18px;border-radius:10px;border:1px solid transparent;font-size:14.5px;font-weight:700;transition:.16s;}
   .btn-primary{background:var(--brand);color:#fff}
   .btn-primary:hover{background:var(--brand-dark)}
@@ -50,6 +51,8 @@
   .toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,18px);background:#12141d;color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:.28s;z-index:300;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.25);}
   .toast.show{opacity:1;transform:translate(-50%,0)}
   .sub-info{font-size:12px;color:var(--ink3);margin-top:4px;word-break:break-all;line-height:1.5}
+  .video-preview{margin-top:10px;border-radius:10px;overflow:hidden;background:#000;max-width:100%;}
+  .video-preview video{width:100%;display:block;max-height:280px;background:#000;}
   @media (max-width:700px){
     .form-row{grid-template-columns:1fr;}
     .table{font-size:12.5px}
@@ -102,13 +105,14 @@ function fmtDateTime(ts) {
 }
 
 async function api(path, options = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {};
+  if (!options.isForm) headers['Content-Type'] = 'application/json';
   const token = getToken();
   if (token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch('/api' + path, {
     method: options.method || 'GET',
     headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: options.isForm ? options.body : (options.body ? JSON.stringify(options.body) : undefined),
   });
   let data = {};
   try { data = await res.json(); } catch(e) {}
@@ -135,7 +139,6 @@ async function adminLogin() {
     await loadAll();
     renderTab('orders');
     startPolling();
-    // 登录后自动补单一次
     setTimeout(() => autoFill(), 500);
   } catch (e) { toast(e.message); }
 }
@@ -164,9 +167,7 @@ async function loadAll() {
 async function autoFill(silent = true) {
   try {
     const r = await api('/admin/auto-fill', { method: 'POST' });
-    if (!silent) {
-      toast(`补单完成：新增 ${r.added || 0} 条，当前 ${r.total || 0} 条`);
-    }
+    if (!silent) toast(`补单完成：新增 ${r.added || 0} 条，当前 ${r.total || 0} 条`);
     return r;
   } catch (e) {
     if (!silent) toast('补单失败：' + e.message);
@@ -284,13 +285,10 @@ async function clearAllOrders() {
 }
 async function manualFill() {
   const r = await autoFill(false);
-  if (r) {
-    await loadAll();
-    renderTab('orders');
-  }
+  if (r) { await loadAll(); renderTab('orders'); }
 }
 
-/* ============ 发布订单（金额变更 → 返佣按 12% 自动填充） ============ */
+/* ============ 发布订单 ============ */
 function renderPublish(el) {
   el.innerHTML = `
     <div class="card">
@@ -319,7 +317,6 @@ function renderPublish(el) {
       <button class="btn btn-primary btn-block" onclick="adminSubmitPost()" style="margin-top:16px;">确认发布</button>
     </div>
   `;
-  // 金额 → 返佣 12% 联动
   const amountEl = $('#pub-amount');
   const commissionEl = $('#pub-commission');
   amountEl.addEventListener('input', () => {
@@ -419,9 +416,7 @@ function renderUsers(el) {
             }).join('') : '<span class="badge badge-gray">未填写</span>';
             return `
             <tr>
-              <td>
-                <div style="font-weight:700">@${esc(u.username)}</div>
-              </td>
+              <td><div style="font-weight:700">@${esc(u.username)}</div></td>
               <td style="max-width:240px">${pmHtml}</td>
               <td>
                 <div style="font-weight:700;color:var(--brand)">${u.deposit || 0} USDT</div>
@@ -436,9 +431,13 @@ function renderUsers(el) {
   `;
 }
 
-/* ============ 系统设置 ============ */
+/* ============ 系统设置（含首页配置） ============ */
 function renderSettings(el) {
   const c = state.config || {};
+  const videoUrl = c.videoUrl || '';
+  const aboutText = c.aboutText || '';
+  const tabCancelName = c.tabCancelName || '已取消';
+
   el.innerHTML = `
     <div class="card">
       <h3>押金收款地址</h3>
@@ -458,6 +457,30 @@ function renderSettings(el) {
         </div>
       </div>
     </div>
+
+    <div class="card">
+      <h3>首页配置</h3>
+
+      <label class="field-label">"已取消" Tab 显示名称</label>
+      <input class="input" id="cfg-tab-cancel" maxlength="10" value="${esc(tabCancelName)}" placeholder="默认：已取消">
+
+      <label class="field-label" style="margin-top:6px">宣传视频</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <input type="file" id="video-file" accept="video/*" style="font-size:13px;flex:1;min-width:200px">
+        <button class="btn btn-primary" onclick="uploadVideo()" style="padding:9px 16px;font-size:13px">⬆️ 上传视频</button>
+      </div>
+      <div class="sub-info" style="margin-bottom:10px">上传需绑定 R2 存储（变量名 VIDEO_BUCKET）。若未绑定，可粘贴外部视频链接。</div>
+      <input class="input" id="cfg-video-url" value="${esc(videoUrl)}" placeholder="视频链接（如 mp4 直链，或留空不显示）">
+      ${videoUrl ? `<div class="video-preview"><video src="${esc(videoUrl)}" controls preload="metadata"></video></div>` : ''}
+
+      <label class="field-label" style="margin-top:14px">企业简介文案（显示在视频下方）</label>
+      <textarea class="input" id="cfg-about" rows="6" placeholder="支持多行，例如：&#10;我们是一家专注于……&#10;致力于为……">${esc(aboutText)}</textarea>
+
+      <div style="background:#f8f9fd;border-radius:10px;padding:12px 14px;margin-top:10px;font-size:12px;color:var(--ink3);line-height:1.7">
+        💡 视频与简介会显示在"订单大厅"标签的空状态区域。若两者都为空，则显示默认的"暂无订单"。
+      </div>
+    </div>
+
     <div class="card">
       <h3>提示文案</h3>
       <label class="field-label">充值页提示</label>
@@ -465,9 +488,39 @@ function renderSettings(el) {
       <label class="field-label">客服信息</label>
       <input class="input" id="cfg-support" value="${esc(c.support || '')}">
     </div>
-    <button class="btn btn-primary btn-block" onclick="saveAdminConfig()">保存配置</button>
+
+    <button class="btn btn-primary btn-block" onclick="saveAdminConfig()">保存全部配置</button>
   `;
 }
+
+async function uploadVideo() {
+  const fileInput = $('#video-file');
+  const file = fileInput?.files?.[0];
+  if (!file) { toast('请先选择视频文件'); return; }
+  if (file.size > 100 * 1024 * 1024) { toast('视频过大（>100MB），建议用外部链接'); return; }
+
+  const formData = new FormData();
+  formData.append('video', file);
+
+  toast('上传中，请稍候…');
+  try {
+    const r = await api('/admin/upload-video', { method: 'POST', body: formData, isForm: true });
+    const url = r.url || ('/api/video/' + r.key);
+    $('#cfg-video-url').value = url;
+    toast('视频上传成功 ✅');
+    // 刷新预览
+    const wrap = $('#cfg-video-url').nextElementSibling;
+    if (wrap && wrap.classList.contains('video-preview')) {
+      wrap.querySelector('video').src = url;
+    } else {
+      const div = document.createElement('div');
+      div.className = 'video-preview';
+      div.innerHTML = `<video src="${esc(url)}" controls preload="metadata"></video>`;
+      $('#cfg-video-url').parentNode.insertBefore(div, $('#cfg-video-url').nextSibling);
+    }
+  } catch(e) { toast('上传失败：' + e.message); }
+}
+
 async function saveAdminConfig() {
   const body = {
     trc20: $('#cfg-trc20')?.value.trim() || '',
@@ -475,11 +528,15 @@ async function saveAdminConfig() {
     minDeposit: Number($('#cfg-min')?.value) || 10,
     notice: $('#cfg-notice')?.value.trim() || '',
     support: $('#cfg-support')?.value.trim() || '',
+    tabCancelName: $('#cfg-tab-cancel')?.value.trim() || '已取消',
+    videoUrl: $('#cfg-video-url')?.value.trim() || '',
+    aboutText: $('#cfg-about')?.value || '',
   };
   try {
     await api('/admin/config', { method: 'POST', body });
-    toast('配置已保存');
+    toast('配置已保存 ✅');
     await loadAll();
+    renderTab('settings');
   } catch(e) { toast(e.message); }
 }
 
@@ -505,7 +562,6 @@ function toast(msg) {
       document.getElementById('admin-app').style.display = 'block';
       renderTab('orders');
       startPolling();
-      // 后台打开后自动补单一次
       setTimeout(() => autoFill(true), 800);
     } catch(e) {
       clearToken();
