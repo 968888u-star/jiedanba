@@ -52,6 +52,18 @@ async function createRandomOrder(db, forceFresh = false) {
   await db.prepare('INSERT INTO orders (id, order_no, amount, commission, pay_type, description, status, publisher_id, publisher_name, credit, takers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id, orderNo, amount, commission, payType, desc, 'pending', 'admin', '官方发布', 100, '[]', createdAt).run();
 }
 
+async function createFinishedOrder(db) {
+  const id = uid();
+  const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
+  const amount = randomAmount();
+  const commission = Math.round(amount * 0.12);
+  const fakeNames = ['张**', '李**', '王**', '陈**', '刘**', '赵**', '孙**', '周**', '吴**', '郑**', '冯**', '黄**'];
+  const fakeName = fakeNames[Math.floor(Math.random() * fakeNames.length)];
+  const createdAt = Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000);
+  const takers = JSON.stringify([{ userId: 'fake_' + id, userName: fakeName, payMethod: { type: 'alipay', realName: fakeName, account: '138****8888' }, at: createdAt, status: 'done', doneAt: createdAt + 120000 }]);
+  await db.prepare('INSERT INTO orders (id, order_no, amount, commission, pay_type, description, status, publisher_id, publisher_name, credit, takers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id, orderNo, amount, commission, '支付宝固定小额', '系统已完成订单', 'paid', 'admin', '官方发布', 100, takers, createdAt).run();
+}
+
 async function autoFillOrders(db) {
   const countRow = await db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'pending'").first();
   const current = Number(countRow.c) || 0;
@@ -68,7 +80,14 @@ async function autoFillOrders(db) {
       await db.prepare('UPDATE orders SET created_at = ? WHERE id = ?').bind(newTs, row.id).run();
     }
   }
-  return { added: need, total: current + need, fresh: freshCount };
+
+  // 补足 15 条已完成订单用于大厅轮播
+  const paidRow = await db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'paid'").first();
+  const paidCount = Number(paidRow.c) || 0;
+  const needPaid = Math.max(0, 15 - paidCount);
+  for (let i = 0; i < needPaid; i++) { await createFinishedOrder(db); }
+
+  return { added: need, total: current + need, fresh: freshCount, paid: paidCount + needPaid };
 }export async function onRequest(context) {
   const { request, env, params } = context;
   const path = '/' + (params.path || []).join('/');
