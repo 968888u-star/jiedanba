@@ -64,7 +64,6 @@ async function createFinishedOrder(db) {
   await db.prepare('INSERT INTO orders (id, order_no, amount, commission, pay_type, description, status, publisher_id, publisher_name, credit, takers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').bind(id, orderNo, amount, commission, '支付宝固定小额', '系统已完成订单', 'paid', 'admin', '官方发布', 100, takers, createdAt).run();
 }
 
-/* ===== 随机刷新已完成订单的时间（让轮播显示"刚刚/几分钟前"） ===== */
 async function refreshFinishedOrderTimes(db) {
   const rows = await db.prepare("SELECT id FROM orders WHERE status = 'paid'").all();
   const list = rows.results || [];
@@ -94,13 +93,11 @@ async function autoFillOrders(db) {
     }
   }
 
-  // 补足 15 条已完成订单用于大厅轮播
   const paidRow = await db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'paid'").first();
   const paidCount = Number(paidRow.c) || 0;
   const needPaid = Math.max(0, 15 - paidCount);
   for (let i = 0; i < needPaid; i++) { await createFinishedOrder(db); }
 
-  // 随机刷新已完成订单的时间
   try { await refreshFinishedOrderTimes(db); } catch(e) {}
 
   return { added: need, total: current + need, fresh: freshCount, paid: paidCount + needPaid };
@@ -191,7 +188,12 @@ async function autoFillOrders(db) {
     if (path === '/config' && method === 'GET') return json({ config: await getConfig(db) });
 
     if (path === '/orders' && method === 'GET') {
-      try { await autoFillOrders(db); } catch(e) {}
+      // 只在待审核订单数不足时补单，避免每次轮询都刷新已完成订单时间戳
+      try {
+        const c = await db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'pending'").first();
+        const need = Math.max(0, TARGET_COUNT - (Number(c.c) || 0));
+        if (need > 0) await autoFillOrders(db);
+      } catch(e) {}
       const rows = await db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
       return json({ orders: (rows.results || []).map(parseOrder) });
     }if (path.startsWith('/orders/') && method === 'POST') {
