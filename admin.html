@@ -127,7 +127,6 @@ async function api(path, options = {}) {
   return data;
 }
 
-/* ============ 登录 ============ */
 async function adminLogin() {
   const pwd = $('#admin-pwd').value;
   if (!pwd) { toast('请输入密码'); return; }
@@ -149,7 +148,6 @@ async function adminLogout() {
   location.reload();
 }
 
-/* ============ 数据加载 ============ */
 async function loadAll() {
   const [ordersRes, refundsRes, usersRes, configRes] = await Promise.all([
     api('/admin/orders'),
@@ -163,7 +161,6 @@ async function loadAll() {
   state.config = configRes.config || {};
 }
 
-/* ============ 自动补单 ============ */
 async function autoFill(silent = true) {
   try {
     const r = await api('/admin/auto-fill', { method: 'POST' });
@@ -196,7 +193,6 @@ function stopPolling() {
   if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
 }
 
-/* ============ Tab ============ */
 function switchTab(tab) {
   $$('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   renderTab(tab);
@@ -208,15 +204,14 @@ function renderTab(tab) {
   if (tab === 'refunds')  return renderRefunds(el);
   if (tab === 'users')    return renderUsers(el);
   if (tab === 'settings') return renderSettings(el);
-}/* ============ 订单管理 ============ */
-function renderOrders(el) {
+}function renderOrders(el) {
   const list = state.orders.slice().sort((a,b) => b.createdAt - a.createdAt);
   const pendingCount = state.orders.filter(o => o.status === 'pending').length;
   el.innerHTML = `
     <div class="card">
-      <h3>所有订单（大厅待审核 ${pendingCount} 条 / 目标 20 条）</h3>
+      <h3>所有订单（大厅待审核 ${pendingCount} 条 / 目标 30 条）</h3>
       <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="manualFill()" style="padding:8px 14px;font-size:13px">🔄 一键补单到 20 条</button>
+        <button class="btn btn-primary" onclick="manualFill()" style="padding:8px 14px;font-size:13px">🔄 一键补单到 30 条</button>
         <button class="btn btn-danger" onclick="clearAllOrders()" style="padding:8px 14px;font-size:13px">🗑️ 删除全部订单</button>
       </div>
       ${!list.length ? '<div class="empty">暂无订单</div>' : `
@@ -288,7 +283,6 @@ async function manualFill() {
   if (r) { await loadAll(); renderTab('orders'); }
 }
 
-/* ============ 发布订单 ============ */
 function renderPublish(el) {
   el.innerHTML = `
     <div class="card">
@@ -339,7 +333,6 @@ async function adminSubmitPost() {
   } catch(e) { toast('发布失败：' + e.message); }
 }
 
-/* ============ 退款审批 ============ */
 function renderRefunds(el) {
   const list = state.refunds.slice().sort((a,b) => b.createdAt - a.createdAt);
   if (!list.length) { el.innerHTML = `<div class="card"><div class="empty">暂无退款申请</div></div>`; return; }
@@ -388,8 +381,7 @@ async function rejectRefund(id) {
     await loadAll();
     renderTab('refunds');
   } catch(e) { toast(e.message); }
-}/* ============ 用户管理 ============ */
-function renderUsers(el) {
+}function renderUsers(el) {
   if (!state.users.length) { el.innerHTML = `<div class="card"><div class="empty">暂无注册用户</div></div>`; return; }
   el.innerHTML = `
     <div class="card">
@@ -431,12 +423,11 @@ function renderUsers(el) {
   `;
 }
 
-/* ============ 系统设置（含首页配置） ============ */
 function renderSettings(el) {
   const c = state.config || {};
   const videoUrl = c.videoUrl || '';
   const aboutText = c.aboutText || '';
-  const tabCancelName = c.tabCancelName || '已取消';
+  const tabCancelName = c.tabCancelName || '集团介绍';
 
   el.innerHTML = `
     <div class="card">
@@ -457,13 +448,10 @@ function renderSettings(el) {
         </div>
       </div>
     </div>
-
     <div class="card">
       <h3>首页配置</h3>
-
-      <label class="field-label">"已取消" Tab 显示名称</label>
-      <input class="input" id="cfg-tab-cancel" maxlength="10" value="${esc(tabCancelName)}" placeholder="默认：已取消">
-
+      <label class="field-label">"集团介绍" Tab 显示名称</label>
+      <input class="input" id="cfg-tab-cancel" maxlength="10" value="${esc(tabCancelName)}" placeholder="默认：集团介绍">
       <label class="field-label" style="margin-top:6px">宣传视频</label>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
         <input type="file" id="video-file" accept="video/*" style="font-size:13px;flex:1;min-width:200px">
@@ -472,15 +460,12 @@ function renderSettings(el) {
       <div class="sub-info" style="margin-bottom:10px">上传需绑定 R2 存储（变量名 VIDEO_BUCKET）。若未绑定，可粘贴外部视频链接。</div>
       <input class="input" id="cfg-video-url" value="${esc(videoUrl)}" placeholder="视频链接（如 mp4 直链，或留空不显示）">
       ${videoUrl ? `<div class="video-preview"><video src="${esc(videoUrl)}" controls preload="metadata"></video></div>` : ''}
-
       <label class="field-label" style="margin-top:14px">企业简介文案（显示在视频下方）</label>
-      <textarea class="input" id="cfg-about" rows="6" placeholder="支持多行，例如：&#10;我们是一家专注于……&#10;致力于为……">${esc(aboutText)}</textarea>
-
+      <textarea class="input" id="cfg-about" rows="6" placeholder="支持多行，例如：\n我们是一家专注于……\n致力于为……">${esc(aboutText)}</textarea>
       <div style="background:#f8f9fd;border-radius:10px;padding:12px 14px;margin-top:10px;font-size:12px;color:var(--ink3);line-height:1.7">
-        💡 视频与简介会显示在"订单大厅"标签的空状态区域。若两者都为空，则显示默认的"暂无订单"。
+        💡 视频与简介会显示在"集团介绍"标签下方。若两者都为空，则显示"暂无简介内容"。
       </div>
     </div>
-
     <div class="card">
       <h3>提示文案</h3>
       <label class="field-label">充值页提示</label>
@@ -488,7 +473,6 @@ function renderSettings(el) {
       <label class="field-label">客服信息</label>
       <input class="input" id="cfg-support" value="${esc(c.support || '')}">
     </div>
-
     <button class="btn btn-primary btn-block" onclick="saveAdminConfig()">保存全部配置</button>
   `;
 }
@@ -498,17 +482,14 @@ async function uploadVideo() {
   const file = fileInput?.files?.[0];
   if (!file) { toast('请先选择视频文件'); return; }
   if (file.size > 100 * 1024 * 1024) { toast('视频过大（>100MB），建议用外部链接'); return; }
-
   const formData = new FormData();
   formData.append('video', file);
-
   toast('上传中，请稍候…');
   try {
     const r = await api('/admin/upload-video', { method: 'POST', body: formData, isForm: true });
     const url = r.url || ('/api/video/' + r.key);
     $('#cfg-video-url').value = url;
     toast('视频上传成功 ✅');
-    // 刷新预览
     const wrap = $('#cfg-video-url').nextElementSibling;
     if (wrap && wrap.classList.contains('video-preview')) {
       wrap.querySelector('video').src = url;
@@ -528,7 +509,7 @@ async function saveAdminConfig() {
     minDeposit: Number($('#cfg-min')?.value) || 10,
     notice: $('#cfg-notice')?.value.trim() || '',
     support: $('#cfg-support')?.value.trim() || '',
-    tabCancelName: $('#cfg-tab-cancel')?.value.trim() || '已取消',
+    tabCancelName: $('#cfg-tab-cancel')?.value.trim() || '集团介绍',
     videoUrl: $('#cfg-video-url')?.value.trim() || '',
     aboutText: $('#cfg-about')?.value || '',
   };
@@ -540,7 +521,6 @@ async function saveAdminConfig() {
   } catch(e) { toast(e.message); }
 }
 
-/* ============ Toast ============ */
 let toastTimer = null;
 function toast(msg) {
   document.querySelectorAll('.toast').forEach(el => el.remove());
@@ -553,7 +533,6 @@ function toast(msg) {
   toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 320); }, 2200);
 }
 
-/* ============ 自动登录 + 自动补单 ============ */
 (async () => {
   if (getToken()) {
     try {
@@ -563,9 +542,7 @@ function toast(msg) {
       renderTab('orders');
       startPolling();
       setTimeout(() => autoFill(true), 800);
-    } catch(e) {
-      clearToken();
-    }
+    } catch(e) { clearToken(); }
   }
 })();
 
