@@ -53,6 +53,10 @@
   .sub-info{font-size:12px;color:var(--ink3);margin-top:4px;word-break:break-all;line-height:1.5}
   .video-preview{margin-top:10px;border-radius:10px;overflow:hidden;background:#000;max-width:100%;}
   .video-preview video{width:100%;display:block;max-height:280px;background:#000;}
+  .feature-item{background:#f8f9fd;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;}
+  .feature-item .feature-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  .feature-item .feature-row input{flex:1;margin-bottom:0;}
+  .feature-item textarea{margin-bottom:0;}
   @media (max-width:700px){
     .form-row{grid-template-columns:1fr;}
     .table{font-size:12.5px}
@@ -428,9 +432,8 @@ function renderSettings(el) {
   const videoUrl = c.videoUrl || '';
   const aboutTitle = c.aboutTitle || '企业简介';
   const aboutText = c.aboutText || '';
-  const featureTitle = c.featureTitle || '功能说明';
-  const featureText = c.featureText || '';
   const tabCancelName = c.tabCancelName || '集团介绍';
+  const featureList = c.featureList || [];
 
   el.innerHTML = `
     <div class="card">
@@ -451,8 +454,9 @@ function renderSettings(el) {
         </div>
       </div>
     </div>
+    
     <div class="card">
-      <h3>首页配置</h3>
+      <h3>集团介绍配置</h3>
       <label class="field-label">"集团介绍" Tab 显示名称</label>
       <input class="input" id="cfg-tab-cancel" maxlength="10" value="${esc(tabCancelName)}" placeholder="默认：集团介绍">
       
@@ -467,20 +471,29 @@ function renderSettings(el) {
 
       <label class="field-label" style="margin-top:14px">企业简介标题</label>
       <input class="input" id="cfg-about-title" value="${esc(aboutTitle)}" placeholder="默认：企业简介">
-
       <label class="field-label" style="margin-top:6px">企业简介文案</label>
       <textarea class="input" id="cfg-about" rows="4" placeholder="支持多行文案">${esc(aboutText)}</textarea>
+    </div>
 
-      <label class="field-label" style="margin-top:14px">功能说明标题（可折叠）</label>
-      <input class="input" id="cfg-feature-title" value="${esc(featureTitle)}" placeholder="默认：功能说明">
-
-      <label class="field-label" style="margin-top:6px">功能说明内容（点击展开/收起）</label>
-      <textarea class="input" id="cfg-feature" rows="6" placeholder="支持多行文本，例如常见问题解答...">${esc(featureText)}</textarea>
-
-      <div style="background:#f8f9fd;border-radius:10px;padding:12px 14px;margin-top:10px;font-size:12px;color:var(--ink3);line-height:1.7">
-        💡 以上内容会显示在"集团介绍"标签页中。
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin-bottom:0">折叠功能说明（可添加/删除）</h3>
+        <button class="btn btn-primary" onclick="addFeatureItem()" style="padding:8px 14px;font-size:13px">➕ 添加折叠项</button>
+      </div>
+      <div id="feature-list-editor">
+        ${featureList.length === 0 ? `<div style="color:var(--ink3);font-size:13px;text-align:center;padding:20px">暂无折叠项，点击右上角添加</div>` : ''}
+        ${featureList.map((item, idx) => `
+          <div class="feature-item" data-idx="${idx}">
+            <div class="feature-row">
+              <input class="input feature-title" value="${esc(item.title || '')}" placeholder="折叠项标题（如：常见问题）">
+              <button class="btn btn-danger" onclick="removeFeatureItem(${idx})" style="padding:8px 12px;margin-bottom:0">删除</button>
+            </div>
+            <textarea class="input feature-content" rows="3" placeholder="折叠项内容">${esc(item.content || '')}</textarea>
+          </div>
+        `).join('')}
       </div>
     </div>
+
     <div class="card">
       <h3>提示文案</h3>
       <label class="field-label">充值页提示</label>
@@ -490,6 +503,20 @@ function renderSettings(el) {
     </div>
     <button class="btn btn-primary btn-block" onclick="saveAdminConfig()">保存全部配置</button>
   `;
+}
+
+function addFeatureItem() {
+  const list = state.config.featureList || [];
+  list.push({ title: '', content: '' });
+  state.config.featureList = list;
+  renderTab('settings');
+}
+
+function removeFeatureItem(idx) {
+  const list = state.config.featureList || [];
+  list.splice(idx, 1);
+  state.config.featureList = list;
+  renderTab('settings');
 }
 
 async function uploadVideo() {
@@ -518,6 +545,17 @@ async function uploadVideo() {
 }
 
 async function saveAdminConfig() {
+  // 收集折叠列表
+  const featureItems = document.querySelectorAll('.feature-item');
+  const featureList = [];
+  featureItems.forEach(item => {
+    const title = item.querySelector('.feature-title')?.value.trim() || '';
+    const content = item.querySelector('.feature-content')?.value || '';
+    if (title || content) {
+      featureList.push({ title, content });
+    }
+  });
+
   const body = {
     trc20: $('#cfg-trc20')?.value.trim() || '',
     ratio: (Number($('#cfg-ratio')?.value) || 10) / 100,
@@ -528,8 +566,7 @@ async function saveAdminConfig() {
     videoUrl: $('#cfg-video-url')?.value.trim() || '',
     aboutTitle: $('#cfg-about-title')?.value.trim() || '企业简介',
     aboutText: $('#cfg-about')?.value || '',
-    featureTitle: $('#cfg-feature-title')?.value.trim() || '功能说明',
-    featureText: $('#cfg-feature')?.value || '',
+    featureList: featureList
   };
   try {
     await api('/admin/config', { method: 'POST', body });
