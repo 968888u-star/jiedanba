@@ -128,14 +128,15 @@
   .wallet-card .wc-tip{font-size:11px;color:var(--ink3);margin-top:2px}
   .wallet-card .wc-check{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;display:grid;place-items:center;border:2px solid #fff;}
   .empty-rich{background:#fff;border-radius:0 0 12px 12px;padding:20px;margin-top:0;}
-  .empty-rich .media-box{border-radius:12px;overflow:hidden;background:#000;margin-bottom:14px;}
+  .empty-rich .media-box{border-radius:12px;overflow:hidden;background:#000;margin-bottom:16px;}
   .empty-rich .media-box video{width:100%;display:block;max-height:460px;background:#000;}
-  .empty-rich .about-box{background:#f8f9fd;border-radius:12px;padding:16px;font-size:13.5px;color:var(--ink2);line-height:1.8;white-space:pre-wrap;}
-  .empty-rich .about-box h4{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-  .feature-box{background:#f8f9fd;border-radius:12px;padding:16px;margin-top:14px;border:1px solid var(--line);}
-  .feature-header{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px;color:var(--ink);cursor:pointer;user-select:none;}
-  .feature-header .arrow{font-size:12px;transition:transform 0.3s;}
-  .feature-content{display:none;margin-top:12px;font-size:13.5px;line-height:1.8;color:var(--ink2);white-space:pre-wrap;border-top:1px dashed var(--line);padding-top:12px;}
+  .empty-rich .about-title{font-size:16px;font-weight:800;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .empty-rich .about-text{font-size:13.5px;color:var(--ink2);line-height:1.8;white-space:pre-wrap;margin-bottom:20px;}
+  .feature-box{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+  .feature-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-weight:800;font-size:14px;color:var(--ink);cursor:pointer;user-select:none;background:#f8f9fd;transition:background 0.2s;}
+  .feature-header:hover{background:#f1f2f7;}
+  .feature-header .arrow{font-size:12px;transition:transform 0.3s;color:var(--ink3);}
+  .feature-content{display:none;padding:16px;font-size:13.5px;line-height:1.8;color:var(--ink2);white-space:pre-wrap;border-top:1px solid var(--line);}
   @media (max-width:900px){
     .sidebar{display:none}
     .main{margin-left:0;padding:0 12px 80px;max-width:100%}
@@ -165,7 +166,7 @@ const state = {
   config: {
     trc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '',
     tabCancelName: '集团介绍', videoUrl: '', aboutTitle: '企业简介', aboutText: '',
-    featureTitle: '功能说明', featureText: ''
+    featureList: [] // 数组结构：[{ title: '说明1', content: '内容1' }]
   },
   view: 'hall',
   orderTab: 'cancelled',
@@ -436,8 +437,7 @@ function viewHall() {
     const hasVideo = state.config.videoUrl && state.config.videoUrl.trim();
     const aboutTitle = state.config.aboutTitle || '企业简介';
     const hasAbout = state.config.aboutText && state.config.aboutText.trim();
-    const featureTitle = state.config.featureTitle || '功能说明';
-    const featureText = state.config.featureText || '';
+    const featureList = state.config.featureList || [];
 
     return `
     <div class="page">
@@ -446,23 +446,26 @@ function viewHall() {
       </div>
       <div class="empty-rich">
         ${hasVideo ? `
-          <div class="media-box" style="margin-bottom:16px;">
+          <div class="media-box">
             <video src="${esc(state.config.videoUrl)}" controls preload="metadata" playsinline></video>
           </div>` : ''}
+        
         ${hasAbout ? `
-          <div class="about-box">
-            <h4>🏢 ${esc(aboutTitle)}</h4>
-            <div>${esc(state.config.aboutText)}</div>
-          </div>` : ''}
-        ${featureText ? `
+          <div class="about-title">🏢 ${esc(aboutTitle)}</div>
+          <div class="about-text">${esc(state.config.aboutText)}</div>
+        ` : ''}
+
+        ${featureList.length > 0 ? featureList.map((item, idx) => `
           <div class="feature-box">
-            <div class="feature-header" data-action="toggle-feature">
-              <span>📖 ${esc(featureTitle)}</span>
+            <div class="feature-header" data-action="toggle-feature" data-idx="${idx}">
+              <span>📖 ${esc(item.title || '功能说明')}</span>
               <span class="arrow">▼</span>
             </div>
-            <div class="feature-content">${esc(featureText)}</div>
-          </div>` : ''}
-        ${!hasVideo && !hasAbout && !featureText ? `<div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">暂无简介内容，管理员可在后台配置</div>` : ''}
+            <div class="feature-content">${esc(item.content || '')}</div>
+          </div>
+        `).join('') : ''}
+
+        ${!hasVideo && !hasAbout && featureList.length === 0 ? `<div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">暂无简介内容，管理员可在后台配置</div>` : ''}
       </div>
     </div>`;
   }
@@ -1115,15 +1118,13 @@ document.addEventListener('click', async e => {
         });
         break;
       case 'toggle-feature': {
-        const box = el.closest('.feature-box');
-        if (box) {
-          const content = box.querySelector('.feature-content');
-          const arrow = box.querySelector('.arrow');
-          if (content) {
-            const isHidden = content.style.display === 'none' || content.style.display === '';
-            content.style.display = isHidden ? 'block' : 'none';
-            if (arrow) arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-          }
+        const idx = el.dataset.idx;
+        const content = el.nextElementSibling;
+        const arrow = el.querySelector('.arrow');
+        if (content) {
+          const isHidden = content.style.display === 'none' || content.style.display === '';
+          content.style.display = isHidden ? 'block' : 'none';
+          if (arrow) arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
         }
         break;
       }
