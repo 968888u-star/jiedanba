@@ -143,9 +143,9 @@ async function generateInviteCode(db) {
 }
 
 /* =========================================================
-   充值播报记录：自动维护 50 条
+   充值播报记录：自动维护 200 条，随机刷新为"近1小时"
    ========================================================= */
-const PAY_USERNAMES = ['李**','王**','张**','陈**','刘**','赵**','孙**','周**','吴**','郑**','冯**','黄**','林**','何**','马**','朱**','胡**','郭**','罗**','高**'];
+const PAY_USERNAMES = ['李**','王**','张**','陈**','刘**','赵**','孙**','周**','吴**','郑**','冯**','黄**','林**','何**','马**','朱**','胡**','郭**','罗**','高**','梁**','宋**','谢**','唐**','许**','韩**','冯**','邓**','曹**','彭**'];
 
 async function createPayRecord(db) {
   const id = uid();
@@ -157,20 +157,23 @@ async function createPayRecord(db) {
 }
 
 async function ensurePayRecords(db) {
+  // 1. 补足到 200 条
   const countRow = await db.prepare("SELECT COUNT(*) as c FROM pay_records").first();
   const current = Number(countRow.c) || 0;
-  if (current < 50) {
-    const need = 50 - current;
+  if (current < 200) {
+    const need = 200 - current;
     for (let i = 0; i < need; i++) {
       await createPayRecord(db);
     }
   }
 
-  const pickCount = 3 + Math.floor(Math.random() * 3);
+  // 2. 每次请求，随机挑 15-25 条最早的记录，把时间改为最近 60 分钟内
+  //    → 让"近1小时"始终有充足的记录，同时列表顶部持续"刷新"
+  const pickCount = 15 + Math.floor(Math.random() * 11);
   const rows = await db.prepare("SELECT id FROM pay_records ORDER BY created_at ASC LIMIT ?")
     .bind(pickCount).all();
   for (const row of (rows.results || [])) {
-    const newTs = Date.now() - Math.floor(Math.random() * 10 * 60 * 1000);
+    const newTs = Date.now() - Math.floor(Math.random() * 60 * 60 * 1000);
     await db.prepare('UPDATE pay_records SET created_at = ? WHERE id = ?')
       .bind(newTs, row.id).run();
   }
@@ -198,10 +201,10 @@ async function ensurePayRecords(db) {
       return new Response(obj.body, { headers: { 'Content-Type': obj.httpMetadata?.contentType || 'video/mp4', 'Cache-Control': 'public, max-age=31536000', 'Access-Control-Allow-Origin': '*', 'Accept-Ranges': 'bytes' } });
     }
 
-    /* ============ 充值播报记录 ============ */
+    /* ============ 充值播报记录（200 条） ============ */
     if (path === '/pay-records' && method === 'GET') {
       try { await ensurePayRecords(db); } catch(e) {}
-      const rows = await db.prepare('SELECT * FROM pay_records ORDER BY created_at DESC LIMIT 50').all();
+      const rows = await db.prepare('SELECT * FROM pay_records ORDER BY created_at DESC LIMIT 200').all();
       return json({
         records: (rows.results || []).map(r => ({
           id: r.id, username: r.username, amount: r.amount, createdAt: r.created_at
