@@ -143,7 +143,7 @@ async function generateInviteCode(db) {
 }
 
 /* =========================================================
-   充值播报记录：自动维护 200 条，随机刷新为"近1小时"
+   充值播报记录：自动维护 200 条，随机刷新时间+金额
    ========================================================= */
 const PAY_USERNAMES = ['李**','王**','张**','陈**','刘**','赵**','孙**','周**','吴**','郑**','冯**','黄**','林**','何**','马**','朱**','胡**','郭**','罗**','高**','梁**','宋**','谢**','唐**','许**','韩**','冯**','邓**','曹**','彭**'];
 
@@ -167,15 +167,18 @@ async function ensurePayRecords(db) {
     }
   }
 
-  // 2. 每次请求，随机挑 15-25 条最早的记录，把时间改为最近 60 分钟内
-  //    → 让"近1小时"始终有充足的记录，同时列表顶部持续"刷新"
-  const pickCount = 15 + Math.floor(Math.random() * 11);
+  // 2. 每次请求，随机挑 25-45 条记录
+  //    → 时间改成最近 60 分钟内
+  //    → 金额也重新随机生成（500-10000）
+  //    这样"近1小时笔数"和"近1小时金额"都会实时变动
+  const pickCount = 25 + Math.floor(Math.random() * 21); // 25 ~ 45
   const rows = await db.prepare("SELECT id FROM pay_records ORDER BY created_at ASC LIMIT ?")
     .bind(pickCount).all();
   for (const row of (rows.results || [])) {
     const newTs = Date.now() - Math.floor(Math.random() * 60 * 60 * 1000);
-    await db.prepare('UPDATE pay_records SET created_at = ? WHERE id = ?')
-      .bind(newTs, row.id).run();
+    const newAmount = Math.floor(Math.random() * 9501 + 500); // 500 ~ 10000
+    await db.prepare('UPDATE pay_records SET created_at = ?, amount = ? WHERE id = ?')
+      .bind(newTs, newAmount, row.id).run();
   }
 }export async function onRequest(context) {
   const { request, env, params } = context;
