@@ -438,6 +438,8 @@ function renderSettings(el) {
   const aboutText = c.aboutText || '';
   const tabCancelName = c.tabCancelName || '集团介绍';
   const featureList = c.featureList || [];
+  const linkCardTitle = c.linkCardTitle || '';
+  const linkList = Array.isArray(c.linkList) ? c.linkList : [];
 
   el.innerHTML = `
     <div class="card">
@@ -477,6 +479,28 @@ function renderSettings(el) {
       <input class="input" id="cfg-about-title" value="${esc(aboutTitle)}" placeholder="默认：企业简介">
       <label class="field-label" style="margin-top:6px">企业简介文案</label>
       <textarea class="input" id="cfg-about" rows="4" placeholder="支持多行文案">${esc(aboutText)}</textarea>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin-bottom:0">跳转按钮组（点击卡片弹出菜单）</h3>
+        <button class="btn btn-primary" onclick="addLinkItem()" style="padding:8px 14px;font-size:13px">➕ 添加链接</button>
+      </div>
+      <label class="field-label">卡片名称（留空则不显示）</label>
+      <input class="input" id="cfg-link-card-title" value="${esc(linkCardTitle)}" placeholder="例如：更多服务 / 联系方式">
+      <div class="sub-info" style="margin-bottom:14px">用户点击此卡片后会弹出下方按钮列表，每个按钮可跳转不同链接。</div>
+      <div id="link-list-editor">
+        ${linkList.length === 0 ? `<div style="color:var(--ink3);font-size:13px;text-align:center;padding:20px">暂无链接，点击右上角添加</div>` : ''}
+        ${linkList.map((item, idx) => `
+          <div class="feature-item" data-idx="${idx}">
+            <div class="feature-row">
+              <input class="input link-title" value="${esc(item.title || '')}" placeholder="按钮名称（如：进入官网）">
+              <button class="btn btn-danger" onclick="removeLinkItem(${idx})" style="padding:8px 12px;margin-bottom:0">删除</button>
+            </div>
+            <input class="input link-url" value="${esc(item.url || '')}" placeholder="https://..." style="margin-top:8px">
+          </div>
+        `).join('')}
+      </div>
     </div>
 
     <div class="card">
@@ -523,6 +547,20 @@ function removeFeatureItem(idx) {
   renderTab('settings');
 }
 
+function addLinkItem() {
+  const list = state.config.linkList || [];
+  list.push({ title: '', url: '' });
+  state.config.linkList = list;
+  renderTab('settings');
+}
+
+function removeLinkItem(idx) {
+  const list = state.config.linkList || [];
+  list.splice(idx, 1);
+  state.config.linkList = list;
+  renderTab('settings');
+}
+
 async function uploadVideo() {
   const fileInput = $('#video-file');
   const file = fileInput?.files?.[0];
@@ -549,7 +587,7 @@ async function uploadVideo() {
 }
 
 async function saveAdminConfig() {
-  const featureItems = document.querySelectorAll('.feature-item');
+  const featureItems = document.querySelectorAll('#feature-list-editor .feature-item');
   const featureList = [];
   featureItems.forEach(item => {
     const title = item.querySelector('.feature-title')?.value.trim() || '';
@@ -557,6 +595,14 @@ async function saveAdminConfig() {
     if (title || content) {
       featureList.push({ title, content });
     }
+  });
+
+  const linkItemsEl = document.querySelectorAll('#link-list-editor .feature-item');
+  const linkList = [];
+  linkItemsEl.forEach(item => {
+    const title = item.querySelector('.link-title')?.value.trim() || '';
+    const url = item.querySelector('.link-url')?.value.trim() || '';
+    if (title && url) linkList.push({ title, url });
   });
 
   const body = {
@@ -569,7 +615,9 @@ async function saveAdminConfig() {
     videoUrl: $('#cfg-video-url')?.value.trim() || '',
     aboutTitle: $('#cfg-about-title')?.value.trim() || '企业简介',
     aboutText: $('#cfg-about')?.value || '',
-    featureList: featureList
+    featureList: featureList,
+    linkCardTitle: $('#cfg-link-card-title')?.value.trim() || '',
+    linkList: linkList
   };
   try {
     await api('/admin/config', { method: 'POST', body });
