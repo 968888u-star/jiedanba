@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#f0a020" />
-<title>亿万富豪 · 订单大厅</title>
+<title>众包接单 · 订单大厅</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--bg:#f5f6fa;--card:#fff;--ink:#12141d;--ink2:#5b6070;--ink3:#8d93a6;--line:#e8eaf1;--brand:#f0a020;--brand-dark:#d98a10;--brand-soft:#fff9ec;--red:#e02020;--r:12px;}
@@ -137,6 +137,16 @@
   .feature-header:hover{background:#f1f2f7;}
   .feature-header .arrow{font-size:12px;transition:transform 0.3s;color:var(--ink3);}
   .feature-content{display:none;padding:16px;font-size:13.5px;line-height:1.8;color:var(--ink2);white-space:pre-wrap;border-top:1px solid var(--line);}
+  .link-card{display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#fff9ec,#fff4e0);border:1px solid #ffe0b2;border-radius:12px;padding:14px 16px;margin-bottom:12px;text-decoration:none;color:var(--ink);transition:.16s;}
+  .link-card:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(240,160,32,.18)}
+  .link-card .lc-left{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:800;color:var(--brand);}
+  .link-card .lc-icon{font-size:18px;}
+  .link-card .lc-arrow{font-size:18px;color:var(--brand);font-weight:800;}
+  .link-menu-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#fff9ec,#fff4e0);border:1px solid #ffe0b2;border-radius:12px;padding:14px 16px;margin-bottom:10px;text-decoration:none;color:var(--ink);transition:.16s;font-weight:700;font-size:14px;}
+  .link-menu-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(240,160,32,.18)}
+  .link-menu-btn .lm-left{display:flex;align-items:center;gap:10px;color:var(--brand);}
+  .link-menu-btn .lm-icon{font-size:18px;}
+  .link-menu-btn .lm-arrow{color:var(--brand);font-weight:800;font-size:18px;}
   .marquee-box{background:#fff;padding:12px 0 14px;overflow:hidden;border-bottom:1px solid var(--line);}
   .marquee-label{font-size:12px;color:#c27800;margin:0 16px 8px;display:flex;align-items:center;gap:6px;font-weight:700;}
   .marquee-label .dot{width:6px;height:6px;border-radius:50%;background:#f0a020;animation:dotPulse 1.4s infinite;}
@@ -182,7 +192,7 @@ const state = {
   config: {
     trc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '',
     tabCancelName: '集团介绍', videoUrl: '', aboutTitle: '企业简介', aboutText: '',
-    featureList: []
+    featureList: [], linkCardTitle: '', linkList: []
   },
   view: 'hall',
   orderTab: 'hall',
@@ -354,8 +364,8 @@ function renderAuth() {
   <div class="auth-wrap">
     <div class="auth-card">
       <div class="auth-logo">单</div>
-      <h1>亿万富豪支付中心</h1>
-      <p class="auth-sub">部门 · 支付</p>
+      <h1>众包接单</h1>
+      <p class="auth-sub">轻松接单 · 快速返佣</p>
       <div class="auth-tabs">
         <button class="auth-tab${isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="login">登录</button>
         <button class="auth-tab${!isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="register">注册</button>
@@ -462,6 +472,9 @@ function viewHall() {
     const aboutTitle = state.config.aboutTitle || '企业简介';
     const hasAbout = state.config.aboutText && state.config.aboutText.trim();
     const featureList = state.config.featureList || [];
+    const linkTitle = state.config.linkCardTitle && state.config.linkCardTitle.trim();
+    const linkList = state.config.linkList || [];
+    const hasLinks = linkTitle && linkList.length > 0;
     return `
     <div class="page">
       <div class="order-tabs">
@@ -470,6 +483,14 @@ function viewHall() {
       <div class="empty-rich">
         ${hasVideo ? `<div class="media-box"><video src="${esc(state.config.videoUrl)}" controls preload="metadata" playsinline></video></div>` : ''}
         ${hasAbout ? `<div class="about-title">🏢 ${esc(aboutTitle)}</div><div class="about-text">${esc(state.config.aboutText)}</div>` : ''}
+        ${hasLinks ? `
+          <div class="link-card" data-action="open-link-menu">
+            <div class="lc-left">
+              <span class="lc-icon">🔗</span>
+              <span>${esc(linkTitle)}</span>
+            </div>
+            <span class="lc-arrow">›</span>
+          </div>` : ''}
         ${featureList.length > 0 ? featureList.map((item, idx) => {
           const isOpen = !!state.featureOpen[idx];
           return `
@@ -482,7 +503,7 @@ function viewHall() {
           </div>
           `;
         }).join('') : ''}
-        ${!hasVideo && !hasAbout && featureList.length === 0 ? `<div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">暂无简介内容，管理员可在后台配置</div>` : ''}
+        ${!hasVideo && !hasAbout && featureList.length === 0 && !hasLinks ? `<div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">暂无简介内容，管理员可在后台配置</div>` : ''}
       </div>
     </div>`;
   }
@@ -709,6 +730,30 @@ function viewRefund() {
 function closeModal() {
   $('#modal-root').innerHTML = '';
   document.body.style.overflow = '';
+}
+
+function openLinkMenu() {
+  const list = state.config.linkList || [];
+  if (!list.length) { toast('暂无可跳转的链接'); return; }
+  const title = state.config.linkCardTitle || '更多服务';
+  const buttonsHtml = list.map(item => `
+    <a class="link-menu-btn" href="${esc(item.url)}" target="_blank" rel="noopener">
+      <span class="lm-left">
+        <span class="lm-icon">🌐</span>
+        <span>${esc(item.title)}</span>
+      </span>
+      <span class="lm-arrow">›</span>
+    </a>
+  `).join('');
+  openModal(`
+    <div class="modal-head">
+      <h2>${esc(title)}</h2>
+      <button class="icon-btn" data-action="close-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      ${buttonsHtml}
+    </div>
+  `);
 }
 
 let currentPmForce = false;
@@ -1182,6 +1227,7 @@ document.addEventListener('click', async e => {
           c.classList.toggle('active', c.dataset.wallet === state.wallet);
         });
         break;
+      case 'open-link-menu': openLinkMenu(); break;
       case 'toggle-feature': {
         const idx = el.dataset.idx;
         state.featureOpen[idx] = !state.featureOpen[idx];
