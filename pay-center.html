@@ -34,7 +34,9 @@
   .list-header .badge-count{font-size:11.5px;color:var(--ink3);font-weight:600;background:#f5f6fa;padding:4px 10px;border-radius:20px;}
 
   /* 记录列表 */
-  .records{display:flex;flex-direction:column;gap:8px;}
+  .records{display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow-y:auto;padding-right:4px;}
+  .records::-webkit-scrollbar{width:6px;}
+  .records::-webkit-scrollbar-thumb{background:#d9dbe3;border-radius:3px;}
   .record{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#f8f9fd;border-radius:10px;transition:.2s;}
   .record.new{background:linear-gradient(135deg,#fff9ec,#fff4e0);border:1px solid #ffe0b2;box-shadow:0 4px 14px rgba(240,160,32,.15);}
   .record.new .avatar{animation:newPulse 1s ease;}
@@ -52,10 +54,6 @@
 
   /* 加载 */
   .loading{text-align:center;padding:40px;font-size:13px;color:var(--ink3);}
-
-  /* 提示 */
-  .toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,18px);background:#12141d;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.28s;pointer-events:none;z-index:300;}
-  .toast.show{opacity:1;transform:translate(-50%,0);}
 </style>
 </head>
 <body>
@@ -68,11 +66,11 @@
     <div class="hero-stats">
       <div class="hero-stat">
         <div class="num" id="stat-count">--</div>
-        <div class="lbl">今日充值笔数</div>
+        <div class="lbl">近1小时充值笔数</div>
       </div>
       <div class="hero-stat">
         <div class="num" id="stat-total">--</div>
-        <div class="lbl">今日充值金额</div>
+        <div class="lbl">近1小时充值金额</div>
       </div>
     </div>
   </div>
@@ -82,7 +80,7 @@
   <div class="panel">
     <div class="list-header">
       <h2><span class="live-dot"></span>实时充值记录</h2>
-      <span class="badge-count" id="record-count">0 / 50</span>
+      <span class="badge-count" id="record-count">0 / 200</span>
     </div>
     <div class="records" id="records">
       <div class="loading">正在加载…</div>
@@ -92,8 +90,6 @@
     <a href="/">← 返回订单大厅</a>
   </div>
 </main>
-
-<div id="toast-root"></div>
 <script>
 const $ = s => document.querySelector(s);
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -122,11 +118,15 @@ function fmtTotal(n) {
 let lastTopId = null;
 
 function renderRecords(records) {
-  const count = records.length;
-  const total = records.reduce((s, r) => s + Number(r.amount || 0), 0);
-  $('#stat-count').textContent = count;
-  $('#stat-total').textContent = '¥' + fmtTotal(total);
-  $('#record-count').textContent = count + ' / 50';
+  // 只统计近 1 小时内的记录
+  const oneHourAgo = Date.now() - 60 * 60 * 1000;
+  const recentRecords = records.filter(r => Number(r.createdAt) >= oneHourAgo);
+  const recentCount = recentRecords.length;
+  const recentTotal = recentRecords.reduce((s, r) => s + Number(r.amount || 0), 0);
+
+  $('#stat-count').textContent = recentCount;
+  $('#stat-total').textContent = '¥' + fmtTotal(recentTotal);
+  $('#record-count').textContent = records.length + ' / 200';
 
   const topId = records[0]?.id || null;
   const isNewTop = topId && topId !== lastTopId;
