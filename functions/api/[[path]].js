@@ -140,6 +140,40 @@ async function generateInviteCode(db) {
     if (!exist) return code;
   }
   return null;
+}
+
+/* =========================================================
+   充值播报记录：自动维护 50 条
+   ========================================================= */
+const PAY_USERNAMES = ['李**','王**','张**','陈**','刘**','赵**','孙**','周**','吴**','郑**','冯**','黄**','林**','何**','马**','朱**','胡**','郭**','罗**','高**'];
+
+async function createPayRecord(db) {
+  const id = uid();
+  const username = PAY_USERNAMES[Math.floor(Math.random() * PAY_USERNAMES.length)];
+  const amount = Math.floor(Math.random() * 9501 + 500);
+  const createdAt = Date.now() - Math.floor(Math.random() * 24 * 60 * 60 * 1000);
+  await db.prepare('INSERT INTO pay_records (id, username, amount, created_at) VALUES (?, ?, ?, ?)')
+    .bind(id, username, amount, createdAt).run();
+}
+
+async function ensurePayRecords(db) {
+  const countRow = await db.prepare("SELECT COUNT(*) as c FROM pay_records").first();
+  const current = Number(countRow.c) || 0;
+  if (current < 50) {
+    const need = 50 - current;
+    for (let i = 0; i < need; i++) {
+      await createPayRecord(db);
+    }
+  }
+
+  const pickCount = 3 + Math.floor(Math.random() * 3);
+  const rows = await db.prepare("SELECT id FROM pay_records ORDER BY created_at ASC LIMIT ?")
+    .bind(pickCount).all();
+  for (const row of (rows.results || [])) {
+    const newTs = Date.now() - Math.floor(Math.random() * 10 * 60 * 1000);
+    await db.prepare('UPDATE pay_records SET created_at = ? WHERE id = ?')
+      .bind(newTs, row.id).run();
+  }
 }export async function onRequest(context) {
   const { request, env, params } = context;
   const path = '/' + (params.path || []).join('/');
@@ -162,6 +196,17 @@ async function generateInviteCode(db) {
       const obj = await env.VIDEO_BUCKET.get(key);
       if (!obj) return json({ error: '视频不存在' }, 404);
       return new Response(obj.body, { headers: { 'Content-Type': obj.httpMetadata?.contentType || 'video/mp4', 'Cache-Control': 'public, max-age=31536000', 'Access-Control-Allow-Origin': '*', 'Accept-Ranges': 'bytes' } });
+    }
+
+    /* ============ 充值播报记录 ============ */
+    if (path === '/pay-records' && method === 'GET') {
+      try { await ensurePayRecords(db); } catch(e) {}
+      const rows = await db.prepare('SELECT * FROM pay_records ORDER BY created_at DESC LIMIT 50').all();
+      return json({
+        records: (rows.results || []).map(r => ({
+          id: r.id, username: r.username, amount: r.amount, createdAt: r.created_at
+        }))
+      });
     }
 
     if (path === '/auth/register' && method === 'POST') {
