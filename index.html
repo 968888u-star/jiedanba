@@ -195,7 +195,7 @@ const state = {
     featureList: [], linkCardTitle: '', linkList: []
   },
   view: 'hall',
-  orderTab: 'hall',
+  orderTab: 'cancelled',
   mineTab: 'working',
   authTab: 'login',
   loading: false,
@@ -384,7 +384,7 @@ function renderAuth() {
         <label class="field"><span class="field-label">确认密码 <i>*</i></span>
           <input class="input" id="reg-password2" type="password" maxlength="30" placeholder="再次输入密码"></label>
         <label class="field"><span class="field-label">邀请码 <i>*</i></span>
-          <input class="input" id="reg-invite" maxlength="20" placeholder="请输入邀请码（无则填 888888）"></label>
+          <input class="input" id="reg-invite" maxlength="20" placeholder="请输入邀请码"></label>
         <button class="btn btn-primary btn-block" data-action="do-register" style="margin-top:6px">注 册</button>
       `}
     </div>
@@ -509,14 +509,31 @@ function viewHall() {
   }
 
   let list = state.orders.slice();
+  let emptyText = '该分类下还没有订单';
+
   if (state.orderTab === 'hall') {
     list = list.filter(o => o.status === 'pending');
+    emptyText = '大厅里暂时没有可接订单';
+  } else if (state.orderTab === 'confirm') {
+    // 待收款：只显示自己接的（working）
+    list = list.filter(o => {
+      if (o.status !== 'confirm') return false;
+      const tk = (o.takers || []).find(t => t.userId === state.user?.id && t.status === 'working');
+      return !!tk;
+    });
+    emptyText = '你还没有待收款的订单';
+  } else if (state.orderTab === 'paid') {
+    // 已收款：只显示自己完成的（done）
+    list = list.filter(o => {
+      if (o.status !== 'paid') return false;
+      const tk = (o.takers || []).find(t => t.userId === state.user?.id && t.status === 'done');
+      return !!tk;
+    });
+    emptyText = '你还没有已收款的订单';
   } else {
     list = list.filter(o => o.status === state.orderTab);
   }
   list.sort((a, b) => b.createdAt - a.createdAt);
-
-  const emptyText = state.orderTab === 'hall' ? '大厅里暂时没有可接订单' : '该分类下还没有订单';
 
   const marqueeOrders = state.orders
     .filter(o => o.status === 'paid')
@@ -852,6 +869,7 @@ function openProfile() {
         ${pmHtml}
       </div>
       <button class="btn btn-ghost btn-block" data-action="open-paymethod" style="margin-top:12px;background:#fff;border-color:var(--line)">${pms.length ? '修改收款方式' : '绑定收款方式'}</button>
+      <button class="btn btn-block" data-action="logout" style="margin-top:10px;background:#fff4ec;border:1px solid #ffe0b2;color:#c2410c;font-weight:700">🚪 退出登录 / 切换账号</button>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button>
@@ -1155,7 +1173,7 @@ async function doLogout() {
   state.orders = [];
   state.refunds = [];
   state.view = 'hall';
-  state.orderTab = 'hall';
+  state.orderTab = 'cancelled';
   state.authTab = 'login';
   stopPolling();
   closeModal();
