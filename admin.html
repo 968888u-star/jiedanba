@@ -53,6 +53,8 @@
   .sub-info{font-size:12px;color:var(--ink3);margin-top:4px;word-break:break-all;line-height:1.5}
   .video-preview{margin-top:10px;border-radius:10px;overflow:hidden;background:#000;max-width:100%;}
   .video-preview video{width:100%;display:block;max-height:280px;background:#000;}
+  .icon-preview{width:64px;height:64px;border-radius:12px;background:#0e8aff;display:grid;place-items:center;overflow:hidden;margin-top:10px;}
+  .icon-preview img{width:100%;height:100%;object-fit:cover;}
   .feature-item{background:#f8f9fd;border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;}
   .feature-item .feature-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
   .feature-item .feature-row input{flex:1;margin-bottom:0;}
@@ -86,9 +88,7 @@
     <button class="tab"        data-tab="settings" onclick="switchTab('settings')">⚙️ 系统设置</button>
   </div>
   <div class="container" id="admin-content"></div>
-</div>
-
-<script>const TOKEN_KEY = 'jiedan.admin.token';
+</div><script>const TOKEN_KEY = 'jiedan.admin.token';
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
@@ -335,9 +335,7 @@ async function adminSubmitPost() {
     await loadAll();
     switchTab('orders');
   } catch(e) { toast('发布失败：' + e.message); }
-}
-
-function renderRefunds(el) {
+}function renderRefunds(el) {
   const list = state.refunds.slice().sort((a,b) => b.createdAt - a.createdAt);
   if (!list.length) { el.innerHTML = `<div class="card"><div class="empty">暂无退款申请</div></div>`; return; }
   el.innerHTML = `
@@ -440,6 +438,7 @@ function renderSettings(el) {
   const featureList = c.featureList || [];
   const linkCardTitle = c.linkCardTitle || '';
   const linkList = Array.isArray(c.linkList) ? c.linkList : [];
+  const walletIconUrl = c.walletIconUrl || '';
 
   el.innerHTML = `
     <div class="card">
@@ -460,12 +459,25 @@ function renderSettings(el) {
         </div>
       </div>
     </div>
-    
+
+    <div class="card">
+      <h3>钱包图标（imToken）</h3>
+      <label class="field-label">图标 URL（留空使用默认）</label>
+      <input class="input" id="cfg-wallet-icon" value="${esc(walletIconUrl)}" placeholder="https://... 建议 200x200 正方形图片">
+      <div class="sub-info">支持填入任意图片外链，例如 CDN / 图床地址。留空则使用系统默认 imToken 图标。</div>
+      <div class="icon-preview" id="wallet-icon-preview">
+        ${walletIconUrl
+          ? `<img src="${esc(walletIconUrl)}" onerror="this.parentNode.innerHTML='加载失败'">`
+          : `<svg width="36" height="36" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/></svg>`
+        }
+      </div>
+    </div>
+
     <div class="card">
       <h3>集团介绍配置</h3>
       <label class="field-label">"集团介绍" Tab 显示名称</label>
       <input class="input" id="cfg-tab-cancel" maxlength="10" value="${esc(tabCancelName)}" placeholder="默认：集团介绍">
-      
+
       <label class="field-label" style="margin-top:6px">宣传视频</label>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
         <input type="file" id="video-file" accept="video/*" style="font-size:13px;flex:1;min-width:200px">
@@ -531,6 +543,20 @@ function renderSettings(el) {
     </div>
     <button class="btn btn-primary btn-block" onclick="saveAdminConfig()">保存全部配置</button>
   `;
+
+  const iconInput = $('#cfg-wallet-icon');
+  if (iconInput) {
+    iconInput.addEventListener('input', () => {
+      const url = iconInput.value.trim();
+      const box = $('#wallet-icon-preview');
+      if (!box) return;
+      if (!url) {
+        box.innerHTML = `<svg width="36" height="36" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/></svg>`;
+      } else {
+        box.innerHTML = `<img src="${esc(url)}" onerror="this.parentNode.innerHTML='加载失败'">`;
+      }
+    });
+  }
 }
 
 function addFeatureItem() {
@@ -539,21 +565,18 @@ function addFeatureItem() {
   state.config.featureList = list;
   renderTab('settings');
 }
-
 function removeFeatureItem(idx) {
   const list = state.config.featureList || [];
   list.splice(idx, 1);
   state.config.featureList = list;
   renderTab('settings');
 }
-
 function addLinkItem() {
   const list = state.config.linkList || [];
   list.push({ title: '', url: '' });
   state.config.linkList = list;
   renderTab('settings');
 }
-
 function removeLinkItem(idx) {
   const list = state.config.linkList || [];
   list.splice(idx, 1);
@@ -592,9 +615,7 @@ async function saveAdminConfig() {
   featureItems.forEach(item => {
     const title = item.querySelector('.feature-title')?.value.trim() || '';
     const content = item.querySelector('.feature-content')?.value || '';
-    if (title || content) {
-      featureList.push({ title, content });
-    }
+    if (title || content) featureList.push({ title, content });
   });
 
   const linkItemsEl = document.querySelectorAll('#link-list-editor .feature-item');
@@ -617,7 +638,8 @@ async function saveAdminConfig() {
     aboutText: $('#cfg-about')?.value || '',
     featureList: featureList,
     linkCardTitle: $('#cfg-link-card-title')?.value.trim() || '',
-    linkList: linkList
+    linkList: linkList,
+    walletIconUrl: $('#cfg-wallet-icon')?.value.trim() || ''
   };
   try {
     await api('/admin/config', { method: 'POST', body });
