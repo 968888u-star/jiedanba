@@ -4,54 +4,94 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#f0a020" />
-<title>亿万富豪 · 订单大厅</title>
+<title>众包接单 · 订单大厅</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#f5f6fa;--card:#fff;--ink:#12141d;--ink2:#5b6070;--ink3:#8d93a6;--line:#e8eaf1;--brand:#f0a020;--brand-dark:#d98a10;--brand-soft:#fff9ec;--red:#e02020;--r:12px;}
+  :root{
+    --bg:#f5f6fa;--card:#fff;--ink:#12141d;--ink2:#5b6070;--ink3:#8d93a6;
+    --line:#e8eaf1;--brand:#f0a020;--brand-dark:#d98a10;--brand-soft:#fff9ec;
+    --red:#e02020;--ok:#10b981;--r:12px;
+  }
   html,body{height:100%}
-  body{font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55;}
+  body{
+    font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55;
+  }
   button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
   button{cursor:pointer;border:none;background:none}
   input,select,textarea{outline:none}
-  .loading{position:fixed;inset:0;background:rgba(245,246,250,.8);display:grid;place-items:center;font-size:14px;color:var(--ink3);z-index:999}
-  .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-  .auth-card{background:#fff;border-radius:20px;padding:32px 26px;width:min(420px,100%);box-shadow:0 20px 60px rgba(15,17,26,.12);}
-  .auth-logo{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:24px;font-weight:800;display:grid;place-items:center;margin:0 auto 14px;}
-  .auth-card h1{font-size:22px;font-weight:800;text-align:center;margin-bottom:4px;letter-spacing:-.3px}
-  .auth-sub{font-size:13px;color:var(--ink3);text-align:center;margin-bottom:22px}
-  .auth-tabs{display:flex;background:#f5f6fa;border-radius:10px;padding:4px;margin-bottom:22px}
-  .auth-tab{flex:1;padding:10px;border-radius:8px;font-size:14px;font-weight:600;color:var(--ink2);transition:.16s}
-  .auth-tab.active{background:#fff;color:var(--ink);box-shadow:0 2px 6px rgba(15,17,26,.06)}
+
   .app{display:flex;min-height:100vh}
-  .sidebar{position:fixed;top:0;left:0;bottom:0;width:220px;background:var(--card);border-right:1px solid var(--line);padding:22px 16px;display:flex;flex-direction:column;z-index:20;}
+
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;width:220px;
+    background:var(--card);border-right:1px solid var(--line);
+    padding:22px 16px;display:flex;flex-direction:column;z-index:20;
+  }
   .brand{display:flex;align-items:center;gap:11px;padding:0 6px 20px}
-  .brand-logo{width:36px;height:36px;border-radius:10px;flex:0 0 auto;background:linear-gradient(135deg,#ffc107,#f0a020);display:grid;place-items:center;color:#fff;font-size:16px;font-weight:800;}
+  .brand-logo{
+    width:36px;height:36px;border-radius:10px;flex:0 0 auto;
+    background:linear-gradient(135deg,#ffc107,#f0a020);
+    display:grid;place-items:center;color:#fff;font-size:16px;font-weight:800;
+  }
   .brand-name{font-size:15px;font-weight:800}
   .brand-sub{font-size:11px;color:var(--ink3);margin-top:1px}
+
   .nav{display:flex;flex-direction:column;gap:4px}
-  .nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:var(--ink2);font-size:14px;font-weight:500;text-align:left;width:100%;transition:.16s;}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:11px 12px;border-radius:10px;
+    color:var(--ink2);font-size:14px;font-weight:500;
+    text-align:left;width:100%;transition:.16s;
+  }
   .nav-item .ico{font-size:16px;width:18px;text-align:center}
   .nav-item:hover{background:#f4f5fa;color:var(--ink)}
   .nav-item.active{background:var(--brand-soft);color:var(--brand);font-weight:700}
+
   .sidebar-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
-  .user-box{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border-radius:10px;transition:.16s;text-align:left;}
+  .user-box{
+    display:flex;align-items:center;gap:10px;width:100%;
+    padding:8px;border-radius:10px;transition:.16s;text-align:left;
+  }
   .user-box:hover{background:#f4f5fa}
-  .avatar{width:32px;height:32px;border-radius:50%;flex:0 0 auto;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;}
+  .avatar{
+    width:32px;height:32px;border-radius:50%;flex:0 0 auto;
+    background:linear-gradient(135deg,#ffc107,#f0a020);
+    color:#fff;display:grid;place-items:center;
+    font-size:13px;font-weight:700;
+  }
   .user-name{font-size:13px;font-weight:700}
   .user-sub{font-size:11px;color:var(--ink3)}
-  .logout-btn{width:100%;margin-top:10px;padding:9px;border-radius:10px;background:#f1f2f7;color:var(--ink2);font-size:12.5px;font-weight:600;transition:.16s;}
-  .logout-btn:hover{background:#fee2e2;color:#dc2626}
+
   .main{margin-left:220px;flex:1;padding:20px 24px 80px;max-width:900px}
   .page{animation:fadeUp .3s ease}
   @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
   .mhead{display:none}
-  .order-tabs{display:flex;background:#fff;border-radius:12px 12px 0 0;padding:0 16px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none;}
+
+  .order-tabs{
+    display:flex;background:#fff;border-radius:12px 12px 0 0;
+    padding:0 16px;border-bottom:1px solid var(--line);
+    overflow-x:auto;scrollbar-width:none;
+  }
   .order-tabs::-webkit-scrollbar{display:none}
-  .order-tab{flex:0 0 auto;padding:15px 16px;font-size:14px;font-weight:600;color:var(--ink2);position:relative;white-space:nowrap;transition:.16s;}
+  .order-tab{
+    flex:0 0 auto;padding:15px 16px;font-size:14px;font-weight:600;
+    color:var(--ink2);position:relative;white-space:nowrap;transition:.16s;
+  }
+  .order-tab:hover{color:var(--ink)}
   .order-tab.active{color:var(--brand);font-weight:800}
-  .order-tab.active::after{content:'';position:absolute;bottom:0;left:16px;right:16px;height:3px;border-radius:3px 3px 0 0;background:var(--brand);}
+  .order-tab.active::after{
+    content:'';position:absolute;bottom:0;left:16px;right:16px;
+    height:3px;border-radius:3px 3px 0 0;background:var(--brand);
+  }
+
   .order-list{background:#fff;border-radius:0 0 12px 12px;padding:12px 16px;display:flex;flex-direction:column;gap:12px}
-  .order-card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fff;transition:.18s;display:flex;flex-direction:column;cursor:pointer;}
+  .order-card{
+    border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;background:#fff;transition:.18s;
+    display:flex;flex-direction:column;cursor:pointer;
+  }
   .order-card:hover{border-color:#ffe0b2;box-shadow:0 4px 16px rgba(240,160,32,.08)}
   .order-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px}
   .order-no{font-size:12.5px;color:var(--ink2);line-height:1.4;word-break:break-all}
@@ -61,178 +101,259 @@
   .status-paid{color:#10b981}
   .status-paused{color:#8d93a6}
   .status-cancel{color:#c9cddc}
+
   .order-amounts{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
   .amount-item{display:flex;align-items:baseline;gap:2px}
   .amount-label{font-size:12.5px;color:var(--ink3);margin-right:2px}
   .amount-value{font-size:16px;font-weight:800;letter-spacing:-.3px}
   .amount-value.red{color:var(--red)}
   .amount-value.gold{color:var(--brand)}
-  .deposit-tip{font-size:12px;color:#c2410c;background:#fff9ec;border:1px dashed #ffe0b2;border-radius:8px;padding:7px 10px;margin-bottom:10px;}
+
+  .deposit-tip{
+    font-size:12px;color:#c2410c;background:#fff9ec;border:1px dashed #ffe0b2;
+    border-radius:8px;padding:7px 10px;margin-bottom:10px;
+  }
+
   .order-info{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
   .order-info-row{font-size:12.5px;color:var(--ink2);display:flex;gap:6px}
   .order-info-row .label{color:var(--ink3);flex:0 0 auto;min-width:62px}
   .order-info-row .val{color:var(--ink);font-weight:500}
-  .order-btn{display:block;width:100%;padding:11px 0;border-radius:10px;font-size:15px;font-weight:800;background:#ffc107;color:#5b4200;transition:.16s;text-align:center;letter-spacing:.5px;}
+
+  .order-btn{
+    display:block;width:100%;padding:11px 0;
+    border-radius:10px;font-size:15px;font-weight:800;
+    background:#ffc107;color:#5b4200;transition:.16s;
+    text-align:center;letter-spacing:.5px;
+  }
   .order-btn:hover{background:#f0a020;color:#fff}
-  .order-btn.done{background:#f1f2f7;color:var(--ink3);cursor:default;}
+  .order-btn:active{transform:scale(.98)}
+  .order-btn.done{background:#f1f2f7;color:var(--ink3);cursor:default;transform:none}
+  .order-btn.done:hover{background:#f1f2f7;color:var(--ink3)}
   .order-btn.need-deposit{background:#fff4ec;color:#c2410c;border:1px dashed #f0a020}
-  .empty{text-align:center;padding:60px 20px;background:#fff;border-radius:12px;border:1px dashed var(--line);margin-top:12px;}
+  .order-btn.need-deposit:hover{background:#ffe9d6;color:#9a3412}
+
+  .empty{
+    text-align:center;padding:60px 20px;background:#fff;border-radius:12px;
+    border:1px dashed var(--line);margin-top:12px;
+  }
   .empty-ico{font-size:36px;margin-bottom:12px;opacity:.6}
   .empty h3{font-size:15px;font-weight:700;margin-bottom:6px}
   .empty p{font-size:13px;color:var(--ink3)}
+
   .form-card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:22px;max-width:680px}
   .field{display:block;margin-bottom:16px}
   .field-label{display:block;font-size:13.5px;font-weight:700;color:var(--ink2);margin-bottom:8px}
   .field-label i{color:#ef4444;font-style:normal}
-  .input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:14.5px;transition:.16s;}
+  .input{
+    width:100%;padding:12px 14px;border-radius:10px;
+    border:1px solid var(--line);background:#fff;font-size:14.5px;transition:.16s;
+  }
   .input:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(240,160,32,.12)}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 18px;border-radius:10px;border:1px solid transparent;font-size:14.5px;font-weight:700;transition:.16s;white-space:nowrap;}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    padding:11px 18px;border-radius:10px;border:1px solid transparent;
+    font-size:14.5px;font-weight:700;transition:.16s;white-space:nowrap;
+  }
   .btn-primary{background:var(--brand);color:#fff}
   .btn-primary:hover{background:var(--brand-dark)}
-  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
   .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink2)}
+  .btn-ghost:hover{border-color:#c9cddc;color:var(--ink)}
+  .btn-danger{background:#fff;border-color:#fecaca;color:#dc2626}
+  .btn-danger:hover{background:#fef2f2}
   .btn-block{width:100%}
-  .btn-imtoken{background:linear-gradient(135deg,#2c2c2c,#12141d);color:#fff;}
+  .btn-sm{padding:8px 14px;font-size:13px;border-radius:9px}
+  .btn-imtoken{
+    background:linear-gradient(135deg,#2c2c2c,#12141d);color:#fff;
+    box-shadow:0 4px 14px rgba(18,20,29,.25);
+  }
+  .btn-imtoken:hover{background:linear-gradient(135deg,#3a3a3a,#202124)}
+
   .tabbar{display:none}
-  .overlay{position:fixed;inset:0;background:rgba(15,17,26,.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
-  .modal{background:#fff;border-radius:16px;width:min(500px,100%);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
-  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;}
+
+  .overlay{
+    position:fixed;inset:0;background:rgba(15,17,26,.5);
+    -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+    z-index:100;display:flex;align-items:center;justify-content:center;
+    padding:20px;animation:fadeIn .2s ease;
+  }
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .modal{
+    background:#fff;border-radius:16px;width:min(500px,100%);
+    max-height:88vh;display:flex;flex-direction:column;
+    animation:pop .24s cubic-bezier(.2,.9,.3,1.2);
+    box-shadow:0 24px 60px rgba(15,17,26,.3);overflow:hidden;
+  }
+  @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;flex:0 0 auto}
   .modal-head h2{font-size:17px;font-weight:800}
-  .icon-btn{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--ink3);font-size:15px}
+  .icon-btn{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:var(--ink3);font-size:15px;transition:.16s}
+  .icon-btn:hover{background:#f1f2f7;color:var(--ink)}
   .modal-body{padding:0 20px 18px;overflow-y:auto;flex:1}
-  .modal-foot{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line);background:#fbfbfe;}
+  .modal-foot{
+    display:flex;gap:10px;justify-content:flex-end;align-items:center;
+    padding:14px 20px;border-top:1px solid var(--line);
+    background:#fbfbfe;flex:0 0 auto;
+  }
+
   .detail-price{font-size:28px;font-weight:850;color:var(--red);letter-spacing:-1px;margin:12px 0 4px}
-  .detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;padding:14px;background:#f8f9fd;border-radius:12px;margin:14px 0;}
+  .detail-price small{font-size:13px;font-weight:600;color:var(--ink3);margin-left:5px;letter-spacing:0}
+  .detail-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;
+    padding:14px;background:#f8f9fd;border-radius:12px;margin:14px 0;
+  }
   .dg-item .dg-k{font-size:11.5px;color:var(--ink3);margin-bottom:3px}
   .dg-item .dg-v{font-size:13.5px;font-weight:700;word-break:break-all}
-  .detail-desc{font-size:13.5px;color:var(--ink2);line-height:1.7;padding:14px;background:#f8f9fd;border-radius:12px;margin-bottom:14px;white-space:pre-wrap;}
-  .notice{padding:12px 14px;border-radius:10px;font-size:13px;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2;display:flex;align-items:center;gap:8px;line-height:1.5;}
-  .toast{position:fixed;left:50%;bottom:104px;transform:translate(-50%,18px);background:#12141d;color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;font-weight:600;opacity:0;transition:.28s;z-index:300;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.25);max-width:calc(100vw - 40px);text-align:center;}
+  .detail-desc{
+    font-size:13.5px;color:var(--ink2);line-height:1.7;
+    padding:14px;background:#f8f9fd;border-radius:12px;margin-bottom:14px;white-space:pre-wrap;
+  }
+
+  .notice{
+    padding:12px 14px;border-radius:10px;font-size:13px;
+    background:#fff9ec;color:#c27800;border:1px solid #ffe0b2;
+    display:flex;align-items:center;gap:8px;line-height:1.5;
+  }
+  .notice-dark{background:#f5f6fa;color:#12141d;border-color:#e8eaf1}
+
+  .chip-cat{
+    flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;
+    padding:8px 14px;border-radius:10px;border:1px solid var(--line);
+    background:#fff;font-size:13.5px;font-weight:600;color:var(--ink2);
+    white-space:nowrap;transition:.16s;
+  }
+  .chip-cat.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .qr-wrap{
+    display:flex;justify-content:center;align-items:center;
+    padding:12px;background:#fff;border:1px solid var(--line);
+    border-radius:12px;width:180px;height:180px;margin:0 auto;
+    position:relative;overflow:hidden;
+  }
+  .qr-wrap img{width:100%;height:100%;display:block;object-fit:contain}
+  .qr-wrap .qr-loading{
+    position:absolute;inset:0;display:grid;place-items:center;
+    font-size:12px;color:var(--ink3);background:#fff;
+  }
+
+  .admin-head{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+  .admin-badge{
+    display:inline-flex;align-items:center;gap:5px;
+    background:#12141d;color:#fff;font-size:11px;font-weight:700;
+    padding:3px 10px;border-radius:20px;letter-spacing:.5px;
+  }
+  .admin-sec{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:16px}
+  .admin-sec h3{font-size:14px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .admin-sec h3::before{content:'';width:3px;height:14px;border-radius:2px;background:var(--brand)}
+
+  .toast{
+    position:fixed;left:50%;bottom:104px;transform:translate(-50%,18px);
+    background:#12141d;color:#fff;padding:12px 20px;border-radius:10px;
+    font-size:13.5px;font-weight:600;opacity:0;transition:.28s;
+    z-index:300;pointer-events:none;box-shadow:0 12px 30px rgba(0,0,0,.25);
+    max-width:calc(100vw - 40px);text-align:center;
+  }
   .toast.show{opacity:1;transform:translate(-50%,0)}
-  .pm-choice{display:flex;flex-direction:column;gap:8px}
-  .pm-choice-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid var(--line);border-radius:10px;cursor:pointer;transition:.16s;background:#fff;}
-  .pm-choice-item.active{border-color:var(--brand);background:var(--brand-soft);}
-  .pm-choice-item input[type="radio"]{accent-color:var(--brand);width:18px;height:18px;margin:0;flex:0 0 auto}
-  .pm-choice-info{flex:1;min-width:0}
-  .pm-choice-info .t{font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:2px}
-  .pm-choice-info .s{font-size:11.5px;color:var(--ink3);word-break:break-all}
-  .pm-btn-blue{display:inline-block;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;margin-right:8px;flex:0 0 auto}
-  .wallet-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
-  .wallet-card{display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;transition:.16s;text-align:left;position:relative;}
-  .wallet-card:hover{border-color:#c9cddc}
-  .wallet-card.active{border-color:var(--brand);background:var(--brand-soft);}
-  .wallet-card .wc-icon{width:36px;height:36px;border-radius:10px;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;}
-  .wallet-card .wc-icon.imtoken{background:#0e8aff;}
-  .wallet-card .wc-info{flex:1;min-width:0}
-  .wallet-card .wc-name{font-size:13.5px;font-weight:800;color:var(--ink)}
-  .wallet-card .wc-tip{font-size:11px;color:var(--ink3);margin-top:2px}
-  .wallet-card .wc-check{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;display:grid;place-items:center;border:2px solid #fff;}
-  .empty-rich{background:#fff;border-radius:0 0 12px 12px;padding:20px;margin-top:0;}
-  .empty-rich .media-box{border-radius:12px;overflow:hidden;background:#000;margin-bottom:16px;}
-  .empty-rich .media-box video{width:100%;display:block;max-height:460px;background:#000;}
-  .empty-rich .about-title{font-size:16px;font-weight:800;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
-  .empty-rich .about-text{font-size:13.5px;color:var(--ink2);line-height:1.8;white-space:pre-wrap;margin-bottom:20px;}
-  .feature-box{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;}
-  .feature-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-weight:800;font-size:14px;color:var(--ink);cursor:pointer;user-select:none;background:#f8f9fd;transition:background 0.2s;}
-  .feature-header:hover{background:#f1f2f7;}
-  .feature-header .arrow{font-size:12px;transition:transform 0.3s;color:var(--ink3);}
-  .feature-content{display:none;padding:16px;font-size:13.5px;line-height:1.8;color:var(--ink2);white-space:pre-wrap;border-top:1px solid var(--line);}
-  .link-card{display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#fff9ec,#fff4e0);border:1px solid #ffe0b2;border-radius:12px;padding:14px 16px;margin-bottom:12px;text-decoration:none;color:var(--ink);transition:.16s;}
-  .link-card:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(240,160,32,.18)}
-  .link-card .lc-left{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:800;color:var(--brand);}
-  .link-card .lc-icon{font-size:18px;}
-  .link-card .lc-arrow{font-size:18px;color:var(--brand);font-weight:800;}
-  .link-menu-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;background:linear-gradient(135deg,#fff9ec,#fff4e0);border:1px solid #ffe0b2;border-radius:12px;padding:14px 16px;margin-bottom:10px;text-decoration:none;color:var(--ink);transition:.16s;font-weight:700;font-size:14px;}
-  .link-menu-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(240,160,32,.18)}
-  .link-menu-btn .lm-left{display:flex;align-items:center;gap:10px;color:var(--brand);}
-  .link-menu-btn .lm-icon{font-size:18px;}
-  .link-menu-btn .lm-arrow{color:var(--brand);font-weight:800;font-size:18px;}
-  .marquee-box{background:#fff;padding:12px 0 14px;overflow:hidden;border-bottom:1px solid var(--line);}
-  .marquee-label{font-size:12px;color:#c27800;margin:0 16px 8px;display:flex;align-items:center;gap:6px;font-weight:700;}
-  .marquee-label .dot{width:6px;height:6px;border-radius:50%;background:#f0a020;animation:dotPulse 1.4s infinite;}
-  @keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
-  .marquee-viewport{overflow:hidden;position:relative;background:#fff9ec;border-top:1px solid #ffe9c9;border-bottom:1px solid #ffe9c9;padding:8px 0;}
-  .marquee-track{display:flex;gap:40px;width:max-content;animation:marqueeH 80s linear infinite;}
-  .marquee-track:hover{animation-play-state:paused;}
-  @keyframes marqueeH{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-  .marquee-item{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#5b6070;white-space:nowrap;padding:0 4px;}
-  .marquee-item .m-avatar{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;flex:0 0 auto;}
-  .marquee-item .m-name{color:#12141d;font-weight:700;}
-  .marquee-item .m-text{color:#8d93a6;font-size:12px;}
-  .marquee-item .m-amount{color:#e02020;font-weight:800;}
-  .marquee-item .m-time{color:#8d93a6;font-size:11px;}
+
   @media (max-width:900px){
     .sidebar{display:none}
     .main{margin-left:0;padding:0 12px 80px;max-width:100%}
-    .mhead{display:flex;align-items:center;justify-content:space-between;padding:12px 0 14px;position:sticky;top:0;z-index:15;background:rgba(245,246,250,.95);}
-    .tabbar{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:30;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom));}
-    .tabbar .nav-item{flex:1;flex-direction:column;gap:2px;font-size:10px;padding:5px 2px;justify-content:center;}
+    .mhead{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 0 14px;position:sticky;top:0;z-index:15;
+      background:rgba(245,246,250,.95);
+      -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    }
+    .mhead .brand{padding:0}
+    .mhead .brand-logo{width:32px;height:32px;border-radius:9px;font-size:15px}
+    .mhead .brand-name{font-size:15px}
+
+    .tabbar{
+      display:flex;position:fixed;bottom:0;left:0;right:0;z-index:30;
+      background:rgba(255,255,255,.97);
+      -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+      border-top:1px solid var(--line);
+      padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    }
+    .tabbar .nav-item{
+      flex:1;flex-direction:column;gap:2px;font-size:10px;
+      padding:5px 2px;border-radius:8px;justify-content:center;
+    }
     .tabbar .nav-item .ico{font-size:18px}
+
+    .order-card{padding:12px 14px}
+    .order-amounts{margin-bottom:8px}
+    .amount-value{font-size:15px}
+    .order-btn{font-size:14.5px;padding:10px 0}
     .toast{bottom:80px}
+    .form-row{grid-template-columns:1fr}
+    .form-card{padding:16px}
     .overlay{padding:0;align-items:flex-end}
     .modal{width:100%;max-height:90vh;border-radius:16px 16px 0 0;}
-    .wallet-choices{grid-template-columns:1fr}
-    .marquee-item{font-size:12px;}
-    .marquee-item .m-text{font-size:11px;}
   }
 </style>
 </head><body>
-<div id="app"><div class="loading">加载中…</div></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">单</div>
+      <div>
+        <div class="brand-name">众包接单</div>
+        <div class="brand-sub">订单大厅</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nav-item active" data-action="nav" data-view="hall"><span class="ico">📋</span>订单大厅</button>
+      <button class="nav-item" data-action="nav" data-view="post"><span class="ico">✏️</span>发布订单</button>
+      <button class="nav-item" data-action="nav" data-view="mine"><span class="ico">📥</span>我的接单</button>
+      <button class="nav-item" data-action="nav" data-view="posted"><span class="ico">📤</span>我的发布</button>
+      <button class="nav-item" data-action="nav" data-view="deposit"><span class="ico">💰</span>充值押金</button>
+      <button class="nav-item" data-action="admin"><span class="ico">⚙️</span>管理后台</button>
+    </nav>
+    <div class="sidebar-foot">
+      <button class="user-box" data-action="edit-name">
+        <div class="avatar" id="sb-avatar">我</div>
+        <div>
+          <div class="user-name" id="sb-name">我</div>
+          <div class="user-sub" id="sb-sub">押金 0 USDT</div>
+        </div>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="mhead">
+      <div class="brand">
+        <div class="brand-logo">单</div>
+        <div class="brand-name">订单大厅</div>
+      </div>
+      <button class="avatar" data-action="edit-name" id="mh-avatar">我</button>
+    </header>
+    <div id="view"></div>
+  </main>
+
+  <nav class="tabbar">
+    <button class="nav-item active" data-action="nav" data-view="hall"><span class="ico">📋</span>大厅</button>
+    <button class="nav-item" data-action="nav" data-view="mine"><span class="ico">📥</span>接单</button>
+    <button class="nav-item" data-action="nav" data-view="deposit"><span class="ico">💰</span>押金</button>
+    <button class="nav-item" data-action="nav" data-view="posted"><span class="ico">📤</span>发布</button>
+    <button class="nav-item" data-action="admin"><span class="ico">⚙️</span>管理</button>
+  </nav>
+</div>
+
 <div id="modal-root"></div>
 
-<script>
-const TOKEN_KEY = 'jiedan.token';
+<script>const LS_KEY = 'order.v11';
+const CFG_KEY = 'order.v11.config';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 
-const state = {
-  user: null,
-  orders: [],
-  refunds: [],
-  config: {
-    trc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '',
-    tabCancelName: '集团介绍', videoUrl: '', aboutTitle: '企业简介', aboutText: '',
-    featureList: [], linkCardTitle: '', linkList: []
-  },
-  view: 'hall',
-  orderTab: 'cancelled',
-  mineTab: 'working',
-  authTab: 'login',
-  loading: false,
-  pollTimer: null,
-  grabChoice: null,
-  wallet: 'imtoken',
-  featureOpen: {},
-};
-
-function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch(e) { return null; } }
-function setToken(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch(e) {} }
-function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch(e) {} }
-
-async function api(path, options = {}) {
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-  const token = getToken();
-  if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch('/api' + path, {
-    method: options.method || 'GET',
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-  let data = {};
-  try { data = await res.json(); } catch(e) {}
-  if (!res.ok) {
-    if (res.status === 401) { clearToken(); state.user = null; }
-    throw new Error(data.error || ('请求失败 ' + res.status));
-  }
-  return data;
-}
-
-const uid = () => Math.random().toString(36).slice(2, 9);
-function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-function fmtDateTime(ts) {
-  const d = new Date(ts);
-  const p = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
 }
 function timeAgo(ts) {
   const d = Date.now() - ts;
@@ -241,362 +362,174 @@ function timeAgo(ts) {
   if (m < 60) return m + ' 分钟前';
   const h = Math.floor(m / 60);
   if (h < 24) return h + ' 小时前';
-  return Math.floor(h/24) + ' 天前';
+  const dd = Math.floor(h / 24);
+  if (dd < 30) return dd + ' 天前';
+  return new Date(ts).toLocaleDateString('zh-CN');
+}
+function fmtDateTime(ts) {
+  const d = new Date(ts);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
-let toastTimer = null;
-function toast(msg) {
-  $$('.toast').forEach(el => el.remove());
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  requestAnimationFrame(() => el.classList.add('show'));
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => {
-    el.classList.remove('show');
-    setTimeout(() => el.remove(), 320);
-  }, 2200);
+/* =========================================================
+   ⭐ 图标渲染工具：支持 emoji 和 图片URL
+   ========================================================= */
+function renderIconHtml(icon, size) {
+  if (!icon) return '';
+  const s = size || 44;
+  if (icon.startsWith('http') || icon.startsWith('/') || icon.startsWith('data:')) {
+    return `<img src="${esc(icon)}" style="width:${s}px;height:${s}px;object-fit:contain;display:inline-block;vertical-align:middle">`;
+  }
+  return `<span style="font-size:${s}px;line-height:1;vertical-align:middle">${esc(icon)}</span>`;
 }
 
-function getPayMethods(u) {
-  if (!u || !u.payMethod) return [];
-  const pm = u.payMethod;
-  if (pm.type) return [pm];
-  const arr = [];
-  if (pm.alipay) arr.push({ type: 'alipay', ...pm.alipay });
-  if (pm.bank) arr.push({ type: 'bank', ...pm.bank });
-  return arr;
+/* =========================================================
+   ⭐ 全局配置（支持图标自定义）
+   ========================================================= */
+const DEFAULT_CONFIG = {
+  trc20: 'TXk7YbWcWnQPNhSCXC3p4aFb5tHKqMgRzA',
+  erc20: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+  ratio: 0.1,
+  minDeposit: 10,
+  notice: '请务必使用所选网络充值，转账到其他网络将无法到账',
+  support: '客服微信：support_usdt',
+  // ⭐ 图标自定义字段
+  pageIcon: '💰',         // 充值页顶部图标（emoji 或 图片URL）
+  pageTitle: '充值押金',   // 充值页标题
+  imtokenIcon: '🦊',      // imToken 按钮图标（emoji 或 图片URL）
+};
+
+let CONFIG = Object.assign({}, DEFAULT_CONFIG);
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(CFG_KEY);
+    if (raw) CONFIG = Object.assign({}, DEFAULT_CONFIG, JSON.parse(raw));
+  } catch (e) {}
 }
-function hasPayMethod(u) { return getPayMethods(u).length > 0; }
-function formatPayMethod(pm) {
-  if (!pm) return '';
-  if (pm.type === 'alipay') return `支付宝 · ${pm.account || ''}`;
-  if (pm.type === 'bank') return `银行卡 · ${pm.bank || ''} ${pm.account || ''}`;
-  return '';
+function saveConfig() {
+  try { localStorage.setItem(CFG_KEY, JSON.stringify(CONFIG)); } catch (e) {}
 }
+
+const state = {
+  user: { id: '', name: '', credit: 100, income: 0, deposit: 0 },
+  orders: [],
+  view: 'hall',
+  orderTab: 'all',
+  mineTab: 'working',
+  depositNet: 'TRC20',
+  depositWallet: 'manual',
+};
+
+function save() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ user: state.user, orders: state.orders })); } catch (e) {}
+}
+const getOrder = id => state.orders.find(o => o.id === id);
+const myTaker = o => (o.takers || []).find(x => x.userId === state.user.id) || null;
 
 function depositRequired(o) {
-  const r = Number(state.config.ratio) || 0.1;
-  const min = Number(state.config.minDeposit) || 10;
+  const r = Number(CONFIG.ratio) || 0.1;
+  const min = Number(CONFIG.minDeposit) || 10;
   return Math.max(min, Math.round(Number(o.amount) * r));
 }
-function hasEnoughDeposit(o) { return Number(state.user?.deposit || 0) >= depositRequired(o); }
-const myTaker = o => (o.takers || []).find(x => x.userId === state.user?.id) || null;
-
-async function refreshAll(silent = false) {
-  if (!getToken() || !state.user) return;
-  try {
-    const [meRes, ordersRes, refundsRes] = await Promise.all([
-      api('/me'), api('/orders'), api('/refunds/mine'),
-    ]);
-    const buildKey = () => JSON.stringify({
-      u: state.user ? [state.user.deposit, state.user.income] : null,
-      o: state.orders.map(o => o.id + '|' + o.status + '|' + (o.takers || []).length),
-      r: state.refunds.map(r => r.id + '|' + r.status),
-    });
-    const oldKey = buildKey();
-    state.user = meRes.user;
-    state.orders = ordersRes.orders || [];
-    state.refunds = refundsRes.refunds || [];
-    const newKey = buildKey();
-    if (!silent) { render(); return; }
-    if (oldKey === newKey) return;
-    const activeEl = document.activeElement;
-    const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-    const modalOpen = !!document.querySelector('.overlay');
-    if (isTyping || modalOpen) return;
-    render();
-  } catch (e) {
-    if (!silent) toast(e.message);
-  }
+function hasEnoughDeposit(o) {
+  return Number(state.user.deposit) >= depositRequired(o);
 }
 
-async function loadConfig() {
-  try {
-    const r = await api('/config');
-    state.config = Object.assign(state.config, r.config || {});
-  } catch(e) {}
+function seedOrders() {
+  const now = Date.now();
+  const H = 3600000;
+  const orderNo = () => '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
+  const mk = (o) => Object.assign({
+    id: uid(), status: 'pending', takers: [], createdAt: now - H,
+    publisherId: 'sys', publisherName: '系统发布', credit: 100,
+    orderNo: orderNo(), amount: 100, commission: 10,
+    payType: '支付宝固定小额', desc: '按订单要求完成收款操作，审核通过后返佣。',
+  }, o);
+  return [
+    mk({ id: 'o1', orderNo: '20261007025226586812', status: 'pending', amount: 1000, commission: 100, payType: '支付宝固定小额', createdAt: now - 2 * H, publisherName: '林经理', credit: 98, desc: '需确认收款账户状态，操作简单，完成后截图提交审核。' }),
+    mk({ id: 'o2', orderNo: '20261007025226586660', status: 'pending', amount: 100, commission: 10, payType: '银行转账', createdAt: now - 6 * H, publisherName: '王财务', credit: 95, desc: '小额银行转账测试，完成后上传转账凭证即可。' }),
+    mk({ id: 'o3', orderNo: '20261007025226586123', status: 'confirm', amount: 500, commission: 50, payType: '微信收款码', createdAt: now - 12 * H, publisherName: '赵主管', credit: 100, takers: [{ userId: 'u_li', userName: '李同学', at: now - 10 * H, status: 'working' }] }),
+    mk({ id: 'o4', orderNo: '20261007025226585555', status: 'paid', amount: 2000, commission: 200, payType: '支付宝固定小额', createdAt: now - 24 * H, publisherName: '孙总', credit: 99, takers: [{ userId: 'u_ma', userName: '马师傅', at: now - 20 * H, status: 'done', doneAt: now - 18 * H }] }),
+    mk({ id: 'o5', orderNo: '20261007025226584444', status: 'paused', amount: 300, commission: 30, payType: '银行转账', createdAt: now - 30 * H, publisherName: '周经理', credit: 92 }),
+    mk({ id: 'o6', orderNo: '20261007025226583333', status: 'cancelled', amount: 150, commission: 15, payType: '微信收款码', createdAt: now - 40 * H, publisherName: '吴老板', credit: 90 }),
+  ];
 }
 
-async function bootstrap() {
-  await loadConfig();
-  const token = getToken();
-  if (token) {
-    try {
-      const meRes = await api('/me');
-      state.user = meRes.user;
-      const ordersRes = await api('/orders');
-      state.orders = ordersRes.orders || [];
-      const refundsRes = await api('/refunds/mine');
-      state.refunds = refundsRes.refunds || [];
-    } catch(e) {
-      clearToken();
-      state.user = null;
-    }
-  }
-  render();
-  if (state.user) startPolling();
-}
-
-function startPolling() {
-  stopPolling();
-  state.pollTimer = setInterval(() => {
-    if (document.visibilityState === 'visible' && state.user) {
-      refreshAll(true);
-    }
-  }, 5000);
-}
-function stopPolling() {
-  if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
-}function render() {
-  const app = $('#app');
-  if (!state.user) {
-    app.innerHTML = renderAuth();
+function boot() {
+  loadConfig();
+  let data = null;
+  try { data = JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { data = null; }
+  if (data && data.user && Array.isArray(data.orders)) {
+    state.user = Object.assign({ credit: 100, income: 0, deposit: 0 }, data.user);
+    state.orders = data.orders;
   } else {
-    app.innerHTML = renderMainApp();
+    state.user = { id: uid(), name: '', credit: 100, income: 0, deposit: 0 };
+    state.orders = seedOrders();
+    save();
   }
-}
-
-function renderAuth() {
-  const isLogin = state.authTab === 'login';
-  return `
-  <div class="auth-wrap">
-    <div class="auth-card">
-      <div class="auth-logo">单</div>
-      <h1>亿万富豪集团支付</h1>
-      <p class="auth-sub">部门 · 承兑</p>
-      <div class="auth-tabs">
-        <button class="auth-tab${isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="login">登录</button>
-        <button class="auth-tab${!isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="register">注册</button>
-      </div>
-      ${isLogin ? `
-        <label class="field"><span class="field-label">用户名</span>
-          <input class="input" id="login-username" maxlength="20" placeholder="请输入用户名"></label>
-        <label class="field"><span class="field-label">密码</span>
-          <input class="input" id="login-password" type="password" maxlength="30" placeholder="请输入密码"></label>
-        <button class="btn btn-primary btn-block" data-action="do-login" style="margin-top:6px">登 录</button>
-      ` : `
-        <label class="field"><span class="field-label">用户名 <i>*</i></span>
-          <input class="input" id="reg-username" maxlength="20" placeholder="3-20 位字母或数字"></label>
-        <label class="field"><span class="field-label">密码 <i>*</i></span>
-          <input class="input" id="reg-password" type="password" maxlength="30" placeholder="至少 6 位"></label>
-        <label class="field"><span class="field-label">确认密码 <i>*</i></span>
-          <input class="input" id="reg-password2" type="password" maxlength="30" placeholder="再次输入密码"></label>
-        <label class="field"><span class="field-label">邀请码 <i>*</i></span>
-          <input class="input" id="reg-invite" maxlength="20" placeholder="请输入邀请码"></label>
-        <button class="btn btn-primary btn-block" data-action="do-register" style="margin-top:6px">注 册</button>
-      `}
-    </div>
-  </div>`;
-}
-
-function renderMainApp() {
-  const u = state.user;
-  const name = u.username || '我';
-  const initial = name.slice(0, 1);
-  const viewHtml = ({
-    hall: viewHall, mine: viewMine, deposit: viewDeposit, refund: viewRefund,
-  }[state.view] || viewHall)();
-
-  const bindBanner = !hasPayMethod(u) ? `
-    <div data-action="open-paymethod" style="
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      background:#fff4ec;border:1px solid #ffe0b2;border-radius:12px;
-      padding:12px 14px;margin-bottom:14px;cursor:pointer;">
-      <div style="font-size:13px;color:#c2410c;font-weight:600;line-height:1.5">
-        ⚠️ 你还没绑定收款方式<br>
-        <span style="font-size:12px;color:#9a3412;opacity:.8">绑定后才能抢单并收款</span>
-      </div>
-      <div style="font-size:12.5px;font-weight:800;color:#fff;background:#f0a020;padding:7px 14px;border-radius:8px;white-space:nowrap">立即绑定</div>
-    </div>` : '';
-
-  return `
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-logo">单</div>
-        <div><div class="brand-name">众包接单</div><div class="brand-sub">订单大厅</div></div>
-      </div>
-      <nav class="nav">
-        <button class="nav-item${state.view === 'hall' ? ' active' : ''}" data-action="nav" data-view="hall"><span class="ico">📋</span>订单大厅</button>
-        <button class="nav-item${state.view === 'mine' ? ' active' : ''}" data-action="nav" data-view="mine"><span class="ico">📥</span>我的接单</button>
-        <button class="nav-item${state.view === 'deposit' ? ' active' : ''}" data-action="nav" data-view="deposit"><span class="ico">💰</span>充值押金</button>
-        <button class="nav-item${state.view === 'refund' ? ' active' : ''}" data-action="nav" data-view="refund"><span class="ico">💸</span>押金退款</button>
-      </nav>
-      <div class="sidebar-foot">
-        <button class="user-box" data-action="open-profile">
-          <div class="avatar">${esc(initial)}</div>
-          <div><div class="user-name">${esc(name)}</div><div class="user-sub">押金 ${u.deposit} USDT</div></div>
-        </button>
-        <button class="logout-btn" data-action="logout">退出登录</button>
-      </div>
-    </aside>
-
-    <main class="main">
-      <header class="mhead">
-        <div class="brand"><div class="brand-logo">单</div><div class="brand-name">订单大厅</div></div>
-        <button class="avatar" data-action="open-profile">${esc(initial)}</button>
-      </header>
-      ${bindBanner}
-      <div id="view">${viewHtml}</div>
-    </main>
-
-    <nav class="tabbar">
-      <button class="nav-item${state.view === 'hall' ? ' active' : ''}" data-action="nav" data-view="hall"><span class="ico">📋</span>大厅</button>
-      <button class="nav-item${state.view === 'mine' ? ' active' : ''}" data-action="nav" data-view="mine"><span class="ico">📥</span>接单</button>
-      <button class="nav-item${state.view === 'deposit' ? ' active' : ''}" data-action="nav" data-view="deposit"><span class="ico">💰</span>充值</button>
-      <button class="nav-item${state.view === 'refund' ? ' active' : ''}" data-action="nav" data-view="refund"><span class="ico">💸</span>退款</button>
-    </nav>
-  </div>`;
+  if (location.hash === '#admin') state.view = 'admin';
+  render();
+  updateUserUI();
+  if (!state.user.name) showWelcome();
 }const STATUS_MAP = {
-  pending: { text: '待审核', cls: 'status-pending' },
-  confirm: { text: '待收款', cls: 'status-confirm' },
-  paid: { text: '已收款', cls: 'status-paid' },
-  paused: { text: '暂停中', cls: 'status-paused' },
+  pending:   { text: '待审核', cls: 'status-pending' },
+  confirm:   { text: '待确认', cls: 'status-confirm' },
+  paid:      { text: '已收款', cls: 'status-paid' },
+  paused:    { text: '暂停中', cls: 'status-paused' },
   cancelled: { text: '已取消', cls: 'status-cancel' },
 };
 const statusOf = s => STATUS_MAP[s] || STATUS_MAP.pending;
 
 function viewHall() {
-  const cancelTabName = state.config.tabCancelName || '集团介绍';
   const tabs = [
-    { id: 'cancelled', name: cancelTabName },
-    { id: 'hall', name: '订单大厅' },
-    { id: 'confirm', name: '待收款' },
-    { id: 'paid', name: '已收款' },
+    { id: 'all', name: '订单大厅' },
+    { id: 'pending', name: '待确认' },
+    { id: 'confirm', name: '已收款' },
+    { id: 'paused', name: '暂停中' },
+    { id: 'cancelled', name: '已取消' },
   ];
-
-  if (state.orderTab === 'cancelled') {
-    const hasVideo = state.config.videoUrl && state.config.videoUrl.trim();
-    const aboutTitle = state.config.aboutTitle || '企业简介';
-    const hasAbout = state.config.aboutText && state.config.aboutText.trim();
-    const featureList = state.config.featureList || [];
-    const linkTitle = state.config.linkCardTitle && state.config.linkCardTitle.trim();
-    const linkList = state.config.linkList || [];
-    const hasLinks = linkTitle && linkList.length > 0;
-    return `
-    <div class="page">
-      <div class="order-tabs">
-        ${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${t.name}</button>`).join('')}
-      </div>
-      <div class="empty-rich">
-        ${hasVideo ? `<div class="media-box"><video src="${esc(state.config.videoUrl)}" controls preload="metadata" playsinline></video></div>` : ''}
-        ${hasAbout ? `<div class="about-title">🏢 ${esc(aboutTitle)}</div><div class="about-text">${esc(state.config.aboutText)}</div>` : ''}
-        ${hasLinks ? `
-          <div class="link-card" data-action="open-link-menu">
-            <div class="lc-left">
-              <span class="lc-icon">🔗</span>
-              <span>${esc(linkTitle)}</span>
-            </div>
-            <span class="lc-arrow">›</span>
-          </div>` : ''}
-        ${featureList.length > 0 ? featureList.map((item, idx) => {
-          const isOpen = !!state.featureOpen[idx];
-          return `
-          <div class="feature-box">
-            <div class="feature-header" data-action="toggle-feature" data-idx="${idx}">
-              <span>📖 ${esc(item.title || '功能说明')}</span>
-              <span class="arrow" style="transform:rotate(${isOpen ? 180 : 0}deg)">▼</span>
-            </div>
-            <div class="feature-content" style="display:${isOpen ? 'block' : 'none'}">${esc(item.content || '')}</div>
-          </div>
-          `;
-        }).join('') : ''}
-        ${!hasVideo && !hasAbout && featureList.length === 0 && !hasLinks ? `<div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">暂无简介内容，管理员可在后台配置</div>` : ''}
-      </div>
-    </div>`;
-  }
-
   let list = state.orders.slice();
-  let emptyText = '该分类下还没有订单';
-
-  if (state.orderTab === 'hall') {
-    list = list.filter(o => o.status === 'pending');
-    emptyText = '大厅里暂时没有可接订单';
-  } else if (state.orderTab === 'confirm') {
-    // 待收款：只显示自己接的（working）
-    list = list.filter(o => {
-      if (o.status !== 'confirm') return false;
-      const tk = (o.takers || []).find(t => t.userId === state.user?.id && t.status === 'working');
-      return !!tk;
-    });
-    emptyText = '你还没有待收款的订单';
-  } else if (state.orderTab === 'paid') {
-    // 已收款：只显示自己完成的（done）
-    list = list.filter(o => {
-      if (o.status !== 'paid') return false;
-      const tk = (o.takers || []).find(t => t.userId === state.user?.id && t.status === 'done');
-      return !!tk;
-    });
-    emptyText = '你还没有已收款的订单';
-  } else {
-    list = list.filter(o => o.status === state.orderTab);
-  }
+  if (state.orderTab !== 'all') list = list.filter(o => o.status === state.orderTab);
   list.sort((a, b) => b.createdAt - a.createdAt);
-
-  const marqueeOrders = state.orders
-    .filter(o => o.status === 'paid')
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .slice(0, 15);
-
-  let marqueeHtml = '';
-  if (marqueeOrders.length > 0) {
-    const itemsHtml = marqueeOrders.map(o => {
-      const taker = (o.takers || []).find(t => t.status === 'done') || (o.takers || [])[0] || {};
-      const name = taker.userName || '用户**';
-      const initial = name.slice(0, 1);
-      const amount = Number(o.amount).toFixed(0);
-      const commission = Number(o.commission).toFixed(0);
-      return `
-        <div class="marquee-item">
-          <div class="m-avatar">${esc(initial)}</div>
-          <span class="m-name">${esc(name)}</span>
-          <span class="m-text">成功完成订单，收款</span>
-          <span class="m-amount">¥${amount}</span>
-          <span class="m-text">，获得返佣</span>
-          <span class="m-amount">¥${commission}</span>
-          <span class="m-time">· ${timeAgo(o.createdAt)}</span>
-        </div>`;
-    }).join('');
-    marqueeHtml = `
-      <div class="marquee-box">
-        <div class="marquee-label"><span class="dot"></span>最新完成订单</div>
-        <div class="marquee-viewport">
-          <div class="marquee-track">
-            ${itemsHtml}
-            ${itemsHtml}
-          </div>
-        </div>
-      </div>`;
-  }
-
   return `
   <div class="page">
     <div class="order-tabs">
-      ${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${t.name}</button>`).join('')}
+      ${tabs.map(t => `
+        <button class="order-tab${state.orderTab === t.id ? ' active' : ''}"
+                data-action="order-tab" data-tab="${t.id}">${t.name}</button>
+      `).join('')}
     </div>
-    ${marqueeHtml}
     <div class="order-list">
-      ${list.length ? list.map(orderCard).join('') : `<div class="empty"><div class="empty-ico">📭</div><h3>暂无订单</h3><p>${emptyText}</p></div>`}
+      ${list.length ? list.map(orderCard).join('') : `
+        <div class="empty">
+          <div class="empty-ico">📭</div>
+          <h3>暂无订单</h3>
+          <p>该分类下还没有订单，稍后再来看看吧</p>
+        </div>
+      `}
     </div>
   </div>`;
 }
 
 function orderCard(o) {
   const st = statusOf(o.status);
+  const mine = o.publisherId === state.user.id;
   const took = !!myTaker(o);
-  const canGrab = o.status === 'pending' && !took;
+  const canGrab = o.status === 'pending' && !mine && !took;
   const required = depositRequired(o);
   const enough = hasEnoughDeposit(o);
 
   let btnText = '抢单', btnClass = 'order-btn', btnAction = 'grab';
-  if (took) { btnText = '已接单'; btnClass += ' done'; btnAction = ''; }
+  if (mine) { btnText = '我发布的'; btnClass += ' done'; btnAction = ''; }
+  else if (took) { btnText = '已接单'; btnClass += ' done'; btnAction = ''; }
   else if (o.status !== 'pending') { btnText = st.text; btnClass += ' done'; btnAction = ''; }
+  else if (!canGrab) { btnText = '已抢完'; btnClass += ' done'; btnAction = ''; }
   else if (!enough) { btnText = `需押金 ${required} USDT · 去充值`; btnClass = 'order-btn need-deposit'; btnAction = 'deposit'; }
 
   const btnAttr = btnAction ? `data-action="${btnAction}" data-id="${o.id}"` : 'disabled';
-  const depositTip = (canGrab && !enough) ? `<div class="deposit-tip">🔒 当前押金 ${state.user.deposit} USDT，抢此单需 ${required} USDT</div>` : '';
+  const depositTip = (canGrab && !enough)
+    ? `<div class="deposit-tip">🔒 当前押金 ${state.user.deposit} USDT，抢此单需 ${required} USDT</div>` : '';
 
   return `
   <div class="order-card" data-action="open" data-id="${o.id}">
@@ -613,7 +546,44 @@ function orderCard(o) {
       <div class="order-info-row"><span class="label">创建时间：</span><span class="val">${fmtDateTime(o.createdAt)}</span></div>
       <div class="order-info-row"><span class="label">收款类型：</span><span class="val">${esc(o.payType)}</span></div>
     </div>
-    <button class="${btnClass}" ${btnAttr}>${btnText}</button>
+    <button class="${btnClass}" ${btnAttr} data-action="${btnAction}" data-id="${o.id}">${btnText}</button>
+  </div>`;
+}
+
+function viewPost() {
+  return `
+  <div class="page">
+    <div class="form-card">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:20px;">发布订单</h2>
+      <label class="field">
+        <span class="field-label">收款金额（元）<i>*</i></span>
+        <input class="input" name="amount" type="number" min="0.01" step="0.01" required placeholder="例如：1000.00">
+      </label>
+      <label class="field">
+        <span class="field-label">返佣金额（元）<i>*</i></span>
+        <input class="input" name="commission" type="number" min="0.01" step="0.01" required placeholder="例如：100.00">
+      </label>
+      <div class="form-row">
+        <label class="field">
+          <span class="field-label">收款类型 <i>*</i></span>
+          <select class="input" name="payType" required>
+            <option value="支付宝固定小额">支付宝固定小额</option>
+            <option value="银行转账">银行转账</option>
+            <option value="微信收款码">微信收款码</option>
+            <option value="其他方式">其他方式</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">订单号</span>
+          <input class="input" name="orderNo" value="系统自动生成" disabled>
+        </label>
+      </div>
+      <label class="field">
+        <span class="field-label">订单备注</span>
+        <textarea class="input" name="desc" rows="3" placeholder="补充说明，例如操作要求、注意事项等"></textarea>
+      </label>
+      <button class="btn btn-primary btn-block" type="submit" data-action="submit-post">确认发布</button>
+    </div>
   </div>`;
 }
 
@@ -621,11 +591,20 @@ function viewMine() {
   const all = state.orders.filter(o => myTaker(o));
   const working = all.filter(o => myTaker(o).status === 'working');
   const done = all.filter(o => myTaker(o).status === 'done');
-  const list = (state.mineTab === 'done' ? done : working);
+  const listMap = { working, done };
+  const list = listMap[state.mineTab] || working;
 
-  const listHtml = list.length
-    ? `<div class="order-list">${list.map(mineOrderCard).join('')}</div>`
-    : `<div class="empty"><div class="empty-ico">📥</div><h3>暂无记录</h3><p>${state.mineTab === 'working' ? '去订单大厅抢一单试试' : '完成的订单会显示在这里'}</p></div>`;
+  let listHtml;
+  if (!list.length) {
+    listHtml = `
+      <div class="empty">
+        <div class="empty-ico">📥</div>
+        <h3>暂无记录</h3>
+        <p>${state.mineTab === 'working' ? '去订单大厅抢一单试试' : '完成的订单会显示在这里'}</p>
+      </div>`;
+  } else {
+    listHtml = `<div class="order-list">${list.map(mineOrderCard).join('')}</div>`;
+  }
 
   return `
   <div class="page">
@@ -658,88 +637,229 @@ function mineOrderCard(o) {
   </div>`;
 }
 
-function viewDeposit() {
-  const addr = state.config.trc20;
-  const u = state.user;
+function viewPosted() {
+  const mine = state.orders.filter(o => o.publisherId === state.user.id).sort((a, b) => b.createdAt - a.createdAt);
+  if (!mine.length) {
+    return `
+    <div class="page">
+      <div class="empty" style="margin-top:20px">
+        <div class="empty-ico">📤</div>
+        <h3>还没有发布过订单</h3>
+        <p>点击下方按钮发布你的第一个订单</p>
+      </div>
+    </div>`;
+  }
   return `
   <div class="page">
-    <div class="form-card">
-      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">充值押金</h2>
-      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">使用 USDT (TRC20) 充值，抢单前需缴纳押金</p>
-      <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:16px;margin-bottom:18px">
-        <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
-        <div style="font-size:24px;font-weight:800;color:var(--brand);margin-top:2px">${u.deposit} <span style="font-size:13px">USDT</span></div>
-      </div>
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div>
-      <div class="wallet-choices">
-        <button class="wallet-card active" data-action="pick-wallet" data-wallet="imtoken">
-          <div class="wc-icon imtoken">
-            <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/>
-            </svg>
+    <div class="order-list">
+      ${mine.map(o => {
+        const st = statusOf(o.status);
+        return `
+        <div class="order-card" data-action="open" data-id="${o.id}">
+          <div class="order-header">
+            <div class="order-no">订单号：${esc(o.orderNo)}</div>
+            <div class="order-status ${st.cls}">${st.text}</div>
           </div>
-          <div class="wc-info">
-            <div class="wc-name">imToken</div>
-            <div class="wc-tip">官方认证 · 推荐使用</div>
+          <div class="order-amounts">
+            <div class="amount-item"><span class="amount-label">收款金额：</span><span class="amount-value red">${Number(o.amount).toFixed(2)}</span></div>
+            <div class="amount-item"><span class="amount-label">返佣金额：</span><span class="amount-value gold">${Number(o.commission).toFixed(2)}</span></div>
           </div>
-          <div class="wc-check">✓</div>
-        </button>
-      </div>
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px;margin-top:14px">收款地址（TRC20）</div>
-      <div style="background:#f8f9fd;border-radius:10px;padding:10px 14px;font-size:12px;word-break:break-all;color:var(--ink2);margin-bottom:14px">${esc(addr)}</div>
-      <label class="field" style="margin-bottom:12px">
-        <span class="field-label">支付金额（USDT）</span>
-        <input class="input" id="deposit-amount" type="number" min="${state.config.minDeposit}" step="1" value="100">
-      </label>
-      <button class="btn btn-imtoken btn-block" data-action="pay-imtoken">🦊 一键支付 · 打开 imToken</button>
-      <button class="btn btn-primary btn-block" data-action="manual-confirm-deposit" style="margin-top:10px">我已完成支付</button>
-      <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(state.config.support)}</div>
+          <div class="order-info">
+            <div class="order-info-row"><span class="label">创建时间：</span><span class="val">${fmtDateTime(o.createdAt)}</span></div>
+            <div class="order-info-row"><span class="label">收款类型：</span><span class="val">${esc(o.payType)}</span></div>
+          </div>
+          <button class="order-btn done" disabled>${o.status === 'pending' ? '等待抢单' : st.text}</button>
+        </div>`;
+      }).join('')}
     </div>
   </div>`;
 }
 
-function viewRefund() {
-  const u = state.user;
-  const myRefunds = state.refunds.slice().sort((a, b) => b.createdAt - a.createdAt);
-  const recordsHtml = myRefunds.length ? `
-    <div class="form-card" style="margin-top:16px;max-width:680px">
-      <h3 style="font-size:15px;font-weight:800;margin-bottom:14px">我的退款记录</h3>
-      ${myRefunds.map(r => `
-        <div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-size:14px;font-weight:800;color:var(--brand)">${r.amount} USDT</span>
-            <span class="order-status ${r.status === 'pending' ? 'status-pending' : r.status === 'approved' ? 'status-paid' : 'status-cancel'}">
-              ${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已打款' : '已拒绝'}
-            </span>
-          </div>
-          <div style="font-size:12px;color:var(--ink3);word-break:break-all;margin-bottom:4px">地址：${esc(r.address)}</div>
-          <div style="font-size:12px;color:var(--ink3)">提交时间：${fmtDateTime(r.createdAt)}</div>
-        </div>
-      `).join('')}
-    </div>` : '';
-
+/* =========================================================
+   视图：充值押金（支持自定义图标 + 不显示地址）
+   ========================================================= */
+function viewDeposit() {
+  const net = state.depositNet;
+  const wallet = state.depositWallet;
+  const addr = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
   return `
   <div class="page">
     <div class="form-card">
-      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">押金退款</h2>
-      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">申请退还押金，审核通过后将退回至您的钱包</p>
-      <div style="background:#f8f9fd;border:1px solid #e8eaf1;border-radius:12px;padding:16px;margin-bottom:18px">
-        <div style="font-size:12.5px;color:var(--ink3)">当前可退押金</div>
-        <div style="font-size:24px;font-weight:800;color:var(--ink);margin-top:2px">${u.deposit} <span style="font-size:13px">USDT</span></div>
+      ${CONFIG.pageIcon ? `<div style="text-align:center;margin-bottom:12px">${renderIconHtml(CONFIG.pageIcon, 50)}</div>` : ''}
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;text-align:center;">${esc(CONFIG.pageTitle || '充值押金')}</h2>
+      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;text-align:center;">使用 USDT 充值，抢单前需缴纳押金</p>
+      <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:16px;margin-bottom:18px">
+        <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
+        <div style="font-size:24px;font-weight:800;color:var(--brand);margin-top:2px">${state.user.deposit} <span style="font-size:13px">USDT</span></div>
       </div>
-      <label class="field">
-        <span class="field-label">退款金额（USDT）<i>*</i></span>
-        <input class="input" id="refund-amount" type="number" min="1" step="1" max="${u.deposit}" placeholder="例如：100">
-      </label>
-      <label class="field">
-        <span class="field-label">接收退款的 TRC20 地址 <i>*</i></span>
-        <input class="input" id="refund-address" placeholder="请输入您的 TRC20 钱包地址">
-      </label>
-      <div class="notice" style="margin-bottom:14px">⚠️ 请确保地址正确，错误后果自负！并且不能找回！申请后系统自动处理到钱包地址</div>
-      <button class="btn btn-primary btn-block" data-action="submit-refund">提交退款申请</button>
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="chip-cat${wallet === 'imtoken' ? ' active' : ''}" style="flex:1;justify-content:center;gap:6px;display:flex;align-items:center" data-action="wallet" data-wallet="imtoken">${renderIconHtml(CONFIG.imtokenIcon, 18)}<span>imToken</span></button>
+        <button class="chip-cat${wallet === 'manual' ? ' active' : ''}" style="flex:1;justify-content:center;gap:6px;display:flex;align-items:center" data-action="wallet" data-wallet="manual">✍️<span>手动转账</span></button>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择网络</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="chip-cat${net === 'TRC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="net" data-net="TRC20">TRC20（推荐）</button>
+        <button class="chip-cat${net === 'ERC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="net" data-net="ERC20">ERC20</button>
+      </div>
+      ${wallet === 'imtoken' ? `
+        <div class="notice notice-dark" style="margin-bottom:14px">
+          ${renderIconHtml(CONFIG.imtokenIcon, 16)} 点击「一键支付」将在 imToken 内置浏览器打开支付页面，自动填充收款地址和金额
+        </div>
+        <label class="field" style="margin-bottom:12px">
+          <span class="field-label">支付金额（USDT）</span>
+          <input class="input" id="deposit-amount" type="number" min="${CONFIG.minDeposit}" step="1" value="100">
+        </label>
+        <button class="btn btn-imtoken btn-block" data-action="pay-imtoken" style="gap:8px">${renderIconHtml(CONFIG.imtokenIcon, 20)} 一键支付 · 打开 imToken</button>
+      ` : `
+        <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">充值地址（${net}）</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <input class="input" id="usdt-addr" value="${esc(addr)}" readonly style="font-size:12px;flex:1">
+          <button class="btn btn-ghost" data-action="copy-addr" style="padding:0 14px;flex:0 0 auto">复制</button>
+        </div>
+        <div style="display:flex;justify-content:center;margin:14px 0">
+          <div id="qr-box" class="qr-wrap"><div class="qr-loading">二维码加载中…</div></div>
+        </div>
+        <label class="field" style="margin-bottom:12px">
+          <span class="field-label">充值金额（USDT）</span>
+          <input class="input" id="deposit-amount" type="number" min="${CONFIG.minDeposit}" step="1" value="100">
+        </label>
+        <div class="notice" style="margin-bottom:14px">⚠️ ${esc(CONFIG.notice)}</div>
+        <button class="btn btn-primary btn-block" data-action="confirm-deposit" data-id="">我已完成支付</button>
+      `}
+      <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(CONFIG.support)}</div>
     </div>
-    ${recordsHtml}
   </div>`;
+}
+
+/* =========================================================
+   视图：管理后台（新增图标自定义区块）
+   ========================================================= */
+function viewAdmin() {
+  const net = state.depositNet;
+  const addr = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
+  return `
+  <div class="page">
+    <div class="admin-head">
+      <span class="admin-badge">⚙️ 管理后台</span>
+      <span style="font-size:12.5px;color:var(--ink3)">修改后自动保存并同步到客户端</span>
+    </div>
+
+    <div class="admin-sec">
+      <h3>图标自定义</h3>
+      <div class="form-row">
+        <label class="field">
+          <span class="field-label">充值页顶部图标</span>
+          <input class="input" id="cfg-page-icon" maxlength="300" value="${esc(CONFIG.pageIcon)}" placeholder="emoji 或 图片URL">
+          <span style="font-size:11.5px;color:var(--ink3)">支持 emoji（如 💰）或 图片 URL</span>
+        </label>
+        <label class="field">
+          <span class="field-label">充值页标题</span>
+          <input class="input" id="cfg-page-title" maxlength="20" value="${esc(CONFIG.pageTitle)}" placeholder="充值押金">
+        </label>
+      </div>
+      <label class="field" style="margin-bottom:6px">
+        <span class="field-label">imToken 按钮图标</span>
+        <input class="input" id="cfg-imtoken-icon" maxlength="300" value="${esc(CONFIG.imtokenIcon)}" placeholder="emoji 或 图片URL">
+      </label>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:10px;padding:12px;background:#f8f9fd;border-radius:10px">
+        <div style="font-size:12px;color:var(--ink3)">图标预览：</div>
+        <div>${renderIconHtml(CONFIG.pageIcon, 34)}</div>
+        <div>${renderIconHtml(CONFIG.imtokenIcon, 24)}</div>
+      </div>
+    </div>
+
+    <div class="admin-sec">
+      <h3>押金收款地址</h3>
+      <label class="field">
+        <span class="field-label">TRC20 地址（波场网络）</span>
+        <input class="input" id="cfg-trc20" maxlength="80" value="${esc(CONFIG.trc20)}">
+      </label>
+      <label class="field" style="margin-bottom:0">
+        <span class="field-label">ERC20 地址（以太坊网络）</span>
+        <input class="input" id="cfg-erc20" maxlength="80" value="${esc(CONFIG.erc20)}">
+      </label>
+    </div>
+
+    <div class="admin-sec">
+      <h3>押金规则</h3>
+      <div class="form-row">
+        <label class="field">
+          <span class="field-label">押金比例（%）</span>
+          <input class="input" id="cfg-ratio" type="number" min="1" max="100" step="1" value="${Math.round(CONFIG.ratio * 100)}">
+        </label>
+        <label class="field">
+          <span class="field-label">最低押金（USDT）</span>
+          <input class="input" id="cfg-min" type="number" min="1" step="1" value="${CONFIG.minDeposit}">
+        </label>
+      </div>
+    </div>
+
+    <div class="admin-sec">
+      <h3>提示文案</h3>
+      <label class="field">
+        <span class="field-label">充值页提示</span>
+        <input class="input" id="cfg-notice" maxlength="120" value="${esc(CONFIG.notice)}">
+      </label>
+      <label class="field" style="margin-bottom:0">
+        <span class="field-label">客服信息</span>
+        <input class="input" id="cfg-support" maxlength="60" value="${esc(CONFIG.support)}">
+      </label>
+    </div>
+
+    <div class="admin-sec">
+      <h3>二维码预览</h3>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="chip-cat${net === 'TRC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="admin-net" data-net="TRC20">TRC20</button>
+        <button class="chip-cat${net === 'ERC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="admin-net" data-net="ERC20">ERC20</button>
+      </div>
+      <div class="qr-wrap" id="admin-qr"><div class="qr-loading">二维码加载中…</div></div>
+      <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:10px;word-break:break-all;padding:0 10px">${esc(addr)}</div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" data-action="save-cfg">保存配置</button>
+      <button class="btn btn-ghost" data-action="reset-cfg">恢复默认</button>
+      <button class="btn btn-ghost" data-action="admin-close">返回订单大厅</button>
+    </div>
+  </div>`;
+}
+
+function render() {
+  const view = $('#view');
+  if (!view) return;
+  const map = { hall: viewHall, post: viewPost, mine: viewMine, posted: viewPosted, deposit: viewDeposit, admin: viewAdmin };
+  view.innerHTML = (map[state.view] || viewHall)();
+  if (state.view === 'deposit' && state.depositWallet === 'manual') {
+    const addr = state.depositNet === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
+    renderQR($('#qr-box'), addr);
+  }
+  if (state.view === 'admin') {
+    const addr = state.depositNet === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
+    renderQR($('#admin-qr'), addr);
+  }
+  $$('[data-action="nav"]').forEach(el => {
+    el.classList.toggle('active', el.dataset.view === state.view);
+  });
+  window.scrollTo({ top: 0 });
+}
+
+function go(view) {
+  if (state.view === view) return;
+  state.view = view;
+  if (view !== 'admin' && location.hash === '#admin') history.replaceState(null, '', '#');
+  closeModal();
+  render();
+}
+
+function updateUserUI() {
+  const name = state.user.name || '我';
+  const ch = name.trim().slice(0, 1) || '我';
+  const sbA = $('#sb-avatar'), sbN = $('#sb-name'), mhA = $('#mh-avatar'), sbS = $('#sb-sub');
+  if (sbA) sbA.textContent = ch;
+  if (sbN) sbN.textContent = name;
+  if (mhA) mhA.textContent = ch;
+  if (sbS) sbS.textContent = `押金 ${state.user.deposit} USDT · 收入 ¥${state.user.income}`;
 }function openModal(html) {
   $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">${html}</div></div>`;
   document.body.style.overflow = 'hidden';
@@ -749,173 +869,125 @@ function closeModal() {
   document.body.style.overflow = '';
 }
 
-function openLinkMenu() {
-  const list = state.config.linkList || [];
-  if (!list.length) { toast('暂无可跳转的链接'); return; }
-  const title = state.config.linkCardTitle || '更多服务';
-  const buttonsHtml = list.map(item => `
-    <a class="link-menu-btn" href="${esc(item.url)}" target="_blank" rel="noopener">
-      <span class="lm-left">
-        <span class="lm-icon">🌐</span>
-        <span>${esc(item.title)}</span>
-      </span>
-      <span class="lm-arrow">›</span>
-    </a>
-  `).join('');
+function renderQR(el, text) {
+  if (!el) return;
+  if (!text) { el.innerHTML = `<div class="qr-loading">地址为空</div>`; return; }
+  const size = 300;
+  const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=10&data=${encodeURIComponent(text)}`;
+  el.innerHTML = `
+    <img src="${url}" alt="二维码" crossorigin="anonymous"
+         onload="this.parentNode.querySelector('.qr-loading')?.remove()">
+    <div class="qr-loading">二维码加载中…</div>
+  `;
+}
+
+function copyText(text) {
+  if (!text) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+function fallbackCopy(text) {
+  const tmp = document.createElement('textarea');
+  tmp.value = text;
+  tmp.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+  document.body.appendChild(tmp);
+  tmp.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  tmp.remove();
+}
+
+/* =========================================================
+   🔥 一键支付 imToken（Universal Link 方案）
+   ========================================================= */
+function payWithImToken() {
+  const net = state.depositNet;
+  const to = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
+  const amount = Number($('#deposit-amount')?.value) || 0;
+
+  if (!to) { toast('收款地址未配置'); return; }
+  if (amount < 1) { toast('请输入支付金额'); return; }
+
+  const chain = net === 'TRC20' ? 'trx' : 'eth';
+  const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=${chain}`;
+  const imtokenUniversalLink = `https://connect.token.im/link/navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
+
+  const a = document.createElement('a');
+  a.href = imtokenUniversalLink;
+  a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { try { a.remove(); } catch (e) {} }, 500);
+}
+
+function showWelcome() {
+  openModal(`
+    <div style="padding:30px 24px;text-align:center">
+      <div style="font-size:40px;margin-bottom:12px">👋</div>
+      <h2 style="font-size:20px;font-weight:800;margin-bottom:8px">欢迎加入众包接单</h2>
+      <p style="font-size:13.5px;color:var(--ink3);margin-bottom:20px">先起个名字，方便发布者认识你</p>
+      <input class="input" id="welcome-name" maxlength="12" placeholder="你的昵称" autocomplete="off" style="text-align:center;margin-bottom:14px">
+      <button class="btn btn-primary btn-block" data-action="save-name">开始接单</button>
+    </div>
+  `);
+  setTimeout(() => $('#welcome-name')?.focus(), 120);
+}
+
+function saveName() {
+  const el = $('#welcome-name') || $('#edit-name-input');
+  const v = (el?.value || '').trim();
+  if (!v) { toast('请输入一个昵称'); el?.focus(); return; }
+  state.user.name = v.slice(0, 12);
+  save();
+  updateUserUI();
+  closeModal();
+  render();
+  toast('欢迎，' + state.user.name);
+}
+
+function editName() {
   openModal(`
     <div class="modal-head">
-      <h2>${esc(title)}</h2>
+      <h2>个人资料</h2>
       <button class="icon-btn" data-action="close-modal">✕</button>
     </div>
     <div class="modal-body">
-      ${buttonsHtml}
-    </div>
-  `);
-}
-
-let currentPmForce = false;
-
-function openPayMethodModal(isForce = false) {
-  currentPmForce = isForce;
-  const canClose = !isForce;
-  const pm = state.user?.payMethod || {};
-  let alipay = { realName: '', account: '' };
-  let bank = { realName: '', account: '', bank: '' };
-  if (pm.type === 'alipay') { alipay = { realName: pm.realName || '', account: pm.account || '' }; }
-  else if (pm.type === 'bank') { bank = { realName: pm.realName || '', account: pm.account || '', bank: pm.bank || '' }; }
-  else {
-    if (pm.alipay) alipay = { realName: pm.alipay.realName || '', account: pm.alipay.account || '' };
-    if (pm.bank) bank = { realName: pm.bank.realName || '', account: pm.bank.account || '', bank: pm.bank.bank || '' };
-  }
-
-  openModal(`
-    <div class="modal-head">
-      <h2>${isForce ? '请先绑定收款方式' : '绑定收款方式'}</h2>
-      ${canClose ? `<button class="icon-btn" data-action="close-modal">✕</button>` : ''}
-    </div>
-    <div class="modal-body">
-      <div class="notice" style="margin-bottom:16px">
-        ${isForce ? '⚠️ 抢单前至少绑定一种收款方式' : '⚠️ 至少填写一种，可同时绑定支付宝与银行卡'}
+      <label class="field">
+        <span class="field-label">昵称</span>
+        <input class="input" id="edit-name-input" maxlength="12" value="${esc(state.user.name)}" autocomplete="off">
+      </label>
+      <div class="detail-grid" style="margin:6px 0 0">
+        <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${state.user.credit}</div></div>
+        <div class="dg-item"><div class="dg-k">累计收入</div><div class="dg-v">¥${state.user.income}</div></div>
+        <div class="dg-item"><div class="dg-k">接单总数</div><div class="dg-v">${state.orders.filter(o => myTaker(o)).length}</div></div>
+        <div class="dg-item"><div class="dg-k">押金余额</div><div class="dg-v" style="color:var(--brand)">${state.user.deposit} USDT</div></div>
       </div>
-      <div style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;background:#f8faff">
-        <div style="font-size:13.5px;font-weight:800;color:#2563eb;margin-bottom:12px">💙 支付宝（选填）</div>
-        <label class="field" style="margin-bottom:10px">
-          <span class="field-label" style="font-size:12.5px">收款姓名</span>
-          <input class="input" id="pm-alipay-name" maxlength="20" placeholder="与支付宝实名一致" value="${esc(alipay.realName)}">
-        </label>
-        <label class="field" style="margin-bottom:0">
-          <span class="field-label" style="font-size:12.5px">支付宝账号</span>
-          <input class="input" id="pm-alipay-account" maxlength="40" placeholder="手机号或邮箱" value="${esc(alipay.account)}">
-        </label>
-      </div>
-      <div style="border:1px solid var(--line);border-radius:12px;padding:14px;background:#fffdf8">
-        <div style="font-size:13.5px;font-weight:800;color:#b45309;margin-bottom:12px">🏦 银行卡（选填）</div>
-        <label class="field" style="margin-bottom:10px">
-          <span class="field-label" style="font-size:12.5px">收款姓名</span>
-          <input class="input" id="pm-bank-name" maxlength="20" placeholder="与银行卡开户名一致" value="${esc(bank.realName)}">
-        </label>
-        <label class="field" style="margin-bottom:10px">
-          <span class="field-label" style="font-size:12.5px">银行卡号</span>
-          <input class="input" id="pm-bank-account" maxlength="30" placeholder="不空格、不横线" value="${esc(bank.account)}">
-        </label>
-        <label class="field" style="margin-bottom:0">
-          <span class="field-label" style="font-size:12.5px">开户银行</span>
-          <input class="input" id="pm-bank-bank" maxlength="30" placeholder="例如：中国工商银行" value="${esc(bank.bank)}">
-        </label>
-      </div>
-      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-top:14px">
-        <div style="font-size:12px;color:#16a34a;line-height:1.7">
-          ✅ 至少填写支付宝或银行卡其中一项<br>
-          <span style="opacity:.85">填的越多，抢单时可选的收款方式越多</span>
-        </div>
-      </div>
+      <button class="btn btn-primary btn-block" data-action="open-deposit" style="margin-top:14px">充值押金（USDT）</button>
+      <button class="btn btn-ghost btn-block" data-action="admin" style="margin-top:8px">进入管理后台</button>
     </div>
     <div class="modal-foot">
-      ${canClose ? `<button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">稍后再说</button>` : ''}
-      <button class="btn btn-primary" data-action="save-paymethod">确认保存</button>
+      <button class="btn btn-ghost" data-action="close-modal">取消</button>
+      <button class="btn btn-primary" data-action="save-name">保存昵称</button>
     </div>
   `);
-}
-
-function openProfile() {
-  const u = state.user;
-  const pms = getPayMethods(u);
-  const pmHtml = pms.length ? pms.map(p => `
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-top:8px">
-      <span class="pm-btn-blue">${p.type === 'alipay' ? '支付宝' : '银行卡'}</span>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700">${esc(p.realName || '')}</div>
-        <div style="font-size:11.5px;color:var(--ink3);word-break:break-all">${esc(p.account || '')}${p.bank ? ' · ' + esc(p.bank) : ''}</div>
-      </div>
-    </div>
-  `).join('') : `<div style="margin-top:8px;font-size:13px;color:var(--ink3)">未绑定</div>`;
-
-  openModal(`
-    <div class="modal-head"><h2>个人资料</h2><button class="icon-btn" data-action="close-modal">✕</button></div>
-    <div class="modal-body">
-      <div class="detail-grid" style="margin:0 0 14px">
-        <div class="dg-item"><div class="dg-k">用户名</div><div class="dg-v">${esc(u.username)}</div></div>
-        <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${u.credit}</div></div>
-        <div class="dg-item"><div class="dg-k">累计收入</div><div class="dg-v">¥${u.income}</div></div>
-        <div class="dg-item"><div class="dg-k">押金余额</div><div class="dg-v" style="color:var(--brand)">${u.deposit} USDT</div></div>
-      </div>
-      <div style="margin-top:12px;padding:12px 14px;background:#fff9ec;border:1px dashed #ffe0b2;border-radius:10px">
-        <div style="font-size:12px;color:#c27800;margin-bottom:4px">🎁 我的邀请码</div>
-        <div style="font-size:18px;font-weight:800;color:var(--brand);letter-spacing:2px">${esc(u.inviteCode || '生成中')}</div>
-        <div style="font-size:11.5px;color:var(--ink3);margin-top:4px">分享给你的朋友，让他们注册时填写</div>
-      </div>
-      <div style="margin-top:12px;padding:12px 14px;background:#f8f9fd;border-radius:10px">
-        <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">已绑定的收款方式</div>
-        ${pmHtml}
-      </div>
-      <button class="btn btn-ghost btn-block" data-action="open-paymethod" style="margin-top:12px;background:#fff;border-color:var(--line)">${pms.length ? '修改收款方式' : '绑定收款方式'}</button>
-      <button class="btn btn-block" data-action="logout" style="margin-top:10px;background:#fff4ec;border:1px solid #ffe0b2;color:#c2410c;font-weight:700">🚪 退出登录 / 切换账号</button>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button>
-    </div>
-  `);
+  setTimeout(() => $('#edit-name-input')?.focus(), 120);
 }
 
 function openGrabModal(id) {
-  const o = state.orders.find(x => x.id === id);
+  const o = getOrder(id);
   if (!o) return;
-  if (o.status !== 'pending' || myTaker(o)) { toast('这个订单已经不能抢了'); return; }
-  if (!hasPayMethod(state.user)) {
-    window.__pendingGrabId = id;
-    openPayMethodModal(true);
-    return;
+  if (o.status !== 'pending' || myTaker(o) || o.publisherId === state.user.id) {
+    toast('这个订单已经不能抢了'); return;
   }
-  if (!hasEnoughDeposit(o)) { toast(`押金不足，需 ${depositRequired(o)} USDT`); return; }
-
-  const pms = getPayMethods(state.user);
-  state.grabChoice = pms.length === 1 ? pms[0].type : (state.grabChoice || pms[0].type);
-
-  const choiceHtml = pms.length === 1 ? `
-    <div style="padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:14px">
-      <div style="font-size:12px;color:#16a34a;margin-bottom:4px">将使用以下收款方式</div>
-      <div style="font-size:13.5px;font-weight:700;color:#166534">${esc(formatPayMethod(pms[0]))}</div>
-      <div style="font-size:12px;color:#16a34a;margin-top:4px">收款姓名：${esc(pms[0].realName)}</div>
-    </div>
-  ` : `
-    <div style="margin-bottom:14px">
-      <div style="font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:8px">选择收款方式</div>
-      <div class="pm-choice">
-        ${pms.map(p => `
-          <label class="pm-choice-item${state.grabChoice === p.type ? ' active' : ''}" data-action="pick-pm" data-type="${p.type}">
-            <input type="radio" name="grab-pm" value="${p.type}" ${state.grabChoice === p.type ? 'checked' : ''}>
-            <div class="pm-choice-info">
-              <div class="t">${p.type === 'alipay' ? '💙 支付宝' : '🏦 银行卡'}</div>
-              <div class="s">${esc(p.account)}${p.bank ? ' · ' + esc(p.bank) : ''} · ${esc(p.realName)}</div>
-            </div>
-          </label>
-        `).join('')}
-      </div>
-    </div>
-  `;
-
+  if (!hasEnoughDeposit(o)) { openDepositModal(o); return; }
   openModal(`
-    <div class="modal-head"><h2>确认抢单</h2><button class="icon-btn" data-action="close-modal">✕</button></div>
+    <div class="modal-head">
+      <h2>确认抢单</h2>
+      <button class="icon-btn" data-action="close-modal">✕</button>
+    </div>
     <div class="modal-body">
       <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:16px;text-align:center;margin-bottom:16px">
         <div style="font-size:12px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div>
@@ -924,180 +996,148 @@ function openGrabModal(id) {
       </div>
       <div class="detail-grid" style="margin:0 0 14px">
         <div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div>
+        <div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${esc(o.publisherName)}</div></div>
+        <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${o.credit ?? 100}</div></div>
         <div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div>
       </div>
-      ${choiceHtml}
       <div class="notice">⚡ 抢单后请尽快完成，审核通过后返佣自动结算</div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">再想想</button>
+      <button class="btn btn-ghost" data-action="close-modal">再想想</button>
       <button class="btn btn-primary" data-action="submit-grab" data-id="${o.id}">确认抢单</button>
     </div>
   `);
 }
 
-async function submitGrab(id) {
-  try {
-    const pms = getPayMethods(state.user);
-    const chosen = pms.find(p => p.type === state.grabChoice) || pms[0];
-    await api(`/orders/${id}/grab`, { method: 'POST', body: { payMethod: chosen } });
-    closeModal();
-    state.mineTab = 'working';
-    await refreshAll();
-    toast('抢单成功，请尽快完成');
-  } catch (e) { toast(e.message); }
+function submitGrab(id) {
+  const o = getOrder(id);
+  if (!o) return;
+  if (o.status !== 'pending' || myTaker(o)) { toast('手慢了，订单已被抢'); closeModal(); render(); return; }
+  if (!hasEnoughDeposit(o)) { toast('押金不足，请先充值'); openDepositModal(o); return; }
+  o.takers = o.takers || [];
+  o.takers.push({ userId: state.user.id, userName: state.user.name || '我', at: Date.now(), status: 'working' });
+  o.status = 'confirm';
+  save();
+  closeModal();
+  state.mineTab = 'working';
+  render();
+  toast('抢单成功，请尽快完成');
 }
 
-async function submitWork(id) {
-  try {
-    await api(`/orders/${id}/work`, { method: 'POST' });
-    closeModal();
-    state.mineTab = 'done';
-    await refreshAll();
-    toast('订单完成，返佣已到账');
-  } catch (e) { toast(e.message); }
-}
+let currentDepositOrder = null;
 
 function openDepositModal(order) {
-  const required = order ? depositRequired(order) : 0;
-  const addr = state.config.trc20;
+  currentDepositOrder = order;
+  const required = order ? depositRequired(order) : 50;
+  const net = state.depositNet;
+  const addr = net === 'TRC20' ? CONFIG.trc20 : CONFIG.erc20;
+
   openModal(`
-    <div class="modal-head"><h2>充值押金</h2><button class="icon-btn" data-action="close-modal">✕</button></div>
+    <div class="modal-head">
+      <h2>充值押金</h2>
+      <button class="icon-btn" data-action="close-modal">✕</button>
+    </div>
     <div class="modal-body">
-      ${order ? `<div class="notice" style="margin-bottom:14px">🔒 抢此单需押金 ${required} USDT，当前押金 ${state.user.deposit} USDT</div>` : ''}
+      ${order ? `<div class="notice" style="margin-bottom:14px">🔒 抢此单需押金 ${required} USDT，当前押金 ${state.user.deposit} USDT，请先充值</div>` : ''}
       <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:14px;margin-bottom:16px">
         <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
         <div style="font-size:22px;font-weight:800;color:var(--brand);margin-top:2px">${state.user.deposit} <span style="font-size:13px">USDT</span></div>
       </div>
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div>
-      <div class="wallet-choices" style="grid-template-columns:1fr">
-        <button class="wallet-card active" data-action="pick-wallet" data-wallet="imtoken">
-          <div class="wc-icon imtoken">
-            <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/>
-            </svg>
-          </div>
-          <div class="wc-info">
-            <div class="wc-name">imToken</div>
-            <div class="wc-tip">官方认证 · 推荐使用</div>
-          </div>
-          <div class="wc-check">✓</div>
-        </button>
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择网络</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="chip-cat${net === 'TRC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="modal-net" data-net="TRC20">TRC20（推荐）</button>
+        <button class="chip-cat${net === 'ERC20' ? ' active' : ''}" style="flex:1;justify-content:center" data-action="modal-net" data-net="ERC20">ERC20</button>
       </div>
-      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px;margin-top:14px">充值地址（TRC20）</div>
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:8px">充值地址（${net}）</div>
       <div style="display:flex;gap:8px;margin-bottom:14px">
-        <input class="input" value="${esc(addr)}" readonly style="font-size:12px;flex:1">
-        <button class="btn btn-ghost" data-action="copy-addr" style="padding:0 14px;background:#fff;border-color:var(--line)">复制</button>
+        <input class="input" id="usdt-addr" value="${esc(addr)}" readonly style="font-size:12px;flex:1">
+        <button class="btn btn-ghost" data-action="copy-addr" style="padding:0 14px;flex:0 0 auto">复制</button>
+      </div>
+      <div style="display:flex;justify-content:center;margin:14px 0">
+        <div id="qr-box" class="qr-wrap"><div class="qr-loading">二维码加载中…</div></div>
       </div>
       <label class="field" style="margin-bottom:12px">
         <span class="field-label">充值金额（USDT）</span>
-        <input class="input" id="deposit-amount" type="number" min="${state.config.minDeposit}" step="1" value="100">
+        <input class="input" id="deposit-amount" type="number" min="${CONFIG.minDeposit}" step="1" value="100">
       </label>
-      <button class="btn btn-imtoken btn-block" data-action="pay-imtoken" style="margin-bottom:12px">🦊 一键支付 · 打开 imToken</button>
-      <div class="notice">⚠️ 点击"我已完成支付"后，系统将自动查询链上到账记录，请确保已转账成功（约 1-2 分钟后到账）</div>
+      <button class="btn btn-imtoken btn-block" data-action="pay-imtoken" style="margin-bottom:12px">${renderIconHtml(CONFIG.imtokenIcon, 18)} 一键支付 · 打开 imToken</button>
+      <div class="notice">⚠️ ${esc(CONFIG.notice)}</div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">取消</button>
+      <button class="btn btn-ghost" data-action="close-modal">取消</button>
       <button class="btn btn-primary" data-action="confirm-deposit" data-id="${order ? order.id : ''}">我已完成支付</button>
     </div>
   `);
+  setTimeout(() => renderQR($('#qr-box'), addr), 30);
 }
 
-async function submitDeposit(orderId) {
+function submitDeposit(orderId) {
   const amount = Number($('#deposit-amount')?.value) || 0;
-  const min = Number(state.config.minDeposit) || 10;
+  const min = Number(CONFIG.minDeposit) || 10;
   if (amount < min) { toast(`最低充值 ${min} USDT`); return; }
-  try {
-    toast('正在查询链上到账记录…');
-    const r = await api('/deposit', { method: 'POST', body: { amount } });
-    state.user = r.user;
-    closeModal();
-    await refreshAll();
-    toast(`✅ 到账成功！${r.credited} USDT 已入账`);
-    if (orderId) setTimeout(() => openGrabModal(orderId), 400);
-  } catch (e) {
-    toast('❌ ' + e.message);
-  }
-}
-
-async function submitDepositDirect(amount) {
-  try {
-    toast('正在查询链上到账记录…');
-    const r = await api('/deposit', { method: 'POST', body: { amount } });
-    state.user = r.user;
-    await refreshAll();
-    toast(`✅ 到账成功！${r.credited} USDT 已入账`);
-  } catch (e) {
-    toast('❌ ' + e.message);
-  }
-}
-
-async function submitRefund() {
-  const amount = Number($('#refund-amount')?.value) || 0;
-  const address = $('#refund-address')?.value.trim();
-  if (amount <= 0) { toast('退款金额不正确'); return; }
-  if (!address) { toast('请输入接收退款的地址'); return; }
-  try {
-    await api('/refund', { method: 'POST', body: { amount, address } });
-    await refreshAll();
-    toast('退款申请已提交，等待管理员审核');
-  } catch (e) { toast(e.message); }
+  state.user.deposit = Number(state.user.deposit) + amount;
+  save();
+  closeModal();
+  updateUserUI();
+  if (state.view === 'deposit') render();
+  toast(`充值成功，当前押金 ${state.user.deposit} USDT`);
+  if (orderId) setTimeout(() => openGrabModal(orderId), 400);
 }
 
 function openDetail(id) {
-  const o = state.orders.find(x => x.id === id);
+  const o = getOrder(id);
   if (!o) return;
   const st = statusOf(o.status);
   const tk = myTaker(o);
-  const canGrab = o.status === 'pending' && !tk;
+  const isOwner = o.publisherId === state.user.id;
+  const canGrab = o.status === 'pending' && !tk && !isOwner;
 
   let takersHtml = '';
   if (o.takers && o.takers.length) {
     takersHtml = `
       <div style="font-size:13px;font-weight:800;color:var(--ink3);letter-spacing:.5px;margin:18px 0 10px">接单者</div>
-      ${o.takers.map(x => {
-        const pm = x.payMethod || {};
-        const isSelf = x.userId === state.user.id;
-        const text = pm.type === 'alipay' ? `支付宝：${pm.account}` : pm.type === 'bank' ? `银行卡：${pm.bank || ''} ${pm.account}` : '未提供';
-        return `
-        <div style="padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-            <div class="avatar">${esc((x.userName || '?').slice(0, 1))}</div>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:13.5px;font-weight:700">${esc(x.userName)} ${isSelf ? '（我）' : ''}</div>
-              <div style="font-size:11.5px;color:var(--ink3);margin-top:3px">${timeAgo(x.at)} 接单</div>
-            </div>
-            <div style="font-size:13px;font-weight:800;color:var(--brand)">¥${Number(o.commission).toFixed(2)}</div>
+      ${o.takers.map(x => `
+        <div style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px">
+          <div class="avatar">${esc((x.userName||'?').slice(0,1))}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13.5px;font-weight:700">${esc(x.userName)}</div>
+            <div style="font-size:11.5px;color:var(--ink3);margin-top:3px">${timeAgo(x.at)} 接单</div>
           </div>
-          ${isSelf ? `<div style="font-size:12px;color:var(--ink2);padding:8px 10px;background:#f8f9fd;border-radius:8px">
-            <div>${esc(text)}</div><div style="color:var(--ink3);margin-top:2px">收款姓名：${esc(pm.realName || '')}</div>
-          </div>` : `<div style="font-size:12px;color:var(--ink3);padding:8px 10px;background:#f8f9fd;border-radius:8px">仅本人可见</div>`}
-        </div>`;
-      }).join('')}`;
+          <div style="font-size:13px;font-weight:800;color:var(--brand)">¥${Number(o.commission).toFixed(2)}</div>
+        </div>
+      `).join('')}`;
   }
 
   let foot = '';
   if (canGrab) {
-    foot = `<button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button><button class="btn btn-primary" data-action="grab" data-id="${o.id}">立即抢单</button>`;
+    foot = `<button class="btn btn-ghost" data-action="close-modal">关闭</button>
+            <button class="btn btn-primary" data-action="grab" data-id="${o.id}">立即抢单</button>`;
   } else if (tk && tk.status === 'working') {
-    foot = `<button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button><button class="btn btn-primary" data-action="submit-work" data-id="${o.id}">提交完成</button>`;
+    foot = `<button class="btn btn-ghost" data-action="close-modal">关闭</button>
+            <button class="btn btn-primary" data-action="submit-work" data-id="${o.id}">提交完成</button>`;
+  } else if (tk && tk.status === 'done') {
+    foot = `<div class="notice" style="flex:1">✅ 订单已完成，返佣 ¥${Number(o.commission).toFixed(2)} 已结算</div>
+            <button class="btn btn-ghost" data-action="close-modal">关闭</button>`;
   } else {
-    foot = `<div style="flex:1"></div><button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button>`;
+    foot = `<div style="flex:1"></div><button class="btn btn-ghost" data-action="close-modal">关闭</button>`;
   }
 
   openModal(`
     <div class="modal-head">
-      <span class="order-status ${st.cls}" style="font-size:13px">${st.text}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="order-status ${st.cls}" style="font-size:13px">${st.text}</span>
+      </div>
       <button class="icon-btn" data-action="close-modal">✕</button>
     </div>
     <div class="modal-body">
       <div style="font-size:12.5px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div>
-      <div class="detail-price">${Number(o.amount).toFixed(2)}</div>
+      <div class="detail-price">${Number(o.amount).toFixed(2)}<small>收款金额</small></div>
       <div style="font-size:14px;font-weight:800;color:var(--brand)">返佣 ${Number(o.commission).toFixed(2)}</div>
       <div class="detail-grid">
         <div class="dg-item"><div class="dg-k">创建时间</div><div class="dg-v">${fmtDateTime(o.createdAt)}</div></div>
         <div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div>
-        <div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${esc(o.publisherName)}</div></div>
+        <div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${isOwner ? '我' : esc(o.publisherName)}</div></div>
+        <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${o.credit ?? 100}</div></div>
         <div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div>
       </div>
       ${o.desc ? `<div class="detail-desc">${esc(o.desc)}</div>` : ''}
@@ -1107,200 +1147,173 @@ function openDetail(id) {
   `);
 }
 
-function payWithImToken() {
-  const to = state.config.trc20;
-  const amount = Number($('#deposit-amount')?.value) || 0;
-  if (!to) { toast('收款地址未配置'); return; }
-  if (amount < 1) { toast('请输入支付金额'); return; }
-  const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx`;
-  const link = `https://connect.token.im/link/navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
-  const a = document.createElement('a');
-  a.href = link;
-  a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { try { a.remove(); } catch (e) {} }, 500);
-}async function doLogin() {
-  await loadConfig();
-  const username = ($('#login-username')?.value || '').trim();
-  const password = $('#login-password')?.value || '';
-  if (!username || !password) { toast('请输入用户名和密码'); return; }
-  try {
-    const r = await api('/auth/login', { method: 'POST', body: { username, password } });
-    setToken(r.token);
-    state.user = r.user;
-    const [ordersRes, refundsRes] = await Promise.all([api('/orders'), api('/refunds/mine')]);
-    state.orders = ordersRes.orders || [];
-    state.refunds = refundsRes.refunds || [];
-    toast('登录成功');
-    render();
-    startPolling();
-    if (!hasPayMethod(state.user)) {
-      setTimeout(() => openPayMethodModal(false), 250);
-    }
-  } catch (e) { toast(e.message); }
-}
-
-async function doRegister() {
-  await loadConfig();
-  const username = ($('#reg-username')?.value || '').trim();
-  const password = $('#reg-password')?.value || '';
-  const password2 = $('#reg-password2')?.value || '';
-  const inviteCode = ($('#reg-invite')?.value || '').trim();
-  if (!username || !password) { toast('请填写用户名和密码'); return; }
-  if (password.length < 6) { toast('密码至少 6 位'); return; }
-  if (password !== password2) { toast('两次密码不一致'); return; }
-  if (!inviteCode) { toast('请输入邀请码'); return; }
-  try {
-    const r = await api('/auth/register', { method: 'POST', body: { username, nickname: username, password, inviteCode } });
-    setToken(r.token);
-    state.user = r.user;
-    state.orders = (await api('/orders')).orders || [];
-    state.refunds = [];
-    toast('注册成功，请绑定收款方式');
-    render();
-    startPolling();
-    setTimeout(() => openPayMethodModal(false), 250);
-  } catch (e) { toast(e.message); }
-}
-
-async function doLogout() {
-  if (!confirm('确定退出登录吗？')) return;
-  try { await api('/auth/logout', { method: 'POST' }); } catch(e) {}
-  clearToken();
-  state.user = null;
-  state.orders = [];
-  state.refunds = [];
-  state.view = 'hall';
-  state.orderTab = 'cancelled';
-  state.authTab = 'login';
-  stopPolling();
+function submitWork(id) {
+  const o = getOrder(id);
+  if (!o) return;
+  const tk = myTaker(o);
+  if (!tk || tk.status !== 'working') return;
+  tk.status = 'done';
+  tk.doneAt = Date.now();
+  o.status = 'paid';
+  state.user.income += Number(o.commission);
+  save();
   closeModal();
+  state.mineTab = 'done';
+  render();
+  toast(`订单完成，返佣 ¥${Number(o.commission).toFixed(2)} 已到账`);
+}
+
+function submitPost(form) {
+  const fd = new FormData(form);
+  const amount = Number(fd.get('amount')) || 0;
+  const commission = Number(fd.get('commission')) || 0;
+  const payType = String(fd.get('payType') || '');
+  const desc = String(fd.get('desc') || '').trim();
+  if (amount <= 0 || commission <= 0 || !payType) { toast('请填写完整的订单信息'); return; }
+  const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
+  state.orders.unshift({
+    id: uid(), orderNo, amount, commission, payType, desc,
+    createdAt: Date.now(), status: 'pending',
+    publisherId: state.user.id, publisherName: state.user.name || '我',
+    credit: state.user.credit, takers: [],
+  });
+  save();
+  state.view = 'posted';
+  render();
+  toast('订单发布成功 🎉');
+}
+
+/* ⭐ 保存管理配置（含图标字段） */
+function saveAdminConfig() {
+  const trc20 = ($('#cfg-trc20')?.value || '').trim();
+  const erc20 = ($('#cfg-erc20')?.value || '').trim();
+  const ratioPct = Number($('#cfg-ratio')?.value) || 10;
+  const minD = Number($('#cfg-min')?.value) || 10;
+  const notice = ($('#cfg-notice')?.value || '').trim();
+  const support = ($('#cfg-support')?.value || '').trim();
+  // ⭐ 读取图标字段
+  const pageIcon = ($('#cfg-page-icon')?.value || '').trim();
+  const pageTitle = ($('#cfg-page-title')?.value || '').trim();
+  const imtokenIcon = ($('#cfg-imtoken-icon')?.value || '').trim();
+
+  if (!trc20 && !erc20) { toast('至少填写一个收款地址'); return; }
+
+  CONFIG.trc20 = trc20;
+  CONFIG.erc20 = erc20;
+  CONFIG.ratio = Math.max(0.01, Math.min(1, ratioPct / 100));
+  CONFIG.minDeposit = Math.max(1, minD);
+  CONFIG.notice = notice || DEFAULT_CONFIG.notice;
+  CONFIG.support = support;
+  // ⭐ 保存图标字段
+  CONFIG.pageIcon = pageIcon || DEFAULT_CONFIG.pageIcon;
+  CONFIG.pageTitle = pageTitle || DEFAULT_CONFIG.pageTitle;
+  CONFIG.imtokenIcon = imtokenIcon || DEFAULT_CONFIG.imtokenIcon;
+
+  saveConfig();
+  toast('配置已保存');
   render();
 }
 
-async function savePayMethod() {
-  const alipayName = ($('#pm-alipay-name')?.value || '').trim();
-  const alipayAcc = ($('#pm-alipay-account')?.value || '').trim();
-  const bankName = ($('#pm-bank-name')?.value || '').trim();
-  const bankAcc = ($('#pm-bank-account')?.value || '').trim();
-  const bankBank = ($('#pm-bank-bank')?.value || '').trim();
-  const hasAlipay = alipayName || alipayAcc;
-  const hasBank = bankName || bankAcc || bankBank;
-  if (!hasAlipay && !hasBank) { toast('请至少填写一种收款方式'); return; }
-  if (hasAlipay) {
-    if (!alipayName) { toast('请填写支付宝收款姓名'); return; }
-    if (!alipayAcc) { toast('请填写支付宝账号'); return; }
-  }
-  if (hasBank) {
-    if (!bankName) { toast('请填写银行卡收款姓名'); return; }
-    if (!bankAcc) { toast('请填写银行卡号'); return; }
-    if (!bankBank) { toast('请填写开户银行'); return; }
-  }
-  const payMethod = {
-    alipay: hasAlipay ? { realName: alipayName, account: alipayAcc } : null,
-    bank: hasBank ? { realName: bankName, account: bankAcc, bank: bankBank } : null,
-  };
-  try {
-    const r = await api('/me', { method: 'PATCH', body: { payMethod } });
-    state.user = r.user;
-    toast('收款方式已保存');
-    closeModal();
-    render();
-    if (currentPmForce && window.__pendingGrabId) {
-      const gid = window.__pendingGrabId;
-      window.__pendingGrabId = null;
-      setTimeout(() => openGrabModal(gid), 300);
-    }
-  } catch (e) { toast(e.message); }
+function resetAdminConfig() {
+  if (!confirm('确定恢复默认配置吗？')) return;
+  CONFIG = Object.assign({}, DEFAULT_CONFIG);
+  saveConfig();
+  toast('已恢复默认');
+  render();
+}let toastTimer = null;
+function toast(msg) {
+  $$('.toast').forEach(el => el.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 320);
+  }, 2200);
 }
 
-document.addEventListener('click', async e => {
+document.addEventListener('click', e => {
   if (e.target.classList && e.target.classList.contains('overlay')) { closeModal(); return; }
+
   const el = e.target.closest('[data-action]');
   if (!el) return;
+
   const { action, id } = el.dataset;
 
-  try {
-    switch (action) {
-      case 'auth-tab': state.authTab = el.dataset.tab; render(); break;
-      case 'do-login': await doLogin(); break;
-      case 'do-register': await doRegister(); break;
-      case 'logout': await doLogout(); break;
-      case 'open-paymethod': openPayMethodModal(false); break;
-      case 'save-paymethod': await savePayMethod(); break;
-      case 'pick-pm':
-        state.grabChoice = el.dataset.type;
-        document.querySelectorAll('.pm-choice-item').forEach(it => {
-          const isActive = it.dataset.type === state.grabChoice;
-          it.classList.toggle('active', isActive);
-          const radio = it.querySelector('input[type="radio"]');
-          if (radio) radio.checked = isActive;
-        });
-        break;
-      case 'pick-wallet':
-        state.wallet = el.dataset.wallet || 'imtoken';
-        document.querySelectorAll('.wallet-card').forEach(c => {
-          c.classList.toggle('active', c.dataset.wallet === state.wallet);
-        });
-        break;
-      case 'open-link-menu': openLinkMenu(); break;
-      case 'toggle-feature': {
-        const idx = el.dataset.idx;
-        state.featureOpen[idx] = !state.featureOpen[idx];
-        const content = el.nextElementSibling;
-        const arrow = el.querySelector('.arrow');
-        if (content) content.style.display = state.featureOpen[idx] ? 'block' : 'none';
-        if (arrow) arrow.style.transform = state.featureOpen[idx] ? 'rotate(180deg)' : 'rotate(0deg)';
-        break;
+  switch (action) {
+    case 'nav': go(el.dataset.view); break;
+    case 'open': openDetail(id); break;
+    case 'close-modal': closeModal(); break;
+    case 'grab': openGrabModal(id); break;
+    case 'submit-grab': submitGrab(id); break;
+    case 'submit-work': submitWork(id); break;
+    case 'order-tab': state.orderTab = el.dataset.tab; render(); break;
+    case 'mine-tab': state.mineTab = el.dataset.tab; render(); break;
+    case 'edit-name': editName(); break;
+    case 'save-name': saveName(); break;
+    case 'deposit': openDepositModal(getOrder(id)); break;
+    case 'open-deposit': closeModal(); setTimeout(() => openDepositModal(null), 100); break;
+    case 'wallet':
+      state.depositWallet = el.dataset.wallet;
+      if (state.view === 'deposit') render();
+      break;
+    case 'net':
+      state.depositNet = el.dataset.net;
+      if (state.view === 'deposit') render();
+      break;
+    case 'modal-net':
+      state.depositNet = el.dataset.net;
+      openDepositModal(currentDepositOrder);
+      break;
+    case 'pay-imtoken': payWithImToken(); break;
+    case 'copy-addr': {
+      const addr = $('#usdt-addr')?.value || '';
+      if (!addr) { toast('地址为空'); break; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(addr).then(() => toast('地址已复制'), () => toast('复制失败'));
+      } else {
+        fallbackCopy(addr); toast('地址已复制');
       }
-      case 'nav': state.view = el.dataset.view; closeModal(); render(); break;
-      case 'open-profile': openProfile(); break;
-      case 'open': openDetail(id); break;
-      case 'grab': openGrabModal(id); break;
-      case 'submit-grab': await submitGrab(id); break;
-      case 'submit-work': await submitWork(id); break;
-      case 'order-tab': state.orderTab = el.dataset.tab; render(); break;
-      case 'mine-tab': state.mineTab = el.dataset.tab; render(); break;
-      case 'close-modal': closeModal(); break;
-      case 'deposit': openDepositModal(state.orders.find(o => o.id === id)); break;
-      case 'pay-imtoken': payWithImToken(); break;
-      case 'confirm-deposit': await submitDeposit(el.dataset.id || ''); break;
-      case 'manual-confirm-deposit': {
-        const amount = Number($('#deposit-amount')?.value) || 0;
-        const min = Number(state.config.minDeposit) || 10;
-        if (amount < min) { toast(`最低充值 ${min} USDT`); break; }
-        await submitDepositDirect(amount);
-        break;
-      }
-      case 'copy-addr': {
-        const addr = state.config.trc20;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(addr).then(() => toast('地址已复制'), () => toast('复制失败'));
-        }
-        break;
-      }
-      case 'submit-refund': await submitRefund(); break;
+      break;
     }
-  } catch (e) {
-    toast(e.message || '操作失败');
+    case 'confirm-deposit': submitDeposit(el.dataset.id || ''); break;
+    case 'admin':
+      closeModal();
+      state.view = 'admin';
+      history.replaceState(null, '', '#admin');
+      render();
+      break;
+    case 'admin-close': history.replaceState(null, '', '#'); go('hall'); break;
+    case 'admin-net': state.depositNet = el.dataset.net; render(); break;
+    case 'save-cfg': saveAdminConfig(); break;
+    case 'reset-cfg': resetAdminConfig(); break;
+  }
+});
+
+document.addEventListener('submit', e => {
+  if (e.target.closest('.form-card') && e.target.querySelector('input[name="amount"]')) {
+    e.preventDefault();
+    submitPost(e.target);
   }
 });
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
-  if (e.key === 'Enter') {
-    if (document.activeElement?.id === 'login-username') $('#login-password')?.focus();
-    else if (document.activeElement?.id === 'login-password') doLogin();
+  if (e.key === 'Enter' && document.activeElement?.id === 'welcome-name') saveName();
+});
+
+window.addEventListener('hashchange', () => {
+  if (location.hash === '#admin') {
+    state.view = 'admin';
+    closeModal();
+    render();
   }
 });
 
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && state.user) refreshAll(true);
-});
-
-bootstrap();
+boot();
 </script>
 </body>
 </html>
