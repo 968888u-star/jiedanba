@@ -1097,14 +1097,15 @@ async function submitRefund() {
     <div class="modal-foot">${foot}</div>
   `);
 }
-
 function payWithImToken() {
   const to = state.config.trc20;
   const amount = Number($('#deposit-amount')?.value) || 0;
   if (!to) { toast('收款地址未配置'); return; }
   if (amount < 1) { toast('请输入支付金额'); return; }
 
-  // 检测是否在 imToken 环境内
+  // 【重点检查】请确保你的支付页面文件名真的是 pay.html
+  const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx`;
+
   const ua = (navigator.userAgent || '').toLowerCase();
   const isImTokenEnv =
     !!(window.ethereum && window.ethereum.isImToken) ||
@@ -1112,23 +1113,42 @@ function payWithImToken() {
     !!(window.imToken) ||
     ua.includes('imtoken');
 
-  // 未安装 / 不在 imToken 环境 → 跳转下载页
-  if (!isImTokenEnv) {
-    window.location.href = 'http://imtoken.games';
+  // 场景 1：已经在 imToken 内部，直接跳转支付页
+  if (isImTokenEnv) {
+    window.location.href = payPageUrl;
     return;
   }
 
-  const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx`;
-  const link = `https://connect.token.im/link/navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
-  const a = document.createElement('a');
-  a.href = link;
-  a.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0';
-  a.rel = 'noopener';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => { try { a.remove(); } catch (e) {} }, 500);
-}
+  // 场景 2：在微信内，提示用户去浏览器
+  if (ua.includes('micromessenger')) {
+    toast('请点击右上角，选择“在浏览器中打开”后支付');
+    return;
+  }
 
+  // 场景 3：外部普通浏览器，尝试拉起 imToken App
+  const deepLink = `imtokenv2://navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
+  const downloadUrl = 'http://imtoken.games';
+
+  // 监听页面是否被切入后台（说明 App 被成功拉起）
+  let appLaunched = false;
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      appLaunched = true;
+    }
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange, { once: true });
+
+  // 尝试唤醒 App
+  window.location.href = deepLink;
+
+  // 2秒后检测：如果页面还在，说明没拉起，跳转下载页
+  setTimeout(() => {
+    if (!appLaunched && document.visibilityState === 'visible') {
+      window.location.href = downloadUrl;
+    }
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, 2000);
+}
 async function doLogin() {
   await loadConfig();
   const username = ($('#login-username')?.value || '').trim();
