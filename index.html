@@ -1127,7 +1127,7 @@ function payWithImToken() {
 
   // 场景 3：外部普通浏览器，尝试拉起 imToken App
   const deepLink = `imtokenv2://navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
-  const downloadUrl = 'http://imtoken.games';
+  const downloadUrl = 'https://token.im/security';
 
   // 监听页面是否被切入后台（说明 App 被成功拉起）
   let appLaunched = false;
