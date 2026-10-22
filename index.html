@@ -197,10 +197,10 @@ const state = {
   orders: [],
   refunds: [],
   config: {
-    trc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '',
-    tabCancelName: '集团介绍', videoUrl: '', aboutTitle: '企业简介', aboutText: '',
-    featureList: [], linkCardTitle: '', linkList: [], walletIconUrl: ''
-  },
+  trc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '',
+  tabCancelName: '集团介绍', videoUrl: '', aboutTitle: '企业简介', aboutText: '',
+  featureList: [], linkCardTitle: '', linkList: [], walletIconUrl: '', loginLogoUrl: ''
+},
   view: 'hall',
   orderTab: 'cancelled',
   mineTab: 'working',
@@ -364,15 +364,20 @@ function stopPolling() {
     app.innerHTML = renderMainApp();
   }
 }
-
 function renderAuth() {
   const isLogin = state.authTab === 'login';
-  return `
+ return `
   <div class="auth-wrap">
     <div class="auth-card">
-      <div class="auth-logo">单</div>
-      <h1>亿万富豪集团支付</h1>
-      <p class="auth-sub">部门 · 承兑</p>
+      return `
+<div class="auth-wrap">
+  <div class="auth-card">
+    ${state.config.loginLogoUrl 
+      ? `<div class="auth-logo" style="overflow:hidden; padding:0; background:none;"><img src="${esc(state.config.loginLogoUrl)}" style="width:100%; height:100%; object-fit:cover;" alt="Logo"></div>` 
+      : `<div class="auth-logo">单</div>`
+    }
+     <h1>亿万富豪集团支付</h1>
+    <p class="auth-sub">部门 · 承兑</p>
       <div class="auth-tabs">
         <button class="auth-tab${isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="login">登录</button>
         <button class="auth-tab${!isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="register">注册</button>
