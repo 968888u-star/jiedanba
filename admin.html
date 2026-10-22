@@ -531,16 +531,20 @@ function renderSettings(el) {
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h3 style="margin-bottom:0">折叠功能说明（可添加/删除）</h3>
+        <h3 style="margin-bottom:0">折叠功能说明（可自定义排序）</h3>
         <button class="btn btn-primary" onclick="addFeatureItem()" style="padding:8px 14px;font-size:13px">➕ 添加折叠项</button>
       </div>
       <div id="feature-list-editor">
         ${featureList.length === 0 ? `<div style="color:var(--ink3);font-size:13px;text-align:center;padding:20px">暂无折叠项，点击右上角添加</div>` : ''}
         ${featureList.map((item, idx) => `
           <div class="feature-item" data-idx="${idx}">
-            <div class="feature-row">
-              <input class="input feature-title" value="${esc(item.title || '')}" placeholder="折叠项标题（如：常见问题）">
-              <button class="btn btn-danger" onclick="removeFeatureItem(${idx})" style="padding:8px 12px;margin-bottom:0">删除</button>
+            <div class="feature-row" style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <input class="input feature-title" style="flex:1;margin-bottom:0;" value="${esc(item.title || '')}" placeholder="折叠项标题（如：常见问题）">
+              <div style="display:flex; gap:4px; flex:0 0 auto;">
+                <button class="btn btn-ghost" style="padding:6px 8px; border-color:var(--line);" onclick="moveFeatureUp(${idx})" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>⬆️</button>
+                <button class="btn btn-ghost" style="padding:6px 8px; border-color:var(--line);" onclick="moveFeatureDown(${idx})" ${idx === featureList.length - 1 ? 'disabled style="opacity:0.3"' : ''}>⬇️</button>
+                <button class="btn btn-danger" style="padding:6px 8px;" onclick="removeFeatureItem(${idx})">删</button>
+              </div>
             </div>
             <textarea class="input feature-content" rows="3" placeholder="折叠项内容">${esc(item.content || '')}</textarea>
           </div>
@@ -588,18 +592,48 @@ function renderSettings(el) {
   }
 }
 
+function syncFeatureList() {
+  const featureItems = document.querySelectorAll('#feature-list-editor .feature-item');
+  const featureList = [];
+  featureItems.forEach(item => {
+    const title = item.querySelector('.feature-title')?.value || '';
+    const content = item.querySelector('.feature-content')?.value || '';
+    featureList.push({ title, content });
+  });
+  state.config.featureList = featureList;
+}
+
 function addFeatureItem() {
+  syncFeatureList();
   const list = state.config.featureList || [];
   list.push({ title: '', content: '' });
   state.config.featureList = list;
   renderTab('settings');
 }
 function removeFeatureItem(idx) {
+  syncFeatureList();
   const list = state.config.featureList || [];
   list.splice(idx, 1);
   state.config.featureList = list;
   renderTab('settings');
 }
+
+function moveFeatureUp(idx) {
+  if (idx <= 0) return;
+  syncFeatureList();
+  const list = state.config.featureList;
+  [list[idx - 1], list[idx]] = [list[idx], list[idx - 1]];
+  renderTab('settings');
+}
+
+function moveFeatureDown(idx) {
+  syncFeatureList();
+  const list = state.config.featureList;
+  if (idx >= list.length - 1) return;
+  [list[idx + 1], list[idx]] = [list[idx], list[idx + 1]];
+  renderTab('settings');
+}
+
 function addLinkItem() {
   const list = state.config.linkList || [];
   list.push({ title: '', url: '' });
@@ -639,13 +673,7 @@ async function uploadVideo() {
 }
 
 async function saveAdminConfig() {
-  const featureItems = document.querySelectorAll('#feature-list-editor .feature-item');
-  const featureList = [];
-  featureItems.forEach(item => {
-    const title = item.querySelector('.feature-title')?.value.trim() || '';
-    const content = item.querySelector('.feature-content')?.value || '';
-    if (title || content) featureList.push({ title, content });
-  });
+  syncFeatureList();
 
   const linkItemsEl = document.querySelectorAll('#link-list-editor .feature-item');
   const linkList = [];
@@ -665,7 +693,7 @@ async function saveAdminConfig() {
     videoUrl: $('#cfg-video-url')?.value.trim() || '',
     aboutTitle: $('#cfg-about-title')?.value.trim() || '企业简介',
     aboutText: $('#cfg-about')?.value || '',
-    featureList: featureList,
+    featureList: state.config.featureList,
     linkCardTitle: $('#cfg-link-card-title')?.value.trim() || '',
     linkList: linkList,
     walletIconUrl: $('#cfg-wallet-icon')?.value.trim() || '',
