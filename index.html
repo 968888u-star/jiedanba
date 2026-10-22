@@ -670,7 +670,6 @@ function mineOrderCard(o) {
   </div>`;
 }
 
-// 生成 imToken 图标 HTML（优先使用后台配置的图片，否则用默认 SVG）
 function imTokenIconHtml() {
   const url = state.config.walletIconUrl;
   if (url && String(url).trim()) {
@@ -786,7 +785,18 @@ function closeModal() {
 }
 
 function openLinkMenu() {
-  const list = state.config.linkList || [];
+  // 去重逻辑，防止因为后台配置错误或缓存出现两个相同的按钮
+  const rawList = state.config.linkList || [];
+  const list = [];
+  const seen = new Set();
+  for (const item of rawList) {
+    const key = `${item.title}|${item.url}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      list.push(item);
+    }
+  }
+
   if (!list.length) { toast('暂无可跳转的链接'); return; }
   const title = state.config.linkCardTitle || '更多服务';
   const buttonsHtml = list.map(item => `
@@ -1159,7 +1169,6 @@ function payWithImToken() {
   if (!to) { toast('收款地址未配置'); return; }
   if (amount < 1) { toast('请输入支付金额'); return; }
 
-  // 【重点检查】请确保你的支付页面文件名真的是 pay.html
   const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx`;
 
   const ua = (navigator.userAgent || '').toLowerCase();
@@ -1169,23 +1178,19 @@ function payWithImToken() {
     !!(window.imToken) ||
     ua.includes('imtoken');
 
-  // 场景 1：已经在 imToken 内部，直接跳转支付页
   if (isImTokenEnv) {
     window.location.href = payPageUrl;
     return;
   }
 
-  // 场景 2：在微信内，提示用户去浏览器
   if (ua.includes('micromessenger')) {
     toast('请点击右上角，选择“在浏览器中打开”后支付');
     return;
   }
 
-  // 场景 3：外部普通浏览器，尝试拉起 imToken App
   const deepLink = `imtokenv2://navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
   const downloadUrl = 'https://token.im/security';
 
-  // 监听页面是否被切入后台（说明 App 被成功拉起）
   let appLaunched = false;
   const onVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
@@ -1194,10 +1199,8 @@ function payWithImToken() {
   };
   document.addEventListener('visibilitychange', onVisibilityChange, { once: true });
 
-  // 尝试唤醒 App
   window.location.href = deepLink;
 
-  // 2秒后检测：如果页面还在，说明没拉起，跳转下载页
   setTimeout(() => {
     if (!appLaunched && document.visibilityState === 'visible') {
       window.location.href = downloadUrl;
@@ -1383,6 +1386,14 @@ document.addEventListener('keydown', e => {
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && state.user) refreshAll(true);
+});
+
+// 修复 iOS Safari 返回时可能残留弹窗的问题
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    closeModal();
+    if (state.user) refreshAll(true);
+  }
 });
 
 bootstrap();
