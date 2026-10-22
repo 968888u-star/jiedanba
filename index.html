@@ -326,24 +326,44 @@ async function loadConfig() {
   } catch(e) {}
 }
 
+// 极速启动引擎，告别白屏延迟
 async function bootstrap() {
-  await loadConfig();
   const token = getToken();
-  if (token) {
-    try {
-      const meRes = await api('/me');
-      state.user = meRes.user;
-      const ordersRes = await api('/orders');
-      state.orders = ordersRes.orders || [];
-      const refundsRes = await api('/refunds/mine');
-      state.refunds = refundsRes.refunds || [];
-    } catch(e) {
-      clearToken();
-      state.user = null;
-    }
+  
+  if (!token) {
+    render(); 
+    api('/config').then(r => {
+      state.config = Object.assign(state.config, r.config || {});
+      render();
+    }).catch(() => {});
+    return;
   }
-  render();
-  if (state.user) startPolling();
+
+  if (!state.user) {
+    state.user = { username: '加载中', deposit: '...', credit: '...', income: '...', payMethod: null };
+  }
+  render(); 
+
+  try {
+    const [configRes, meRes, ordersRes, refundsRes] = await Promise.all([
+      api('/config'),
+      api('/me'),
+      api('/orders'),
+      api('/refunds/mine')
+    ]);
+
+    state.config = Object.assign(state.config, configRes.config || {});
+    state.user = meRes.user;
+    state.orders = ordersRes.orders || [];
+    state.refunds = refundsRes.refunds || [];
+
+    render();
+    startPolling();
+  } catch(e) {
+    clearToken();
+    state.user = null;
+    render();
+  }
 }
 
 function startPolling() {
