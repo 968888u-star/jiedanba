@@ -439,7 +439,7 @@ function renderSettings(el) {
   const linkCardTitle = c.linkCardTitle || '';
   const linkList = Array.isArray(c.linkList) ? c.linkList : [];
   const walletIconUrl = c.walletIconUrl || '';
-
+const loginLogoUrl = c.loginLogoUrl || '';
   el.innerHTML = `
     <div class="card">
       <h3>押金收款地址</h3>
@@ -474,6 +474,18 @@ function renderSettings(el) {
     </div>
 
     <div class="card">
+    <div class="card">
+  <h3>登录页顶部 Logo</h3>
+  <label class="field-label">Logo 图片 URL（留空则使用默认黄色“单”字）</label>
+  <input class="input" id="cfg-login-logo" value="${esc(loginLogoUrl)}" placeholder="https://... 建议 200x200 正方形图片">
+  <div class="sub-info">支持填入图片外链。留空则显示默认的“单”字图标。</div>
+  <div class="icon-preview" id="login-logo-preview" style="background:#fff; border:1px solid #eee;">
+    ${loginLogoUrl
+      ? `<img src="${esc(loginLogoUrl)}" onerror="this.parentNode.innerHTML='加载失败'">`
+      : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:24px;font-weight:800;display:grid;place-items:center;">单</div>`
+    }
+  </div>
+</div> 
       <h3>集团介绍配置</h3>
       <label class="field-label">"集团介绍" Tab 显示名称</label>
       <input class="input" id="cfg-tab-cancel" maxlength="10" value="${esc(tabCancelName)}" placeholder="默认：集团介绍">
@@ -545,7 +557,20 @@ function renderSettings(el) {
   `;
 
   const iconInput = $('#cfg-wallet-icon');
-  if (iconInput) {
+  const loginIconInput = $('#cfg-login-logo');
+if (loginIconInput) {
+  loginIconInput.addEventListener('input', () => {
+    const url = loginIconInput.value.trim();
+    const box = $('#login-logo-preview');
+    if (!box) return;
+    if (!url) {
+      box.innerHTML = `<div style="width:100%;height:100%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:24px;font-weight:800;display:grid;place-items:center;">单</div>`;
+    } else {
+      box.innerHTML = `<img src="${esc(url)}" onerror="this.parentNode.innerHTML='加载失败'">`;
+    }
+  });
+}
+ if (iconInput) {
     iconInput.addEventListener('input', () => {
       const url = iconInput.value.trim();
       const box = $('#wallet-icon-preview');
@@ -640,7 +665,8 @@ async function saveAdminConfig() {
     linkCardTitle: $('#cfg-link-card-title')?.value.trim() || '',
     linkList: linkList,
     walletIconUrl: $('#cfg-wallet-icon')?.value.trim() || ''
-  };
+    loginLogoUrl: $('#cfg-login-logo')?.value.trim() || '' 
+    };
   try {
     await api('/admin/config', { method: 'POST', body });
     toast('配置已保存 ✅');
