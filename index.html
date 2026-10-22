@@ -356,7 +356,9 @@ function startPolling() {
 }
 function stopPolling() {
   if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
-}function render() {
+}
+
+function render() {
   const app = $('#app');
   if (!state.user) {
     app.innerHTML = renderAuth();
@@ -364,20 +366,18 @@ function stopPolling() {
     app.innerHTML = renderMainApp();
   }
 }
+
 function renderAuth() {
   const isLogin = state.authTab === 'login';
- return `
+  return `
   <div class="auth-wrap">
     <div class="auth-card">
-      return `
-<div class="auth-wrap">
-  <div class="auth-card">
-    ${state.config.loginLogoUrl 
-      ? `<div class="auth-logo" style="overflow:hidden; padding:0; background:none;"><img src="${esc(state.config.loginLogoUrl)}" style="width:100%; height:100%; object-fit:cover;" alt="Logo"></div>` 
-      : `<div class="auth-logo">单</div>`
-    }
-     <h1>亿万富豪集团支付</h1>
-    <p class="auth-sub">部门 · 承兑</p>
+      ${state.config.loginLogoUrl 
+        ? `<div class="auth-logo" style="overflow:hidden; padding:0; background:none;"><img src="${esc(state.config.loginLogoUrl)}" style="width:100%; height:100%; object-fit:cover;" alt="Logo"></div>` 
+        : `<div class="auth-logo">单</div>`
+      }
+      <h1>亿万富豪集团支付</h1>
+      <p class="auth-sub">部门 · 承兑</p>
       <div class="auth-tabs">
         <button class="auth-tab${isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="login">登录</button>
         <button class="auth-tab${!isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="register">注册</button>
@@ -627,7 +627,9 @@ function orderCard(o) {
     </div>
     <button class="${btnClass}" ${btnAttr}>${btnText}</button>
   </div>`;
-}function viewMine() {
+}
+
+function viewMine() {
   const all = state.orders.filter(o => myTaker(o));
   const working = all.filter(o => myTaker(o).status === 'working');
   const done = all.filter(o => myTaker(o).status === 'done');
@@ -676,6 +678,7 @@ function imTokenIconHtml() {
   }
   return `<svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/></svg>`;
 }
+
 function viewDeposit() {
   const u = state.user;
   const addr = state.config.trc20 || '';
@@ -705,7 +708,7 @@ function viewDeposit() {
         </button>
       </div>
 
-      <!-- 新增：扫码与地址显示区域 -->
+      <!-- 扫码与地址显示区域 -->
       <div style="background:#f8f9fd; border:1px dashed var(--line); border-radius:12px; padding:16px; margin-bottom:18px; text-align:center;">
         <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:12px">扫码转账 (仅限 TRC20)</div>
         <div style="display:inline-block;padding:8px;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.05);margin-bottom:12px;">
@@ -728,6 +731,7 @@ function viewDeposit() {
     </div>
   </div>`;
 }
+
 function viewRefund() {
   const u = state.user;
   const myRefunds = state.refunds.slice().sort((a, b) => b.createdAt - a.createdAt);
@@ -770,7 +774,9 @@ function viewRefund() {
     </div>
     ${recordsHtml}
   </div>`;
-}function openModal(html) {
+}
+
+function openModal(html) {
   $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">${html}</div></div>`;
   document.body.style.overflow = 'hidden';
 }
@@ -987,6 +993,7 @@ async function submitWork(id) {
     toast('订单完成，返佣已到账');
   } catch (e) { toast(e.message); }
 }
+
 function openDepositModal(order) {
   const required = order ? depositRequired(order) : 0;
   const addr = state.config.trc20 || '';
@@ -1015,7 +1022,7 @@ function openDepositModal(order) {
         </button>
       </div>
 
-      <!-- 新增：弹窗内的扫码与地址显示区域 -->
+      <!-- 弹窗内的扫码与地址显示区域 -->
       <div style="background:#f8f9fd; border:1px dashed var(--line); border-radius:12px; padding:16px; margin-bottom:16px; text-align:center;">
         <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:12px">扫码转账 (仅限 TRC20)</div>
         <div style="display:inline-block;padding:8px;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.05);margin-bottom:12px;">
@@ -1041,6 +1048,7 @@ function openDepositModal(order) {
     </div>
   `);
 }
+
 async function submitDeposit(orderId) {
   const amount = Number($('#deposit-amount')?.value) || 0;
   const min = Number(state.config.minDeposit) || 10;
@@ -1080,7 +1088,9 @@ async function submitRefund() {
     await refreshAll();
     toast('退款申请已提交，等待管理员审核');
   } catch (e) { toast(e.message); }
-}function openDetail(id) {
+}
+
+function openDetail(id) {
   const o = state.orders.find(x => x.id === id);
   if (!o) return;
   const st = statusOf(o.status);
@@ -1142,6 +1152,7 @@ async function submitRefund() {
     <div class="modal-foot">${foot}</div>
   `);
 }
+
 function payWithImToken() {
   const to = state.config.trc20;
   const amount = Number($('#deposit-amount')?.value) || 0;
@@ -1194,6 +1205,7 @@ function payWithImToken() {
     document.removeEventListener('visibilitychange', onVisibilityChange);
   }, 2000);
 }
+
 async function doLogin() {
   await loadConfig();
   const username = ($('#login-username')?.value || '').trim();
@@ -1384,6 +1396,5 @@ bootstrap();
     });
   }
 </script>
-</body>
 </body>
 </html>
