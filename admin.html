@@ -183,13 +183,17 @@ function startPolling() {
     const activeEl = document.activeElement;
     const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
     if (isTyping) return;
+
+    // ✅ 关键修复：如果当前在“系统设置”标签页，跳过轮询，防止覆盖正在调整的排序
+    const activeTab = document.querySelector('.tab.active')?.dataset.tab;
+    if (activeTab === 'settings') return;
+
     try {
       const oldJson = JSON.stringify(state);
       await loadAll();
       const newJson = JSON.stringify(state);
       if (oldJson === newJson) return;
-      const active = document.querySelector('.tab.active')?.dataset.tab || 'orders';
-      renderTab(active);
+      renderTab(activeTab || 'orders');
     } catch(e) {}
   }, 5000);
 }
