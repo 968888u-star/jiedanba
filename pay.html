@@ -56,8 +56,8 @@
 </head>
 <body>
 <div class="card">
-  <h1>USDT 支付</h1>
-  <p class="sub">请在 imToken 中确认支付</p>
+  <h1 id="page-title">USDT 支付</h1>
+  <p class="sub" id="page-sub">请在 imToken 中确认支付</p>
 
   <div id="env-warn" class="env-warn" style="display:none">
     <div style="margin-bottom:8px">⚠️ 当前不在 imToken 环境中。</div>
@@ -91,8 +91,17 @@ const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 const params = new URLSearchParams(location.search);
 const toAddress = params.get('address') || '';
 const amount = Number(params.get('amount')) || 0;
+const type = params.get('type') || 'deposit';
 
 function $(s) { return document.querySelector(s); }
+
+if (type === 'empty') {
+  $('#page-title').textContent = '空放资格支付';
+  $('#page-sub').textContent = '支付 1 USDT 激活空放通道';
+} else {
+  $('#page-title').textContent = '押金充值';
+  $('#page-sub').textContent = '请在 imToken 中确认支付';
+}
 
 $('#info-addr').textContent = toAddress || '未配置';
 $('#info-chain').textContent = 'TRC20 (波场)';
