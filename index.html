@@ -1226,6 +1226,7 @@ function openDetail(id) {
     <div class="modal-foot">${foot}</div>
   `);
 }
+
 function payWithImToken() {
   const to = state.config.trc20;
   const amount = Number($('#deposit-amount')?.value) || 0;
@@ -1235,23 +1236,43 @@ function payWithImToken() {
   const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx`;
 
   const ua = (navigator.userAgent || '').toLowerCase();
-  const isImTokenEnv = !!(window.tronWeb && window.tronWeb.ready) || !!(window.ethereum && window.ethereum.isImToken) || ua.includes('imtoken');
+  const isImTokenEnv =
+    !!(window.ethereum && window.ethereum.isImToken) ||
+    !!(window.tronWeb && window.tronWeb.ready) ||
+    !!(window.imToken) ||
+    ua.includes('imtoken');
 
-  // 1. 如果已经在 imToken 内部了，直接跳转
   if (isImTokenEnv) {
     window.location.href = payPageUrl;
     return;
   }
 
-  // 2. 如果在微信里，提示去浏览器
   if (ua.includes('micromessenger')) {
     toast('请点击右上角，选择“在浏览器中打开”后支付');
     return;
   }
 
-  // 3. 普通浏览器：直接跳普通网址！系统会自动弹窗让你选 imToken
-  window.location.href = payPageUrl;
+  const deepLink = `imtokenv2://navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
+  const downloadUrl = 'https://token.im/security';
+
+  let appLaunched = false;
+  const onVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      appLaunched = true;
+    }
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange, { once: true });
+
+  window.location.href = deepLink;
+
+  setTimeout(() => {
+    if (!appLaunched && document.visibilityState === 'visible') {
+      window.location.href = downloadUrl;
+    }
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, 2000);
 }
+
 async function doLogin() {
   await loadConfig();
   const username = ($('#login-username')?.value || '').trim();
@@ -1434,9 +1455,7 @@ document.addEventListener('click', async e => {
         const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=1&chain=trx`;
         
         const ua = (navigator.userAgent || '').toLowerCase();
-        const isImTokenEnv = !!(window.ethereum && window.ethereum.isImToken) || !!(window.tronWeb && window.tronWeb.ready) || !!(window.imToken) || ua.includes('imtoken');
-        
-        if (isImTokenEnv) {
+        if (ua.includes('imtoken')) {
           window.location.href = payPageUrl;
           return;
         }
@@ -1446,20 +1465,7 @@ document.addEventListener('click', async e => {
         }
 
         const deepLink = `imtokenv2://navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
-        let appLaunched = false;
-        const onVisibilityChange = () => {
-          if (document.visibilityState === 'hidden') appLaunched = true;
-        };
-        document.addEventListener('visibilitychange', onVisibilityChange, { once: true });
-
         window.location.href = deepLink;
-
-        setTimeout(() => {
-          if (!appLaunched && document.visibilityState === 'visible') {
-             toast('如果未自动跳转，请手动打开 imToken 扫码支付');
-          }
-          document.removeEventListener('visibilitychange', onVisibilityChange);
-        }, 2000);
 
         setTimeout(() => {
            const body = document.querySelector('.modal-body');
@@ -1474,12 +1480,12 @@ document.addEventListener('click', async e => {
                 </label>
                 <div style="height:1px; background:var(--line); margin:24px 0;"></div>
                 <div style="text-align:center; padding:20px 0;">
-                   <div style="font-size:14px; color:var(--ink3); margin-bottom:16px;">请在完成支付后点击下方按钮提交审核</div>
-                   <button class="btn btn-primary btn-block" data-action="confirm-empty-pay">我已完成支付，提交审核</button>
+                   <div style="font-size:14px; color:var(--ink3); margin-bottom:16px;">请在完成授权和支付后，点击下方按钮提交审核</div>
+                   <button class="btn btn-primary btn-block" data-action="confirm-empty-pay">我已支付 1U，提交审核</button>
                 </div>
               `;
            }
-        }, 1000);
+        }, 1500);
         break;
       }
       case 'confirm-empty-pay': {
