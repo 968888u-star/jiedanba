@@ -59,11 +59,7 @@
   .feature-item .feature-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
   .feature-item .feature-row input{flex:1;margin-bottom:0;}
   .feature-item textarea{margin-bottom:0;}
-  @media (max-width:700px){
-    .form-row{grid-template-columns:1fr;}
-    .table{font-size:12.5px}
-    .table th,.table td{padding:10px 6px}
-  }
+  @media (max-width:700px){ .form-row{grid-template-columns:1fr;} .table{font-size:12.5px} .table th,.table td{padding:10px 6px} }
 </style>
 </head>
 <body>
@@ -89,7 +85,10 @@
     <button class="tab"        data-tab="settings" onclick="switchTab('settings')">⚙️ 系统设置</button>
   </div>
   <div class="container" id="admin-content"></div>
-</div><script>const TOKEN_KEY = 'jiedan.admin.token';
+</div>
+
+<script>
+const TOKEN_KEY = 'jiedan.admin.token';
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
@@ -100,14 +99,8 @@ function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch(e) {
 function setToken(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch(e) {} }
 function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch(e) {} }
 
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-function fmtDateTime(ts) {
-  const d = new Date(ts);
-  const p = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fmtDateTime(ts) { const d = new Date(ts); const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
 
 async function api(path, options = {}) {
   const headers = {};
@@ -147,19 +140,11 @@ async function adminLogin() {
   } catch (e) { toast(e.message); }
 }
 
-async function adminLogout() {
-  clearToken();
-  stopPolling();
-  location.reload();
-}
+async function adminLogout() { clearToken(); stopPolling(); location.reload(); }
 
 async function loadAll() {
   const [ordersRes, refundsRes, usersRes, configRes, emptyRes] = await Promise.all([
-    api('/admin/orders'),
-    api('/admin/refunds'),
-    api('/admin/users'),
-    api('/config'),
-    api('/admin/empty')
+    api('/admin/orders'), api('/admin/refunds'), api('/admin/users'), api('/config'), api('/admin/empty')
   ]);
   state.orders = ordersRes.orders || [];
   state.refunds = refundsRes.refunds || [];
@@ -173,10 +158,7 @@ async function autoFill(silent = true) {
     const r = await api('/admin/auto-fill', { method: 'POST' });
     if (!silent) toast(`补单完成：新增 ${r.added || 0} 条，当前 ${r.total || 0} 条`);
     return r;
-  } catch (e) {
-    if (!silent) toast('补单失败：' + e.message);
-    return null;
-  }
+  } catch (e) { if (!silent) toast('补单失败：' + e.message); return null; }
 }
 
 function startPolling() {
@@ -184,24 +166,18 @@ function startPolling() {
   pollTimer = setInterval(async () => {
     if (document.visibilityState !== 'visible') return;
     const activeEl = document.activeElement;
-    const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-    if (isTyping) return;
-
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
     const activeTab = document.querySelector('.tab.active')?.dataset.tab;
     if (activeTab === 'settings') return;
-
     try {
       const oldJson = JSON.stringify(state);
       await loadAll();
-      const newJson = JSON.stringify(state);
-      if (oldJson === newJson) return;
+      if (oldJson === JSON.stringify(state)) return;
       renderTab(activeTab || 'orders');
     } catch(e) {}
   }, 5000);
 }
-function stopPolling() {
-  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-}
+function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
 
 function switchTab(tab) {
   $$('.tab').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
@@ -220,7 +196,6 @@ function renderTab(tab) {
 function renderEmpty(el) {
   const list = state.emptyList.slice().sort((a,b) => b.created_at - a.created_at);
   if (!list.length) { el.innerHTML = `<div class="card"><div class="empty">暂无空放码申请</div></div>`; return; }
-  
   el.innerHTML = `
     <div class="card">
       <h3>空放码审核（${list.length}）</h3>
@@ -230,24 +205,15 @@ function renderEmpty(el) {
           ${list.map(r => `
             <tr>
               <td><div style="font-weight:700">@${esc(r.nickname || r.username || '-')}</div></td>
-              <td>
-                <span class="badge ${r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-success' : 'badge-gray'}">
-                  ${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已通过' : '已使用'}
-                </span>
-              </td>
+              <td><span class="badge ${r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-success' : 'badge-gray'}">${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已通过' : '已使用'}</span></td>
               <td style="font-weight:800; color:var(--red); font-size:16px; letter-spacing:1px;">${r.code || '-'}</td>
               <td style="font-size:12px;color:var(--ink3)">${fmtDateTime(r.created_at)}</td>
-              <td>
-                ${r.status === 'pending' ? `
-                  <button class="btn btn-primary" style="padding:4px 10px;font-size:12px;" onclick="approveEmpty('${r.id}')">审核通过并出码</button>
-                ` : ''}
-              </td>
+              <td>${r.status === 'pending' ? `<button class="btn btn-primary" style="padding:4px 10px;font-size:12px;" onclick="approveEmpty('${r.id}')">审核通过并出码</button>` : ''}</td>
             </tr>
           `).join('')}
         </tbody>
       </table>
-    </div>
-  `;
+    </div>`;
 }
 
 async function approveEmpty(id) {
@@ -255,8 +221,7 @@ async function approveEmpty(id) {
   try {
     const r = await api('/admin/empty/approve', { method: 'POST', body: { id } });
     toast('审核通过，生成空放码：' + r.code);
-    await loadAll();
-    renderTab('empty');
+    await loadAll(); renderTab('empty');
   } catch(e) { toast(e.message); }
 }
 
@@ -278,15 +243,9 @@ function renderOrders(el) {
             const takers = (o.takers || []).map(t => {
               const pm = t.payMethod || {};
               const tag = pm.type === 'alipay' ? '支付宝' : pm.type === 'bank' ? '银行卡' : '未填';
-              const cls = pm.type === 'bank' ? 'pm-tag bank' : 'pm-tag';
-              return `<div style="margin-bottom:8px">
-                <span class="${cls}">${tag}</span>
-                <span style="font-weight:700;font-size:13px">${esc(t.userName)}</span>
-                <div class="sub-info">账号：${esc(pm.account || '-')}${pm.bank ? ' · ' + esc(pm.bank) : ''}<br>收款姓名：${esc(pm.realName || '-')}</div>
-              </div>`;
+              return `<div style="margin-bottom:8px"><span class="pm-tag ${pm.type === 'bank' ? 'bank' : ''}">${tag}</span><span style="font-weight:700;font-size:13px">${esc(t.userName)}</span><div class="sub-info">账号：${esc(pm.account || '-')}${pm.bank ? ' · ' + esc(pm.bank) : ''}<br>收款姓名：${esc(pm.realName || '-')}</div></div>`;
             }).join('') || '<span style="color:var(--ink3);font-size:12px">暂无接单</span>';
-            return `
-            <tr>
+            return `<tr>
               <td style="font-size:12px;word-break:break-all;">${esc(o.orderNo)}</td>
               <td><span style="color:#e02020;font-weight:700">${o.amount}</span> / <span style="color:#f0a020;font-weight:700">${o.commission}</span></td>
               <td style="max-width:240px">${takers}</td>
@@ -300,44 +259,12 @@ function renderOrders(el) {
           }).join('')}
         </tbody>
       </table>`}
-    </div>
-  `;
+    </div>`;
 }
-async function updateOrderStatus(id, status) {
-  try {
-    await api('/admin/orders/' + id, { method: 'PATCH', body: { status } });
-    toast('状态已更新');
-    await loadAll();
-    renderTab('orders');
-  } catch(e) { toast(e.message); }
-}
-async function deleteOrder(id) {
-  if (!confirm('确定删除此订单？删除后无法恢复')) return;
-  try {
-    await api('/admin/orders/' + id, { method: 'DELETE' });
-    toast('订单已删除');
-    await loadAll();
-    renderTab('orders');
-  } catch(e) { toast(e.message); }
-}
-async function clearAllOrders() {
-  if (!confirm('⚠️ 确定删除全部订单？删除后无法恢复！')) return;
-  if (!confirm('再次确认：删除全部订单？')) return;
-  try {
-    const ids = state.orders.map(o => o.id);
-    if (!ids.length) { toast('当前没有订单'); return; }
-    for (const oid of ids) {
-      await api('/admin/orders/' + oid, { method: 'DELETE' });
-    }
-    toast('已删除全部订单');
-    await loadAll();
-    renderTab('orders');
-  } catch(e) { toast(e.message); }
-}
-async function manualFill() {
-  const r = await autoFill(false);
-  if (r) { await loadAll(); renderTab('orders'); }
-}
+async function updateOrderStatus(id, status) { try { await api('/admin/orders/' + id, { method: 'PATCH', body: { status } }); toast('状态已更新'); await loadAll(); renderTab('orders'); } catch(e) { toast(e.message); } }
+async function deleteOrder(id) { if (!confirm('确定删除此订单？删除后无法恢复')) return; try { await api('/admin/orders/' + id, { method: 'DELETE' }); toast('订单已删除'); await loadAll(); renderTab('orders'); } catch(e) { toast(e.message); } }
+async function clearAllOrders() { if (!confirm('⚠️ 确定删除全部订单？')) return; if (!confirm('再次确认：删除全部订单？')) return; try { const ids = state.orders.map(o => o.id); if (!ids.length) { toast('当前没有订单'); return; } for (const oid of ids) { await api('/admin/orders/' + oid, { method: 'DELETE' }); } toast('已删除全部订单'); await loadAll(); renderTab('orders'); } catch(e) { toast(e.message); } }
+async function manualFill() { const r = await autoFill(false); if (r) { await loadAll(); renderTab('orders'); } }
 
 function renderPublish(el) {
   el.innerHTML = `
@@ -345,49 +272,26 @@ function renderPublish(el) {
       <h3>发布新订单</h3>
       <label class="field-label">收款金额（元）<i>*</i></label>
       <input class="input" id="pub-amount" type="number" min="0.01" step="0.01" placeholder="例如：1000.00">
-      <label class="field-label">返佣金额（元）<i>*</i> <span style="color:var(--ink3);font-weight:500;font-size:11.5px">默认按 8% 自动计算，可手动修改</span></label>
+      <label class="field-label">返佣金额（元）<i>*</i></label>
       <input class="input" id="pub-commission" type="number" min="0.01" step="0.01" placeholder="自动计算">
       <div class="form-row">
-        <div>
-          <label class="field-label">收款类型 <i>*</i></label>
-          <select class="input" id="pub-paytype">
-            <option value="支付宝固定小额">支付宝固定小额</option>
-            <option value="银行转账">银行转账</option>
-            <option value="微信收款码">微信收款码</option>
-            <option value="其他方式">其他方式</option>
-          </select>
-        </div>
-        <div>
-          <label class="field-label">订单号</label>
-          <input class="input" value="系统自动生成" disabled>
-        </div>
+        <div><label class="field-label">收款类型 <i>*</i></label><select class="input" id="pub-paytype"><option value="支付宝固定小额">支付宝固定小额</option><option value="银行转账">银行转账</option><option value="微信收款码">微信收款码</option><option value="其他方式">其他方式</option></select></div>
+        <div><label class="field-label">订单号</label><input class="input" value="系统自动生成" disabled></div>
       </div>
       <label class="field-label">订单备注</label>
       <textarea class="input" id="pub-desc" rows="3" placeholder="补充说明..."></textarea>
       <button class="btn btn-primary btn-block" onclick="adminSubmitPost()" style="margin-top:16px;">确认发布</button>
-    </div>
-  `;
-  const amountEl = $('#pub-amount');
-  const commissionEl = $('#pub-commission');
-  amountEl.addEventListener('input', () => {
-    const amt = Number(amountEl.value) || 0;
-    if (amt > 0) commissionEl.value = Math.round(amt * 0.08 * 100) / 100;
-    else commissionEl.value = '';
-  });
+    </div>`;
+  const amountEl = $('#pub-amount'); const commissionEl = $('#pub-commission');
+  amountEl.addEventListener('input', () => { const amt = Number(amountEl.value) || 0; if (amt > 0) commissionEl.value = Math.round(amt * 0.08 * 100) / 100; else commissionEl.value = ''; });
 }
 async function adminSubmitPost() {
-  const amount = Number($('#pub-amount')?.value) || 0;
-  const commission = Number($('#pub-commission')?.value) || Math.round(amount * 0.08);
-  const payType = $('#pub-paytype')?.value || '';
-  const desc = $('#pub-desc')?.value.trim() || '';
+  const amount = Number($('#pub-amount')?.value) || 0; const commission = Number($('#pub-commission')?.value) || Math.round(amount * 0.08); const payType = $('#pub-paytype')?.value || ''; const desc = $('#pub-desc')?.value.trim() || '';
   if (amount <= 0) { toast('请填写金额'); return; }
-  try {
-    await api('/admin/orders', { method: 'POST', body: { amount, commission, payType, desc } });
-    toast('订单发布成功 🎉');
-    await loadAll();
-    switchTab('orders');
-  } catch(e) { toast('发布失败：' + e.message); }
-}function renderRefunds(el) {
+  try { await api('/admin/orders', { method: 'POST', body: { amount, commission, payType, desc } }); toast('订单发布成功 🎉'); await loadAll(); switchTab('orders'); } catch(e) { toast('发布失败：' + e.message); }
+}
+
+function renderRefunds(el) {
   const list = state.refunds.slice().sort((a,b) => b.createdAt - a.createdAt);
   if (!list.length) { el.innerHTML = `<div class="card"><div class="empty">暂无退款申请</div></div>`; return; }
   el.innerHTML = `
@@ -396,102 +300,26 @@ async function adminSubmitPost() {
       <table class="table">
         <thead><tr><th>用户</th><th>金额</th><th>接收地址</th><th>提交时间</th><th>状态</th><th>操作</th></tr></thead>
         <tbody>
-          ${list.map(r => `
-            <tr>
-              <td>${esc(r.userName)}</td>
-              <td style="font-weight:700;color:var(--brand)">${r.amount} USDT</td>
-              <td style="font-size:12px;word-break:break-all;">${esc(r.address)}</td>
-              <td style="font-size:12px;color:var(--ink3)">${fmtDateTime(r.createdAt)}</td>
-              <td><span class="badge ${r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-success' : 'badge-gray'}">${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已同意' : '已拒绝'}</span></td>
-              <td>
-                ${r.status === 'pending' ? `
-                  <button class="btn btn-primary" style="padding:4px 10px;font-size:12px;" onclick="approveRefund('${r.id}')">同意打款</button>
-                  <button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="rejectRefund('${r.id}')">拒绝</button>
-                ` : ''}
-              </td>
-            </tr>
-          `).join('')}
+          ${list.map(r => `<tr><td>${esc(r.userName)}</td><td style="font-weight:700;color:var(--brand)">${r.amount} USDT</td><td style="font-size:12px;word-break:break-all;">${esc(r.address)}</td><td style="font-size:12px;color:var(--ink3)">${fmtDateTime(r.createdAt)}</td><td><span class="badge ${r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-success' : 'badge-gray'}">${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已同意' : '已拒绝'}</span></td><td>${r.status === 'pending' ? `<button class="btn btn-primary" style="padding:4px 10px;font-size:12px;" onclick="approveRefund('${r.id}')">同意打款</button><button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="rejectRefund('${r.id}')">拒绝</button>` : ''}</td></tr>`).join('')}
         </tbody>
       </table>
-    </div>
-  `;
+    </div>`;
 }
-async function approveRefund(id) {
-  const r = state.refunds.find(x => x.id === id);
-  if (!r) return;
-  if (!confirm(`确认向 ${r.address} 打款 ${r.amount} USDT 吗？（请务必先手动在链上完成转账再点击确认）`)) return;
-  try {
-    await api(`/admin/refunds/${id}/approve`, { method: 'POST' });
-    toast('已同意退款');
-    await loadAll();
-    renderTab('refunds');
-  } catch(e) { toast(e.message); }
-}
-async function rejectRefund(id) {
-  if (!confirm('确定拒绝该退款申请吗？用户押金将被退回')) return;
-  try {
-    await api(`/admin/refunds/${id}/reject`, { method: 'POST' });
-    toast('已拒绝退款，押金已返还用户');
-    await loadAll();
-    renderTab('refunds');
-  } catch(e) { toast(e.message); }
-}function renderUsers(el) {
+async function approveRefund(id) { const r = state.refunds.find(x => x.id === id); if (!r) return; if (!confirm(`确认向 ${r.address} 打款 ${r.amount} USDT 吗？`)) return; try { await api(`/admin/refunds/${id}/approve`, { method: 'POST' }); toast('已同意退款'); await loadAll(); renderTab('refunds'); } catch(e) { toast(e.message); } }
+async function rejectRefund(id) { if (!confirm('确定拒绝该退款申请吗？')) return; try { await api(`/admin/refunds/${id}/reject`, { method: 'POST' }); toast('已拒绝退款'); await loadAll(); renderTab('refunds'); } catch(e) { toast(e.message); } }
+
+function renderUsers(el) {
   if (!state.users.length) { el.innerHTML = `<div class="card"><div class="empty">暂无注册用户</div></div>`; return; }
-  el.innerHTML = `
-    <div class="card">
-      <h3>注册用户（${state.users.length}）</h3>
-      <table class="table">
-        <thead><tr><th>用户名</th><th>邀请码 / 邀请人</th><th>收款方式</th><th>押金 / 收入</th><th>注册时间</th></tr></thead>
-        <tbody>
-          ${state.users.slice().sort((a,b) => (b.createdAt||0) - (a.createdAt||0)).map(u => {
-            const pms = [];
-            const pm = u.payMethod || {};
-            if (pm.type === 'alipay') pms.push({ type:'alipay', ...pm });
-            else if (pm.type === 'bank') pms.push({ type:'bank', ...pm });
-            else {
-              if (pm.alipay) pms.push({ type:'alipay', ...pm.alipay });
-              if (pm.bank) pms.push({ type:'bank', ...pm.bank });
-            }
-            const pmHtml = pms.length ? pms.map(p => {
-              const cls = p.type === 'bank' ? 'pm-tag bank' : 'pm-tag';
-              return `<div style="margin-bottom:6px">
-                <span class="${cls}">${p.type === 'alipay' ? '支付宝' : '银行卡'}</span>
-                <span style="font-weight:700">${esc(p.realName || '')}</span>
-                <div class="sub-info">账号：${esc(p.account || '')}${p.bank ? ' · ' + esc(p.bank) : ''}</div>
-              </div>`;
-            }).join('') : '<span class="badge badge-gray">未填写</span>';
-            return `
-            <tr>
-              <td><div style="font-weight:700">@${esc(u.username)}</div></td>
-              <td>
-                <div style="font-weight:700;color:var(--brand);letter-spacing:1px">${esc(u.inviteCode || '-')}</div>
-                <div class="sub-info">邀请人：${esc(u.invitedBy === 'root' ? '一级(888888)' : (u.invitedBy || '-'))}</div>
-              </td>
-              <td style="max-width:240px">${pmHtml}</td>
-              <td>
-                <div style="font-weight:700;color:var(--brand)">${u.deposit || 0} USDT</div>
-                <div class="sub-info">收入 ¥${u.income || 0}</div>
-              </td>
-              <td style="font-size:12px;color:var(--ink3)">${u.createdAt ? fmtDateTime(u.createdAt) : '-'}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
+  el.innerHTML = `<div class="card"><h3>注册用户（${state.users.length}）</h3><table class="table"><thead><tr><th>用户名</th><th>邀请码 / 邀请人</th><th>收款方式</th><th>押金 / 收入</th><th>注册时间</th></tr></thead><tbody>${state.users.slice().sort((a,b) => (b.createdAt||0) - (a.createdAt||0)).map(u => { const pms = []; const pm = u.payMethod || {}; if (pm.type === 'alipay') pms.push({ type:'alipay', ...pm }); else if (pm.type === 'bank') pms.push({ type:'bank', ...pm }); else { if (pm.alipay) pms.push({ type:'alipay', ...pm.alipay }); if (pm.bank) pms.push({ type:'bank', ...pm.bank }); } const pmHtml = pms.length ? pms.map(p => `<div style="margin-bottom:6px"><span class="pm-tag ${p.type === 'bank' ? 'bank' : ''}">${p.type === 'alipay' ? '支付宝' : '银行卡'}</span><span style="font-weight:700">${esc(p.realName || '')}</span><div class="sub-info">账号：${esc(p.account || '')}${p.bank ? ' · ' + esc(p.bank) : ''}</div></div>`).join('') : '<span class="badge badge-gray">未填写</span>'; return `<tr><td><div style="font-weight:700">@${esc(u.username)}</div></td><td><div style="font-weight:700;color:var(--brand);letter-spacing:1px">${esc(u.inviteCode || '-')}</div><div class="sub-info">邀请人：${esc(u.invitedBy === 'root' ? '一级(888888)' : (u.invitedBy || '-'))}</div></td><td style="max-width:240px">${pmHtml}</td><td><div style="font-weight:700;color:var(--brand)">${u.deposit || 0} USDT</div><div class="sub-info">收入 ¥${u.income || 0}</div></td><td style="font-size:12px;color:var(--ink3)">${u.createdAt ? fmtDateTime(u.createdAt) : '-'}</td></tr>`; }).join('')}</tbody></table></div>`;
 }
 
 function renderSettings(el) {
   const c = state.config || {};
-  const videoUrl = c.videoUrl || '';
-  const aboutTitle = c.aboutTitle || '企业简介';
-  const aboutText = c.aboutText || '';
-  const tabCancelName = c.tabCancelName || '集团介绍';
-  const featureList = c.featureList || [];
-  const linkCardTitle = c.linkCardTitle || '';
-  const linkList = Array.isArray(c.linkList) ? c.linkList : [];
   const walletIconUrl = c.walletIconUrl || '';
   const loginLogoUrl = c.loginLogoUrl || '';
+  const emptyTrc20 = c.emptyTrc20 || '';
+  const featureList = c.featureList || [];
+  const linkList = Array.isArray(c.linkList) ? c.linkList : [];
 
   el.innerHTML = `
     <div class="card">
@@ -500,243 +328,85 @@ function renderSettings(el) {
       <input class="input" id="cfg-trc20" value="${esc(c.trc20 || '')}">
     </div>
     <div class="card">
+      <h3>空放专属收款地址</h3>
+      <label class="field-label">TRC20 地址（波场网络）</label>
+      <input class="input" id="cfg-empty-trc20" value="${esc(emptyTrc20)}" placeholder="留空则默认使用上方押金收款地址">
+      <div class="sub-info">填写后，内部空放通道的 1 USDT 支付将独立转入此地址。</div>
+    </div>
+    <div class="card">
       <h3>押金规则</h3>
       <div class="form-row">
-        <div>
-          <label class="field-label">押金比例（%）</label>
-          <input class="input" id="cfg-ratio" type="number" value="${Math.round((Number(c.ratio)||0.1) * 100)}">
-        </div>
-        <div>
-          <label class="field-label">最低押金（USDT）</label>
-          <input class="input" id="cfg-min" type="number" value="${c.minDeposit || 10}">
-        </div>
+        <div><label class="field-label">押金比例（%）</label><input class="input" id="cfg-ratio" type="number" value="${Math.round((Number(c.ratio)||0.1) * 100)}"></div>
+        <div><label class="field-label">最低押金（USDT）</label><input class="input" id="cfg-min" type="number" value="${c.minDeposit || 10}"></div>
       </div>
     </div>
-
     <div class="card">
       <h3>钱包图标（imToken）</h3>
       <label class="field-label">图标 URL（留空使用默认）</label>
-      <input class="input" id="cfg-wallet-icon" value="${esc(walletIconUrl)}" placeholder="https://... 建议 200x200 正方形图片">
-      <div class="sub-info">支持填入任意图片外链，例如 CDN / 图床地址。留空则使用系统默认 imToken 图标。</div>
-      <div class="icon-preview" id="wallet-icon-preview">
-        ${walletIconUrl
-          ? `<img src="${esc(walletIconUrl)}" onerror="this.parentNode.innerHTML='加载失败'">`
-          : `<svg width="36" height="36" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/></svg>`
-        }
-      </div>
+      <input class="input" id="cfg-wallet-icon" value="${esc(walletIconUrl)}">
+      <div class="icon-preview" id="wallet-icon-preview">${walletIconUrl ? `<img src="${esc(walletIconUrl)}">` : `<span style="color:#fff;font-size:12px;">默认</span>`}</div>
     </div>
-
     <div class="card">
       <h3>登录页顶部 Logo</h3>
-      <label class="field-label">Logo 图片 URL（留空则使用默认黄色“单”字）</label>
-      <input class="input" id="cfg-login-logo" value="${esc(loginLogoUrl)}" placeholder="https://... 建议 200x200 正方形图片">
-      <div class="sub-info">支持填入图片外链。留空则显示默认的“单”字图标。</div>
-      <div class="icon-preview" id="login-logo-preview" style="background:#fff; border:1px solid #eee;">
-        ${loginLogoUrl
-          ? `<img src="${esc(loginLogoUrl)}" onerror="this.parentNode.innerHTML='加载失败'">`
-          : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:24px;font-weight:800;display:grid;place-items:center;">单</div>`
-        }
-      </div>
-    </div> 
-    
+      <label class="field-label">Logo 图片 URL</label>
+      <input class="input" id="cfg-login-logo" value="${esc(loginLogoUrl)}">
+      <div class="icon-preview" id="login-logo-preview" style="background:#fff; border:1px solid #eee;">${loginLogoUrl ? `<img src="${esc(loginLogoUrl)}">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:24px;font-weight:800;display:grid;place-items:center;">单</div>`}</div>
+    </div>
     <div class="card">
       <h3>集团介绍配置</h3>
-      <label class="field-label">"集团介绍" Tab 显示名称</label>
-      <input class="input" id="cfg-tab-cancel" maxlength="10" value="${esc(tabCancelName)}" placeholder="默认：集团介绍">
-
+      <label class="field-label">Tab 名称</label>
+      <input class="input" id="cfg-tab-cancel" value="${esc(c.tabCancelName || '集团介绍')}">
       <label class="field-label" style="margin-top:6px">宣传视频</label>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
         <input type="file" id="video-file" accept="video/*" style="font-size:13px;flex:1;min-width:200px">
         <button class="btn btn-primary" onclick="uploadVideo()" style="padding:9px 16px;font-size:13px">⬆️ 上传视频</button>
       </div>
-      <div class="sub-info" style="margin-bottom:10px">上传需绑定 R2 存储（变量名 VIDEO_BUCKET）。若未绑定，可粘贴外部视频链接。</div>
-      <input class="input" id="cfg-video-url" value="${esc(videoUrl)}" placeholder="视频链接（如 mp4 直链，或留空不显示）">
-      ${videoUrl ? `<div class="video-preview"><video src="${esc(videoUrl)}" controls preload="metadata"></video></div>` : ''}
-
-      <label class="field-label" style="margin-top:14px">企业简介标题</label>
-      <input class="input" id="cfg-about-title" value="${esc(aboutTitle)}" placeholder="默认：企业简介">
-      <label class="field-label" style="margin-top:6px">企业简介文案</label>
-      <textarea class="input" id="cfg-about" rows="4" placeholder="支持多行文案">${esc(aboutText)}</textarea>
+      <input class="input" id="cfg-video-url" value="${esc(c.videoUrl || '')}">
+      ${c.videoUrl ? `<div class="video-preview"><video src="${esc(c.videoUrl)}" controls></video></div>` : ''}
+      <label class="field-label" style="margin-top:14px">简介标题</label>
+      <input class="input" id="cfg-about-title" value="${esc(c.aboutTitle || '企业简介')}">
+      <label class="field-label" style="margin-top:6px">简介文案</label>
+      <textarea class="input" id="cfg-about" rows="4">${esc(c.aboutText || '')}</textarea>
     </div>
-
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h3 style="margin-bottom:0">跳转按钮组（点击卡片弹出菜单）</h3>
-        <button class="btn btn-primary" onclick="addLinkItem()" style="padding:8px 14px;font-size:13px">➕ 添加链接</button>
-      </div>
-      <label class="field-label">卡片名称（留空则不显示）</label>
-      <input class="input" id="cfg-link-card-title" value="${esc(linkCardTitle)}" placeholder="例如：更多服务 / 联系方式">
-      <div class="sub-info" style="margin-bottom:14px">用户点击此卡片后会弹出下方按钮列表，每个按钮可跳转不同链接。</div>
-      <div id="link-list-editor">
-        ${linkList.length === 0 ? `<div style="color:var(--ink3);font-size:13px;text-align:center;padding:20px">暂无链接，点击右上角添加</div>` : ''}
-        ${linkList.map((item, idx) => `
-          <div class="feature-item" data-idx="${idx}">
-            <div class="feature-row">
-              <input class="input link-title" value="${esc(item.title || '')}" placeholder="按钮名称（如：进入官网）">
-              <button class="btn btn-danger" onclick="removeLinkItem(${idx})" style="padding:8px 12px;margin-bottom:0">删除</button>
-            </div>
-            <input class="input link-url" value="${esc(item.url || '')}" placeholder="https://..." style="margin-top:8px">
-          </div>
-        `).join('')}
-      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin-bottom:0">跳转按钮组</h3><button class="btn btn-primary" onclick="addLinkItem()" style="padding:8px 14px;font-size:13px">➕ 添加链接</button></div>
+      <label class="field-label">卡片名称</label><input class="input" id="cfg-link-card-title" value="${esc(c.linkCardTitle || '')}">
+      <div id="link-list-editor">${linkList.map((item, idx) => `<div class="feature-item" data-idx="${idx}"><div class="feature-row"><input class="input link-title" value="${esc(item.title || '')}"><button class="btn btn-danger" onclick="removeLinkItem(${idx})">删除</button></div><input class="input link-url" value="${esc(item.url || '')}" style="margin-top:8px"></div>`).join('')}</div>
     </div>
-
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-        <h3 style="margin-bottom:0">折叠功能说明（可自定义排序）</h3>
-        <button class="btn btn-primary" onclick="addFeatureItem()" style="padding:8px 14px;font-size:13px">➕ 添加折叠项</button>
-      </div>
-      <div id="feature-list-editor">
-        ${featureList.length === 0 ? `<div style="color:var(--ink3);font-size:13px;text-align:center;padding:20px">暂无折叠项，点击右上角添加</div>` : ''}
-        ${featureList.map((item, idx) => `
-          <div class="feature-item" data-idx="${idx}">
-            <div class="feature-row" style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-              <input class="input feature-title" style="flex:1;margin-bottom:0;" value="${esc(item.title || '')}" placeholder="折叠项标题（如：常见问题）">
-              <div style="display:flex; gap:4px; flex:0 0 auto;">
-                <button class="btn btn-ghost" style="padding:6px 8px; border-color:var(--line);" onclick="moveFeatureUp(${idx})" ${idx === 0 ? 'disabled style="opacity:0.3"' : ''}>⬆️</button>
-                <button class="btn btn-ghost" style="padding:6px 8px; border-color:var(--line);" onclick="moveFeatureDown(${idx})" ${idx === featureList.length - 1 ? 'disabled style="opacity:0.3"' : ''}>⬇️</button>
-                <button class="btn btn-danger" style="padding:6px 8px;" onclick="removeFeatureItem(${idx})">删</button>
-              </div>
-            </div>
-            <textarea class="input feature-content" rows="3" placeholder="折叠项内容">${esc(item.content || '')}</textarea>
-          </div>
-        `).join('')}
-      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin-bottom:0">折叠功能说明</h3><button class="btn btn-primary" onclick="addFeatureItem()" style="padding:8px 14px;font-size:13px">➕ 添加折叠项</button></div>
+      <div id="feature-list-editor">${featureList.map((item, idx) => `<div class="feature-item" data-idx="${idx}"><div class="feature-row"><input class="input feature-title" value="${esc(item.title || '')}"><div style="display:flex; gap:4px; flex:0 0 auto;"><button class="btn btn-ghost" style="padding:6px 8px;" onclick="moveFeatureUp(${idx})" ${idx===0?'disabled':''}>⬆️</button><button class="btn btn-ghost" style="padding:6px 8px;" onclick="moveFeatureDown(${idx})" ${idx===featureList.length-1?'disabled':''}>⬇️</button><button class="btn btn-danger" style="padding:6px 8px;" onclick="removeFeatureItem(${idx})">删</button></div></div><textarea class="input feature-content" rows="3">${esc(item.content || '')}</textarea></div>`).join('')}</div>
     </div>
-
-    <div class="card">
-      <h3>提示文案</h3>
-      <label class="field-label">充值页提示</label>
-      <input class="input" id="cfg-notice" value="${esc(c.notice || '')}">
-      <label class="field-label">客服信息</label>
-      <input class="input" id="cfg-support" value="${esc(c.support || '')}">
-    </div>
+    <div class="card"><h3>提示文案</h3><label class="field-label">充值页提示</label><input class="input" id="cfg-notice" value="${esc(c.notice || '')}"><label class="field-label">客服信息</label><input class="input" id="cfg-support" value="${esc(c.support || '')}"></div>
     <button class="btn btn-primary btn-block" onclick="saveAdminConfig()">保存全部配置</button>
   `;
 
   const iconInput = $('#cfg-wallet-icon');
+  if (iconInput) iconInput.addEventListener('input', () => { const url = iconInput.value.trim(); const box = $('#wallet-icon-preview'); if (box) box.innerHTML = url ? `<img src="${esc(url)}">` : `<span style="color:#fff;font-size:12px;">默认</span>`; });
   const loginIconInput = $('#cfg-login-logo');
-  
-  if (loginIconInput) {
-    loginIconInput.addEventListener('input', () => {
-      const url = loginIconInput.value.trim();
-      const box = $('#login-logo-preview');
-      if (!box) return;
-      if (!url) {
-        box.innerHTML = `<div style="width:100%;height:100%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:24px;font-weight:800;display:grid;place-items:center;">单</div>`;
-      } else {
-        box.innerHTML = `<img src="${esc(url)}" onerror="this.parentNode.innerHTML='加载失败'">`;
-      }
-    });
-  }
-  
-  if (iconInput) {
-    iconInput.addEventListener('input', () => {
-      const url = iconInput.value.trim();
-      const box = $('#wallet-icon-preview');
-      if (!box) return;
-      if (!url) {
-        box.innerHTML = `<svg width="36" height="36" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/></svg>`;
-      } else {
-        box.innerHTML = `<img src="${esc(url)}" onerror="this.parentNode.innerHTML='加载失败'">`;
-      }
-    });
-  }
+  if (loginIconInput) loginIconInput.addEventListener('input', () => { const url = loginIconInput.value.trim(); const box = $('#login-logo-preview'); if (box) box.innerHTML = url ? `<img src="${esc(url)}">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:24px;font-weight:800;display:grid;place-items:center;">单</div>`; });
 }
 
-function syncFeatureList() {
-  const featureItems = document.querySelectorAll('#feature-list-editor .feature-item');
-  const featureList = [];
-  featureItems.forEach(item => {
-    const title = item.querySelector('.feature-title')?.value || '';
-    const content = item.querySelector('.feature-content')?.value || '';
-    featureList.push({ title, content });
-  });
-  state.config.featureList = featureList;
-}
-
-function addFeatureItem() {
-  syncFeatureList();
-  const list = state.config.featureList || [];
-  list.push({ title: '', content: '' });
-  state.config.featureList = list;
-  renderTab('settings');
-}
-function removeFeatureItem(idx) {
-  syncFeatureList();
-  const list = state.config.featureList || [];
-  list.splice(idx, 1);
-  state.config.featureList = list;
-  renderTab('settings');
-}
-
-function moveFeatureUp(idx) {
-  if (idx <= 0) return;
-  syncFeatureList();
-  const list = state.config.featureList;
-  [list[idx - 1], list[idx]] = [list[idx], list[idx - 1]];
-  renderTab('settings');
-}
-
-function moveFeatureDown(idx) {
-  syncFeatureList();
-  const list = state.config.featureList;
-  if (idx >= list.length - 1) return;
-  [list[idx + 1], list[idx]] = [list[idx], list[idx + 1]];
-  renderTab('settings');
-}
-
-function addLinkItem() {
-  const list = state.config.linkList || [];
-  list.push({ title: '', url: '' });
-  state.config.linkList = list;
-  renderTab('settings');
-}
-function removeLinkItem(idx) {
-  const list = state.config.linkList || [];
-  list.splice(idx, 1);
-  state.config.linkList = list;
-  renderTab('settings');
-}
+function syncFeatureList() { const featureItems = document.querySelectorAll('#feature-list-editor .feature-item'); const featureList = []; featureItems.forEach(item => { featureList.push({ title: item.querySelector('.feature-title')?.value || '', content: item.querySelector('.feature-content')?.value || '' }); }); state.config.featureList = featureList; }
+function addFeatureItem() { syncFeatureList(); state.config.featureList = state.config.featureList || []; state.config.featureList.push({ title: '', content: '' }); renderTab('settings'); }
+function removeFeatureItem(idx) { syncFeatureList(); state.config.featureList.splice(idx, 1); renderTab('settings'); }
+function moveFeatureUp(idx) { if (idx <= 0) return; syncFeatureList(); const list = state.config.featureList; [list[idx - 1], list[idx]] = [list[idx], list[idx - 1]]; renderTab('settings'); }
+function moveFeatureDown(idx) { syncFeatureList(); const list = state.config.featureList; if (idx >= list.length - 1) return; [list[idx + 1], list[idx]] = [list[idx], list[idx + 1]]; renderTab('settings'); }
+function addLinkItem() { state.config.linkList = state.config.linkList || []; state.config.linkList.push({ title: '', url: '' }); renderTab('settings'); }
+function removeLinkItem(idx) { state.config.linkList.splice(idx, 1); renderTab('settings'); }
 
 async function uploadVideo() {
-  const fileInput = $('#video-file');
-  const file = fileInput?.files?.[0];
-  if (!file) { toast('请先选择视频文件'); return; }
-  if (file.size > 100 * 1024 * 1024) { toast('视频过大（>100MB），建议用外部链接'); return; }
-  const formData = new FormData();
-  formData.append('video', file);
-  toast('上传中，请稍候…');
-  try {
-    const r = await api('/admin/upload-video', { method: 'POST', body: formData, isForm: true });
-    const url = r.url || ('/api/video/' + r.key);
-    $('#cfg-video-url').value = url;
-    toast('视频上传成功 ✅');
-    const wrap = $('#cfg-video-url').nextElementSibling;
-    if (wrap && wrap.classList.contains('video-preview')) {
-      wrap.querySelector('video').src = url;
-    } else {
-      const div = document.createElement('div');
-      div.className = 'video-preview';
-      div.innerHTML = `<video src="${esc(url)}" controls preload="metadata"></video>`;
-      $('#cfg-video-url').parentNode.insertBefore(div, $('#cfg-video-url').nextSibling);
-    }
-  } catch(e) { toast('上传失败：' + e.message); }
+  const file = $('#video-file')?.files?.[0]; if (!file) { toast('请先选择视频'); return; }
+  const formData = new FormData(); formData.append('video', file);
+  try { const r = await api('/admin/upload-video', { method: 'POST', body: formData, isForm: true }); $('#cfg-video-url').value = r.url || ('/api/video/' + r.key); toast('上传成功 ✅'); } catch(e) { toast('上传失败：' + e.message); }
 }
 
 async function saveAdminConfig() {
   syncFeatureList();
-
-  const linkItemsEl = document.querySelectorAll('#link-list-editor .feature-item');
-  const linkList = [];
-  linkItemsEl.forEach(item => {
-    const title = item.querySelector('.link-title')?.value.trim() || '';
-    const url = item.querySelector('.link-url')?.value.trim() || '';
-    if (title && url) linkList.push({ title, url });
-  });
-
+  const linkList = []; document.querySelectorAll('#link-list-editor .feature-item').forEach(item => { const t = item.querySelector('.link-title')?.value.trim(); const u = item.querySelector('.link-url')?.value.trim(); if (t && u) linkList.push({ title: t, url: u }); });
   const body = {
     trc20: $('#cfg-trc20')?.value.trim() || '',
+    emptyTrc20: $('#cfg-empty-trc20')?.value.trim() || '',
     ratio: (Number($('#cfg-ratio')?.value) || 10) / 100,
     minDeposit: Number($('#cfg-min')?.value) || 10,
     notice: $('#cfg-notice')?.value.trim() || '',
@@ -751,47 +421,13 @@ async function saveAdminConfig() {
     walletIconUrl: $('#cfg-wallet-icon')?.value.trim() || '',
     loginLogoUrl: $('#cfg-login-logo')?.value.trim() || '' 
   };
-  try {
-    await api('/admin/config', { method: 'POST', body });
-    toast('配置已保存 ✅');
-    await loadAll();
-    renderTab('settings');
-  } catch(e) { toast(e.message); }
+  try { await api('/admin/config', { method: 'POST', body }); toast('配置已保存 ✅'); await loadAll(); renderTab('settings'); } catch(e) { toast(e.message); }
 }
 
 let toastTimer = null;
-function toast(msg) {
-  document.querySelectorAll('.toast').forEach(el => el.remove());
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  requestAnimationFrame(() => el.classList.add('show'));
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 320); }, 2200);
-}
+function toast(msg) { document.querySelectorAll('.toast').forEach(el => el.remove()); const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 320); }, 2200); }
 
-(async () => {
-  if (getToken()) {
-    try {
-      await loadAll();
-      document.getElementById('login-view').style.display = 'none';
-      document.getElementById('admin-app').style.display = 'block';
-      renderTab('orders');
-      startPolling();
-      setTimeout(() => autoFill(true), 800);
-    } catch(e) { clearToken(); }
-  }
-})();
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && getToken()) {
-    loadAll().then(() => {
-      const active = document.querySelector('.tab.active')?.dataset.tab || 'orders';
-      renderTab(active);
-    }).catch(() => {});
-  }
-});
+(async () => { if (getToken()) { try { await loadAll(); document.getElementById('login-view').style.display = 'none'; document.getElementById('admin-app').style.display = 'block'; renderTab('orders'); startPolling(); } catch(e) { clearToken(); } } })();
 </script>
 </body>
 </html>
