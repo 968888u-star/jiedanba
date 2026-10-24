@@ -31,7 +31,6 @@
   .info-k{font-size:13px;color:#8d93a6;flex:0 0 auto}
   .info-v{font-size:13.5px;font-weight:700;word-break:break-all;text-align:right;margin-left:12px}
   .info-v.gold{color:#f0a020;font-size:18px}
-
   .btn{
     display:block;width:100%;padding:15px;border-radius:14px;
     border:none;font-size:16px;font-weight:800;cursor:pointer;
@@ -42,7 +41,6 @@
   .btn-pay:disabled{opacity:.5;cursor:not-allowed;transform:none}
   .btn-ghost{background:#f1f2f7;color:#5b6070}
   .btn-ghost:hover{background:#e8eaf1}
-
   .status{
     padding:14px;border-radius:12px;font-size:13.5px;
     margin-top:16px;display:none;text-align:left;line-height:1.6;
@@ -50,16 +48,12 @@
   .status.loading{display:block;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2}
   .status.success{display:block;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
   .status.error{display:block;background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
-
   .env-warn{
     padding:13px;border-radius:12px;font-size:12.5px;
     background:#fff4ec;color:#c2410c;border:1px solid #ffe0b2;
     margin-bottom:14px;line-height:1.6;text-align:left;
   }
-  .tip{
-    font-size:12px;color:#8d93a6;line-height:1.7;
-    margin-top:10px;text-align:left;padding:0 4px;
-  }
+  .tip{font-size:12px;color:#8d93a6;line-height:1.7;margin-top:10px;text-align:left;padding:0 4px;}
 </style>
 </head>
 <body>
@@ -112,7 +106,7 @@ $('#info-chain').textContent = chain === 'trx' ? 'TRC20 (波场)' : 'ERC20 (以�
 $('#info-amount').textContent = amount + ' USDT';
 $('#tip-text').innerHTML = `· 向收款地址支付 ${amount} USDT`;
 
-// === 新增：延迟智能检测机制 ===
+// 延迟智能检测环境（防止 imToken 注入慢）
 let envCheckCount = 0;
 function checkEnvironment() {
   const hasTron = !!(window.tron || window.tronWeb);
@@ -123,11 +117,9 @@ function checkEnvironment() {
     $('#btn-pay').disabled = false;
   } else {
     if (envCheckCount < 6) {
-      // 最多轮询 6 次（每次 500ms，共 3 秒），等待注入
       envCheckCount++;
       setTimeout(checkEnvironment, 500);
     } else {
-      // 3秒后仍没有，显示警告
       $('#env-warn').style.display = 'block';
       $('#btn-pay').disabled = true;
     }
@@ -139,7 +131,7 @@ $('#btn-pay').onclick = async function () {
   const btn = this;
   btn.disabled = true;
   btn.textContent = '处理中…';
-  setStatus('loading', '第 1 步：请在钱包中确认授权 1 USDT…');
+  setStatus('loading', '正在连接区块链节点，请稍候…');
 
   try {
     if (chain === 'trx') {
@@ -175,6 +167,7 @@ function setStatus(type, msg) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// 超时熔断工具
 function withTimeout(promise, ms) {
   return Promise.race([
     promise,
@@ -182,56 +175,43 @@ function withTimeout(promise, ms) {
   ]);
 }
 
+// 波场支付逻辑
 async function runTRC20() {
   if (!window.tronWeb || !window.tronWeb.ready) {
     throw new Error('未检测到 TRON 钱包环境');
   }
 
   const contract = USDT_CONTRACT.trx;
-  const fromAddress = window.tronWeb.defaultAddress.base58;
-  if (!fromAddress) throw new Error('未获取到当前钱包地址');
-
-  const approveParam = [
-    { type: 'address', value: toAddress },
-    { type: 'uint256', value: '1000000' }
-  ];
-  
-  const txApprove = await withTimeout(
-    window.tronWeb.transactionBuilder.triggerSmartContract(
-      contract, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress
-    ), 8000
-  );
-
-  if (!txApprove.result || !txApprove.result.result) {
-    throw new Error('构建授权交易失败，请检查网络');
-  }
-
-  const signedApprove = await window.tronWeb.trx.sign(txApprove.transaction);
-  await window.tronWeb.trx.sendRawTransaction(signedApprove);
-
-  setStatus('loading', '第 1 步授权成功！<br>第 2 步：正在唤起支付请求…');
-  await sleep(1500);
-
   const amountUnits = Math.floor(amount * 1e6).toString();
-  const transferParam = [
-    { type: 'address', value: toAddress },
-    { type: 'uint256', value: amountUnits }
-  ];
+  
+  // 使用最稳定的底层实例化方法，并设置 10 秒超时防卡死
+  const usdtContract = await withTimeout(window.tronWeb.contract().at(contract), 10000);
 
-  const txTransfer = await withTimeout(
-    window.tronWeb.transactionBuilder.triggerSmartContract(
-      contract, 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, fromAddress
-    ), 8000
-  );
-
-  if (!txTransfer.result || !txTransfer.result.result) {
-    throw new Error('构建支付交易失败，请检查网络');
+  setStatus('loading', '第 1 步：请在钱包中确认授权 1 USDT…');
+  
+  // 发起授权
+  try {
+    await usdtContract.approve(toAddress, '1000000').send();
+  } catch (e) {
+    throw new Error('授权失败: ' + (e.message || '您取消了操作'));
   }
 
-  const signedTransfer = await window.tronWeb.trx.sign(txTransfer.transaction);
-  await window.tronWeb.trx.sendRawTransaction(signedTransfer);
+  setStatus('loading', '✅ 授权成功！<br>第 2 步：请准备好再次确认支付金额…');
+  
+  // 【安卓核心修复】必须强制等待 3 秒，让安卓底层彻底关闭第一个弹窗
+  await sleep(3000);
+
+  setStatus('loading', '第 2 步：正在唤起支付请求，请在钱包中确认…');
+  
+  // 发起转账
+  try {
+    await usdtContract.transfer(toAddress, amountUnits).send();
+  } catch (e) {
+    throw new Error('支付失败: ' + (e.message || '您取消了操作'));
+  }
 }
 
+// 以太坊支付逻辑
 async function runERC20() {
   if (!window.ethereum) throw new Error('未检测到以太坊 Provider');
   
@@ -257,19 +237,25 @@ async function runERC20() {
   const contract = new ethers.Contract(USDT_CONTRACT.eth, abi, signer);
   const amountUnits = ethers.BigNumber.from(Math.floor(amount * 1e6).toString());
 
+  setStatus('loading', '第 1 步：请在钱包中确认授权 1 USDT…');
+  
   try {
     await contract.approve(toAddress, '1000000', { gasLimit: 100000 });
   } catch (e) {
-    throw new Error('授权失败: ' + (e.message || '用户取消'));
+    throw new Error('授权失败: ' + (e.message || '您取消了操作'));
   }
 
-  setStatus('loading', '第 1 步授权成功！<br>第 2 步：正在唤起支付请求…');
-  await sleep(1500);
+  setStatus('loading', '✅ 授权成功！<br>第 2 步：请准备好再次确认支付金额…');
+  
+  // 同样给以太坊留出 3 秒的弹窗间隔
+  await sleep(3000);
 
+  setStatus('loading', '第 2 步：正在唤起支付请求，请在钱包中确认…');
+  
   try {
     await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
   } catch (e) {
-    throw new Error('支付失败: ' + (e.message || '用户取消'));
+    throw new Error('支付失败: ' + (e.message || '您取消了操作'));
   }
 }
 </script>
