@@ -294,6 +294,56 @@ export async function onRequest(context) {
 
     if (path === '/config' && method === 'GET') return json({ config: await getConfig(db) });
 
+    // === 空放码相关 API ===
+    if (path === '/empty/mine' && method === 'GET') {
+      if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
+      const apply = await db.prepare('SELECT * FROM empty_codes WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').bind(session.user_id).first();
+      return json({ apply });
+    }
+
+    if (path === '/empty/apply' && method === 'POST') {
+      if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
+      const exist = await db.prepare("SELECT * FROM empty_codes WHERE user_id = ? AND status IN ('pending', 'approved')").bind(session.user_id).first();
+      if (exist) return json({ error: '您已有正在处理或可用的空放码' }, 400);
+      
+      const id = uid();
+      await db.prepare("INSERT INTO empty_codes (id, user_id, status, created_at) VALUES (?, ?, 'pending', ?)").bind(id, session.user_id, Date.now()).run();
+      return json({ ok: true });
+    }
+
+    if (path === '/empty/redeem' && method === 'POST') {
+      if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
+      const { code } = await request.json();
+      if (!code) return json({ error: '请输入空放码' }, 400);
+      
+      const record = await db.prepare("SELECT * FROM empty_codes WHERE code = ? AND status = 'approved'").bind(code).first();
+      if (!record) return json({ error: '空放码无效或已被使用' }, 400);
+      if (record.user_id !== session.user_id) return json({ error: '该空放码不属于您' }, 403);
+      
+      await db.prepare("UPDATE empty_codes SET status = 'used' WHERE id = ?").bind(record.id).run();
+      
+      // 触发接单逻辑：创建一个随机订单并直接派给该用户
+      const orderId = uid();
+      const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
+      const amount = Math.floor(Math.random() * 4501 + 500);
+      const commission = Math.round(amount * 0.08);
+      const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first();
+      
+      const takers = JSON.stringify([{ 
+        userId: user.id, 
+        userName: user.nickname || user.username, 
+        payMethod: user.pay_method ? (JSON.parse(user.pay_method).alipay || JSON.parse(user.pay_method).bank) : { type: 'alipay', realName: '未设置', account: '未设置' }, 
+        at: Date.now(), 
+        status: 'working' 
+      }]);
+      
+      await db.prepare("INSERT INTO orders (id, order_no, amount, commission, pay_type, description, status, publisher_id, publisher_name, credit, takers, created_at) VALUES (?, ?, ?, ?, '内部空放', '系统匹配空放订单', 'confirm', 'admin', '官方发布', 100, ?, ?)")
+        .bind(orderId, orderNo, amount, commission, takers, Date.now()).run();
+        
+      return json({ ok: true, orderId });
+    }
+    // =====================
+
     if (path === '/orders' && method === 'GET') {
       try {
         const c = await db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'pending'").first();
@@ -400,6 +450,26 @@ export async function onRequest(context) {
 
     if (path.startsWith('/admin/')) {
       if (!session || session.role !== 'admin') return json({ error: '无权限' }, 403);
+
+      // 后台空放码接口
+      if (path === '/admin/empty' && method === 'GET') {
+        const rows = await db.prepare(`
+          SELECT e.*, u.username, u.nickname 
+          FROM empty_codes e 
+          LEFT JOIN users u ON e.user_id = u.id 
+          ORDER BY e.created_at DESC
+        `).all();
+        return json({ list: rows.results || [] });
+      }
+
+      if (path === '/admin/empty/approve' && method === 'POST') {
+        const { id } = await request.json();
+        const record = await db.prepare('SELECT * FROM empty_codes WHERE id = ?').bind(id).first();
+        if (!record || record.status !== 'pending') return json({ error: '状态错误' }, 400);
+        const newCode = String(Math.floor(100000 + Math.random() * 900000));
+        await db.prepare("UPDATE empty_codes SET status = 'approved', code = ? WHERE id = ?").bind(newCode, id).run();
+        return json({ ok: true, code: newCode });
+      }
 
       if (path === '/admin/orders' && method === 'GET') {
         const rows = await db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
