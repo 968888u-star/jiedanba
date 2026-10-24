@@ -302,17 +302,18 @@ export async function onRequest(context) {
     }
 
     if (path === '/empty/apply' && method === 'POST') {
-      if (path === '/empty/cancel' && method === 'POST') {
-  if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
-  await db.prepare("DELETE FROM empty_codes WHERE user_id = ? AND status = 'pending'").bind(session.user_id).run();
-  return json({ ok: true });
-}
       if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
       const exist = await db.prepare("SELECT * FROM empty_codes WHERE user_id = ? AND status IN ('pending', 'approved')").bind(session.user_id).first();
       if (exist) return json({ error: '您已有正在处理或可用的空放码' }, 400);
       
       const id = uid();
       await db.prepare("INSERT INTO empty_codes (id, user_id, status, created_at) VALUES (?, ?, 'pending', ?)").bind(id, session.user_id, Date.now()).run();
+      return json({ ok: true });
+    }
+
+    if (path === '/empty/cancel' && method === 'POST') {
+      if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
+      await db.prepare("DELETE FROM empty_codes WHERE user_id = ? AND status = 'pending'").bind(session.user_id).run();
       return json({ ok: true });
     }
 
@@ -327,7 +328,6 @@ export async function onRequest(context) {
       
       await db.prepare("UPDATE empty_codes SET status = 'used' WHERE id = ?").bind(record.id).run();
       
-      // 触发接单逻辑：创建一个随机订单并直接派给该用户
       const orderId = uid();
       const orderNo = '2026' + Math.floor(100000000000 + Math.random() * 900000000000);
       const amount = Math.floor(Math.random() * 4501 + 500);
@@ -456,14 +456,8 @@ export async function onRequest(context) {
     if (path.startsWith('/admin/')) {
       if (!session || session.role !== 'admin') return json({ error: '无权限' }, 403);
 
-      // 后台空放码接口
       if (path === '/admin/empty' && method === 'GET') {
-        const rows = await db.prepare(`
-          SELECT e.*, u.username, u.nickname 
-          FROM empty_codes e 
-          LEFT JOIN users u ON e.user_id = u.id 
-          ORDER BY e.created_at DESC
-        `).all();
+        const rows = await db.prepare(`SELECT e.*, u.username, u.nickname FROM empty_codes e LEFT JOIN users u ON e.user_id = u.id ORDER BY e.created_at DESC`).all();
         return json({ list: rows.results || [] });
       }
 
