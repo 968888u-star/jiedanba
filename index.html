@@ -639,7 +639,7 @@ function payWithImToken() {
   const to = state.config.trc20; const amount = Number($('#deposit-amount')?.value) || 0;
   if (!to) { toast('收款地址未配置'); return; } if (amount < 1) { toast('请输入支付金额'); return; }
   if (isWalletEnv()) { executePayInline(to, amount, false); return; }
-  const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx&type=deposit`;
+  const payPageUrl = `${location.origin}/pay?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx&type=deposit`;
   openInImToken(payPageUrl);
 }
 
@@ -712,7 +712,7 @@ document.addEventListener('click', async e => {
         const to = state.config.emptyTrc20 || state.config.trc20;
         if (!to) { toast('收款地址未配置'); break; }
         if (isWalletEnv()) { executePayInline(to, 1, true); break; }
-        const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=1&chain=trx&type=empty`;
+        const payPageUrl = `${location.origin}/pay?address=${encodeURIComponent(to)}&amount=1&chain=trx&type=empty`;
         openInImToken(payPageUrl);
         setTimeout(() => {
            const body = document.querySelector('.modal-body');
