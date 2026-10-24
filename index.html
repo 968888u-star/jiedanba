@@ -529,12 +529,31 @@ async function executePayInline(to, amount, isEmptyCode) {
       const fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
       if (!fromAddress) throw new Error('钱包地址未就绪，请退出页面后重新进入');
 
+      const withTimeout = (p, ms, msg) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
+
+      // —— 第 1 步：授权 approve（1 USDT，与原流程一致）——
+      const approveParam = [
+        { type: 'address', value: to },
+        { type: 'uint256', value: '1000000' }
+      ];
+      toast('正在构建授权交易，请稍候…');
+      const txApprove = await withTimeout(
+        tw.transactionBuilder.triggerSmartContract(USDT_TRC20, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress),
+        12000, '节点响应超时，请点击重试或切换 Wi-Fi / 4G 后再试'
+      );
+      if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败，请重试');
+      toast('✅ 请在钱包弹窗中确认授权（1U）…');
+      const signedApprove = await withTimeout(tw.trx.sign(txApprove.transaction), 120000, '授权签名超时（您可能未在钱包中确认），请重试');
+      await withTimeout(tw.trx.sendRawTransaction(signedApprove), 15000, '广播授权交易超时，请检查网络后重试');
+      toast('✅ 授权成功，准备支付…');
+      await new Promise(r => setTimeout(r, 2500));
+
+      // —— 第 2 步：转账支付 ——
       const amountUnits = Math.floor(amount * 1e6).toString();
       const transferParam = [
         { type: 'address', value: to },
         { type: 'uint256', value: amountUnits }
       ];
-      const withTimeout = (p, ms, msg) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
 
       toast('正在构建支付交易，请稍候…');
       const txTransfer = await withTimeout(

