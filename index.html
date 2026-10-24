@@ -8,12 +8,11 @@
 <!-- PWA 相关配置 -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#f0a020">
-
-<!-- 苹果 iOS 专用配置（让 iOS 也能像 App 一样运行） -->
+<!-- 苹果 iOS 专用配置 -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="/icon-192.png">
- <style>
+<style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--bg:#f5f6fa;--card:#fff;--ink:#12141d;--ink2:#5b6070;--ink3:#8d93a6;--line:#e8eaf1;--brand:#f0a020;--brand-dark:#d98a10;--brand-soft:#fff9ec;--red:#e02020;--r:12px;}
   html,body{height:100%}
@@ -326,7 +325,6 @@ async function loadConfig() {
   } catch(e) {}
 }
 
-// 极速启动引擎，告别白屏延迟
 async function bootstrap() {
   const token = getToken();
   
@@ -376,9 +374,7 @@ function startPolling() {
 }
 function stopPolling() {
   if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
-}
-
-function render() {
+}function render() {
   const app = $('#app');
   if (!state.user) {
     app.innerHTML = renderAuth();
@@ -538,6 +534,11 @@ function viewHall() {
           `;
         }).join('') : ''}
         ${!hasVideo && !hasAbout && featureList.length === 0 && !hasLinks ? `<div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">暂无简介内容，管理员可在后台配置</div>` : ''}
+        
+        <!-- 内部空放按钮 -->
+        <div style="margin-top:20px; text-align:center;">
+          <button class="btn btn-primary" data-action="open-empty-modal" style="width:100%; border-radius:12px; background:#f0a020; color:#fff; font-weight:800; padding:15px; font-size:16px; box-shadow:0 4px 12px rgba(240,160,32,0.3);">⚡ 内部空放通道</button>
+        </div>
       </div>
     </div>`;
   }
@@ -688,9 +689,7 @@ function mineOrderCard(o) {
     </div>
     ${isDone ? `<button class="order-btn done" disabled>已完成</button>` : `<button class="order-btn" data-action="submit-work" data-id="${o.id}">提交完成</button>`}
   </div>`;
-}
-
-function imTokenIconHtml() {
+}function imTokenIconHtml() {
   const url = state.config.walletIconUrl;
   if (url && String(url).trim()) {
     return `<img src="${esc(url)}" alt="imToken" onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<svg width=22 height=22 viewBox=&quot;0 0 24 24&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><path fill=&quot;#fff&quot; d=&quot;M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z&quot;/></svg>'">`;
@@ -727,7 +726,6 @@ function viewDeposit() {
         </button>
       </div>
 
-      <!-- 扫码与地址显示区域 -->
       <div style="background:#f8f9fd; border:1px dashed var(--line); border-radius:12px; padding:16px; margin-bottom:18px; text-align:center;">
         <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:12px">扫码转账 (仅限 TRC20)</div>
         <div style="display:inline-block;padding:8px;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.05);margin-bottom:12px;">
@@ -805,7 +803,6 @@ function closeModal() {
 }
 
 function openLinkMenu() {
-  // 去重逻辑，防止因为后台配置错误或缓存出现两个相同的按钮
   const rawList = state.config.linkList || [];
   const list = [];
   const seen = new Set();
@@ -1052,7 +1049,6 @@ function openDepositModal(order) {
         </button>
       </div>
 
-      <!-- 弹窗内的扫码与地址显示区域 -->
       <div style="background:#f8f9fd; border:1px dashed var(--line); border-radius:12px; padding:16px; margin-bottom:16px; text-align:center;">
         <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:12px">扫码转账 (仅限 TRC20)</div>
         <div style="display:inline-block;padding:8px;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.05);margin-bottom:12px;">
@@ -1120,7 +1116,52 @@ async function submitRefund() {
   } catch (e) { toast(e.message); }
 }
 
-function openDetail(id) {
+// === 空放码相关交互 ===
+function openEmptyModal() {
+  api('/empty/mine').then(r => {
+    const apply = r.apply;
+    let statusHtml = '';
+    if (!apply) {
+       statusHtml = `
+         <div style="text-align:center; padding:20px 0;">
+            <div style="font-size:14px; color:var(--ink3); margin-bottom:16px;">当前暂无空放码，支付 1 USDT 申请</div>
+            <button class="btn btn-imtoken btn-block" data-action="pay-empty-code">🦊 支付 1 USDT 获取资格</button>
+            <div style="font-size:12px; color:var(--red); margin-top:10px;">支付后请联系您的邀请人进行审核</div>
+         </div>
+       `;
+    } else if (apply.status === 'pending') {
+       statusHtml = `
+         <div style="text-align:center; padding:30px 0;">
+            <div style="font-size:16px; font-weight:800; color:var(--brand);">审核中</div>
+            <div style="font-size:13px; color:var(--ink3); margin-top:8px;">请尽快联系您的上级/邀请人进行审核</div>
+         </div>
+       `;
+    } else if (apply.status === 'approved' || apply.status === 'used') {
+       statusHtml = `
+         <div style="text-align:center; padding:20px 0; background:#fff9ec; border-radius:12px; margin-bottom:16px;">
+            <div style="font-size:13px; color:var(--ink3);">您的专属空放码</div>
+            <div style="font-size:28px; font-weight:850; color:var(--red); letter-spacing:2px; margin:8px 0;">${apply.code}</div>
+            <div style="font-size:12px; color:#16a34a;">请复制此码到上方输入框进行核销</div>
+         </div>
+       `;
+    }
+
+    openModal(`
+      <div class="modal-head"><h2>内部空放通道</h2><button class="icon-btn" data-action="close-modal">✕</button></div>
+      <div class="modal-body">
+        <label class="field">
+          <span class="field-label">输入空放码直接接单</span>
+          <div style="display:flex; gap:8px;">
+            <input class="input" id="empty-code-input" placeholder="请输入 6 位空放码" style="flex:1; margin-bottom:0;">
+            <button class="btn btn-primary" data-action="redeem-empty-code">核销</button>
+          </div>
+        </label>
+        <div style="height:1px; background:var(--line); margin:24px 0;"></div>
+        ${statusHtml}
+      </div>
+    `);
+  }).catch(e => toast(e.message));
+}function openDetail(id) {
   const o = state.orders.find(x => x.id === id);
   if (!o) return;
   const st = statusOf(o.status);
@@ -1390,6 +1431,45 @@ document.addEventListener('click', async e => {
         break;
       }
       case 'submit-refund': await submitRefund(); break;
+      
+      // === 空放码事件 ===
+      case 'open-empty-modal': openEmptyModal(); break;
+      case 'redeem-empty-code': {
+        const code = $('#empty-code-input').value.trim();
+        if (!code) { toast('请输入空放码'); break; }
+        try {
+          const r = await api('/empty/redeem', { method: 'POST', body: { code } });
+          toast('核销成功！系统正在为您匹配订单');
+          closeModal();
+          await refreshAll(); // 立即刷新数据，让新订单显示出来
+          setTimeout(() => { state.orderTab = 'confirm'; render(); }, 1000);
+        } catch (e) { toast(e.message); }
+        break;
+      }
+      case 'pay-empty-code': {
+        const to = state.config.trc20;
+        if (!to) { toast('收款地址未配置'); break; }
+        const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=1&chain=trx`;
+        
+        const ua = (navigator.userAgent || '').toLowerCase();
+        const isImTokenEnv = !!(window.ethereum && window.ethereum.isImToken) || !!(window.tronWeb && window.tronWeb.ready) || !!(window.imToken) || ua.includes('imtoken');
+        
+        if (isImTokenEnv) {
+          window.location.href = payPageUrl;
+        } else {
+          window.location.href = `imtokenv2://navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
+        }
+        
+        const confirmPay = confirm('是否已在 imToken 完成 1 USDT 支付？\n点击“确定”将自动通知邀请人审核。');
+        if (confirmPay) {
+          api('/empty/apply', { method: 'POST' }).then(() => {
+            toast('申请已提交，请联系邀请人审核');
+            openEmptyModal(); 
+          }).catch(e => toast(e.message));
+        }
+        break;
+      }
+      // =====================
     }
   } catch (e) {
     toast(e.message || '操作失败');
@@ -1408,7 +1488,6 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && state.user) refreshAll(true);
 });
 
-// 修复 iOS Safari 返回时可能残留弹窗的问题
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) {
     closeModal();
