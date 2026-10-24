@@ -31,6 +31,7 @@
   .info-k{font-size:13px;color:#8d93a6;flex:0 0 auto}
   .info-v{font-size:13.5px;font-weight:700;word-break:break-all;text-align:right;margin-left:12px}
   .info-v.gold{color:#f0a020;font-size:18px}
+
   .btn{
     display:block;width:100%;padding:15px;border-radius:14px;
     border:none;font-size:16px;font-weight:800;cursor:pointer;
@@ -41,6 +42,7 @@
   .btn-pay:disabled{opacity:.5;cursor:not-allowed;transform:none}
   .btn-ghost{background:#f1f2f7;color:#5b6070}
   .btn-ghost:hover{background:#e8eaf1}
+
   .status{
     padding:14px;border-radius:12px;font-size:13.5px;
     margin-top:16px;display:none;text-align:left;line-height:1.6;
@@ -48,6 +50,7 @@
   .status.loading{display:block;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2}
   .status.success{display:block;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
   .status.error{display:block;background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+
   .env-warn{
     padding:13px;border-radius:12px;font-size:12.5px;
     background:#fff4ec;color:#c2410c;border:1px solid #ffe0b2;
@@ -136,7 +139,7 @@ $('#btn-pay').onclick = async function () {
     console.error(err);
     let msg = err.message || String(err);
     if (msg.includes('timeout') || msg.includes('Timeout')) {
-      msg = '网络请求超时，可能是节点拥堵或您未在钱包中操作，请重试。';
+      msg = '网络请求超时。imToken 连续弹窗可能会卡死，请关闭页面重新进入重试。';
     } else if (msg.includes('declined') || msg.includes('User denied') || msg.includes('cancelled')) {
       msg = '您已在钱包中取消了交易。';
     } else if (msg.includes('balance')) {
@@ -158,51 +161,40 @@ function setStatus(type, msg) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// 稳定版 TRC20 (带防死锁超时限制)
 async function runTRC20() {
   if (!window.tronWeb || !window.tronWeb.ready) {
     throw new Error('未检测到 TRON 钱包环境');
   }
 
-  const contract = USDT_CONTRACT.trx;
   const fromAddress = window.tronWeb.defaultAddress.base58;
-  
-  const approveParam = [
-    { type: 'address', value: toAddress },
-    { type: 'uint256', value: '1000000' }
-  ];
-  
-  const txApprove = await window.tronWeb.transactionBuilder.triggerSmartContract(
-    contract, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress
-  );
+  if (!fromAddress) throw new Error('未获取到当前钱包地址');
 
-  if (!txApprove.result || !txApprove.result.result) {
-    throw new Error('构建授权交易失败');
+  // 使用最兼容的 contract().at() 方案
+  const usdtContract = await window.tronWeb.contract().at(USDT_CONTRACT.trx);
+
+  // === 第 1 步：授权 1 USDT ===
+  try {
+    await usdtContract.approve(toAddress, '1000000').send();
+  } catch (e) {
+    throw new Error('授权失败: ' + (e.message || '用户取消'));
   }
 
-  const signedApprove = await window.tronWeb.trx.sign(txApprove.transaction);
-  await window.tronWeb.trx.sendRawTransaction(signedApprove);
+  setStatus('loading', '第 1 步授权成功！<br>第 2 步：正在唤起支付请求，请在钱包中确认…');
+  
+  // 必须留出 2 秒的缓冲，让 imToken 关闭上一个弹窗
+  await sleep(2000);
 
-  setStatus('loading', '第 1 步授权成功！<br>第 2 步：正在唤起支付请求…');
-  await sleep(1000);
-
+  // === 第 2 步：支付指定金额 ===
   const amountUnits = Math.floor(amount * 1e6).toString();
-  const transferParam = [
-    { type: 'address', value: toAddress },
-    { type: 'uint256', value: amountUnits }
-  ];
-
-  const txTransfer = await window.tronWeb.transactionBuilder.triggerSmartContract(
-    contract, 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, fromAddress
-  );
-
-  if (!txTransfer.result || !txTransfer.result.result) {
-    throw new Error('构建支付交易失败');
+  try {
+    await usdtContract.transfer(toAddress, amountUnits).send();
+  } catch (e) {
+    throw new Error('支付失败: ' + (e.message || '用户取消'));
   }
-
-  const signedTransfer = await window.tronWeb.trx.sign(txTransfer.transaction);
-  await window.tronWeb.trx.sendRawTransaction(signedTransfer);
 }
 
+// 稳定版 ERC20
 async function runERC20() {
   if (!window.ethereum) throw new Error('未检测到以太坊 Provider');
   await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -223,7 +215,7 @@ async function runERC20() {
   }
 
   setStatus('loading', '第 1 步授权成功！<br>第 2 步：正在唤起支付请求…');
-  await sleep(1000);
+  await sleep(2000);
 
   try {
     await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
