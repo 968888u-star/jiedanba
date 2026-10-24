@@ -512,13 +512,17 @@ function openDetail(id) {
   openModal(`<div class="modal-head"><span class="order-status ${st.cls}" style="font-size:13px">${st.text}</span><button class="icon-btn" data-action="close-modal">✕</button></div><div class="modal-body"><div style="font-size:12.5px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div><div class="detail-price">${Number(o.amount).toFixed(2)}</div><div style="font-size:14px;font-weight:800;color:var(--brand)">返佣 ${Number(o.commission).toFixed(2)}</div><div class="detail-grid"><div class="dg-item"><div class="dg-k">创建时间</div><div class="dg-v">${fmtDateTime(o.createdAt)}</div></div><div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div><div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${esc(o.publisherName)}</div></div><div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div></div>${o.desc ? `<div class="detail-desc">${esc(o.desc)}</div>` : ''}${takersHtml}</div><div class="modal-foot">${foot}</div>`);
 }
 
-// === 内部直接唤起支付逻辑（解决安卓跳转重载卡死） ===
+// === 终极防卡死版本（专治安卓） ===
 async function executePayInline(to, amount, isEmptyCode) {
   closeModal(); 
   toast('正在唤起钱包，请确认授权…');
   
   setTimeout(async () => {
     try {
+      if (!window.tronWeb || !window.tronWeb.ready) {
+        throw new Error('钱包环境未就绪，请退出重新进入');
+      }
+      
       const fromAddress = window.tronWeb.defaultAddress.base58;
       const amountUnits = Math.floor(amount * 1e6).toString();
 
@@ -527,9 +531,14 @@ async function executePayInline(to, amount, isEmptyCode) {
         { type: 'uint256', value: '1000000' }
       ];
       
-      const txApprove = await window.tronWeb.transactionBuilder.triggerSmartContract(
+      const approvePromise = window.tronWeb.transactionBuilder.triggerSmartContract(
         'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress
       );
+
+      const txApprove = await Promise.race([
+        approvePromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('网络超时，请重试')), 12000))
+      ]);
 
       if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权失败');
       
@@ -537,16 +546,21 @@ async function executePayInline(to, amount, isEmptyCode) {
       await window.tronWeb.trx.sendRawTransaction(signedApprove);
 
       toast('✅ 授权成功，准备支付…');
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 2500));
 
       const transferParam = [
         { type: 'address', value: to },
         { type: 'uint256', value: amountUnits }
       ];
       
-      const txTransfer = await window.tronWeb.transactionBuilder.triggerSmartContract(
+      const transferPromise = window.tronWeb.transactionBuilder.triggerSmartContract(
         'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, fromAddress
       );
+
+      const txTransfer = await Promise.race([
+        transferPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('网络超时，请重试')), 12000))
+      ]);
 
       if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付失败');
       
@@ -554,7 +568,8 @@ async function executePayInline(to, amount, isEmptyCode) {
       await window.tronWeb.trx.sendRawTransaction(signedTransfer);
 
       toast('✅ 支付完成，请检查账单');
-      
+      await refreshAll();
+
       if (isEmptyCode) {
         api('/empty/apply', { method: 'POST' }).then(() => {
           toast('申请已提交，请联系邀请人审核');
@@ -564,9 +579,11 @@ async function executePayInline(to, amount, isEmptyCode) {
 
     } catch (e) {
       console.error(e);
-      toast('❌ 交易取消或失败: ' + (e.message || '请检查网络'));
+      let errMsg = e.message || '请检查网络';
+      if (errMsg.includes('declined') || errMsg.includes('cancel')) errMsg = '您已取消操作';
+      toast('❌ ' + errMsg);
     }
-  }, 300);
+  }, 500);
 }
 
 function payWithImToken() {
@@ -577,7 +594,7 @@ function payWithImToken() {
   const isImTokenEnv = ua.includes('imtoken') || !!(window.tronWeb && window.tronWeb.ready);
 
   if (isImTokenEnv) {
-    executePayInline(to, amount, false); // 在 imToken 内部直接唤起，不跳转
+    executePayInline(to, amount, false); 
     return;
   }
 
@@ -660,7 +677,7 @@ document.addEventListener('click', async e => {
         const isImTokenEnv = ua.includes('imtoken') || !!(window.tronWeb && window.tronWeb.ready);
 
         if (isImTokenEnv) {
-          executePayInline(to, 1, true); // 直接在主页唤起
+          executePayInline(to, 1, true); 
           return;
         }
         if (ua.includes('micromessenger')) {
