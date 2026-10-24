@@ -530,6 +530,7 @@ async function executePayInline(to, amount, isEmptyCode) {
       if (!fromAddress) throw new Error('钱包地址未就绪，请退出页面后重新进入');
 
       const withTimeout = (p, ms, msg) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
+      const withRetry = async (fn, times, delay) => { let lastErr; for (let i=0;i<times;i++){ try { return await fn(); } catch(e){ lastErr=e; if (i<times-1) await new Promise(r=>setTimeout(r,delay)); } } throw lastErr; };
 
       // —— 第 1 步：授权 approve（1 USDT，与原流程一致）——
       const approveParam = [
@@ -537,10 +538,12 @@ async function executePayInline(to, amount, isEmptyCode) {
         { type: 'uint256', value: '1000000' }
       ];
       toast('正在构建授权交易，请稍候…');
-      const txApprove = await withTimeout(
+      const slowTipA = setTimeout(() => toast('⏳ 节点响应较慢，正在自动重试…'), 3000);
+      const txApprove = await withRetry(() => withTimeout(
         tw.transactionBuilder.triggerSmartContract(USDT_TRC20, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress),
-        12000, '节点响应超时，请点击重试或切换 Wi-Fi / 4G 后再试'
-      );
+        8000, '节点响应超时，请重试'
+      ), 2, 600);
+      clearTimeout(slowTipA);
       if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败，请重试');
       toast('✅ 请在钱包弹窗中确认授权（1U）…');
       const signedApprove = await withTimeout(tw.trx.sign(txApprove.transaction), 120000, '授权签名超时（您可能未在钱包中确认），请重试');
@@ -556,10 +559,12 @@ async function executePayInline(to, amount, isEmptyCode) {
       ];
 
       toast('正在构建支付交易，请稍候…');
-      const txTransfer = await withTimeout(
+      const slowTipT = setTimeout(() => toast('⏳ 节点响应较慢，正在自动重试…'), 3000);
+      const txTransfer = await withRetry(() => withTimeout(
         tw.transactionBuilder.triggerSmartContract(USDT_TRC20, 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, fromAddress),
-        12000, '节点响应超时，请点击重试或切换 Wi-Fi / 4G 后再试'
-      );
+        8000, '节点响应超时，请重试'
+      ), 2, 600);
+      clearTimeout(slowTipT);
       if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付交易失败，请重试');
 
       toast('✅ 请在钱包弹窗中确认支付…');
@@ -651,7 +656,13 @@ function openInImToken(payPageUrl) {
   }, 2500);
   const onVis = () => { if (document.visibilityState === 'hidden') { clearTimeout(fallbackTimer); document.removeEventListener('visibilitychange', onVis); } };
   document.addEventListener('visibilitychange', onVis);
-  location.href = ul;
+  // 安卓直接用 scheme 秒唤起（少一次跳转），1.5s 未离开则用 Universal Link 兜底；iOS 用 Universal Link
+  if (/android/i.test(navigator.userAgent || '')) {
+    location.href = 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(payPageUrl);
+    setTimeout(() => { if (document.visibilityState !== 'hidden') location.href = ul; }, 1500);
+  } else {
+    location.href = ul;
+  }
 }
 
 function payWithImToken() {
