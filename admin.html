@@ -83,6 +83,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="orders"   onclick="switchTab('orders')">📋 订单管理</button>
     <button class="tab"        data-tab="publish"  onclick="switchTab('publish')">✏️ 发布订单</button>
+    <button class="tab"        data-tab="empty"    onclick="switchTab('empty')">⚡ 空放审核</button>
     <button class="tab"        data-tab="refunds"  onclick="switchTab('refunds')">💸 退款审批</button>
     <button class="tab"        data-tab="users"    onclick="switchTab('users')">👥 用户管理</button>
     <button class="tab"        data-tab="settings" onclick="switchTab('settings')">⚙️ 系统设置</button>
@@ -92,7 +93,7 @@
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
-let state = { orders: [], refunds: [], users: [], config: {} };
+let state = { orders: [], refunds: [], users: [], emptyList: [], config: {} };
 let pollTimer = null;
 
 function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch(e) { return null; } }
@@ -153,16 +154,18 @@ async function adminLogout() {
 }
 
 async function loadAll() {
-  const [ordersRes, refundsRes, usersRes, configRes] = await Promise.all([
+  const [ordersRes, refundsRes, usersRes, configRes, emptyRes] = await Promise.all([
     api('/admin/orders'),
     api('/admin/refunds'),
     api('/admin/users'),
     api('/config'),
+    api('/admin/empty')
   ]);
   state.orders = ordersRes.orders || [];
   state.refunds = refundsRes.refunds || [];
   state.users = usersRes.users || [];
   state.config = configRes.config || {};
+  state.emptyList = emptyRes.list || [];
 }
 
 async function autoFill(silent = true) {
@@ -184,7 +187,6 @@ function startPolling() {
     const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
     if (isTyping) return;
 
-    // ✅ 关键修复：如果当前在“系统设置”标签页，跳过轮询，防止覆盖正在调整的排序
     const activeTab = document.querySelector('.tab.active')?.dataset.tab;
     if (activeTab === 'settings') return;
 
@@ -209,10 +211,56 @@ function renderTab(tab) {
   const el = document.getElementById('admin-content');
   if (tab === 'orders')   return renderOrders(el);
   if (tab === 'publish')  return renderPublish(el);
+  if (tab === 'empty')    return renderEmpty(el);
   if (tab === 'refunds')  return renderRefunds(el);
   if (tab === 'users')    return renderUsers(el);
   if (tab === 'settings') return renderSettings(el);
-}function renderOrders(el) {
+}
+
+function renderEmpty(el) {
+  const list = state.emptyList.slice().sort((a,b) => b.created_at - a.created_at);
+  if (!list.length) { el.innerHTML = `<div class="card"><div class="empty">暂无空放码申请</div></div>`; return; }
+  
+  el.innerHTML = `
+    <div class="card">
+      <h3>空放码审核（${list.length}）</h3>
+      <table class="table">
+        <thead><tr><th>用户</th><th>状态</th><th>空放码</th><th>申请时间</th><th>操作</th></tr></thead>
+        <tbody>
+          ${list.map(r => `
+            <tr>
+              <td><div style="font-weight:700">@${esc(r.nickname || r.username || '-')}</div></td>
+              <td>
+                <span class="badge ${r.status === 'pending' ? 'badge-pending' : r.status === 'approved' ? 'badge-success' : 'badge-gray'}">
+                  ${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已通过' : '已使用'}
+                </span>
+              </td>
+              <td style="font-weight:800; color:var(--red); font-size:16px; letter-spacing:1px;">${r.code || '-'}</td>
+              <td style="font-size:12px;color:var(--ink3)">${fmtDateTime(r.created_at)}</td>
+              <td>
+                ${r.status === 'pending' ? `
+                  <button class="btn btn-primary" style="padding:4px 10px;font-size:12px;" onclick="approveEmpty('${r.id}')">审核通过并出码</button>
+                ` : ''}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function approveEmpty(id) {
+  if (!confirm('确定要通过审核并生成空放码吗？')) return;
+  try {
+    const r = await api('/admin/empty/approve', { method: 'POST', body: { id } });
+    toast('审核通过，生成空放码：' + r.code);
+    await loadAll();
+    renderTab('empty');
+  } catch(e) { toast(e.message); }
+}
+
+function renderOrders(el) {
   const list = state.orders.slice().sort((a,b) => b.createdAt - a.createdAt);
   const pendingCount = state.orders.filter(o => o.status === 'pending').length;
   el.innerHTML = `
