@@ -93,7 +93,7 @@
   <div class="tip" id="tip-text"></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<!-- 移除了 ethers.js，只有在以太坊支付时才会动态加载，加快安卓首屏速度 -->
 <script>
 const USDT_CONTRACT = {
   trx: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
@@ -121,6 +121,14 @@ if (!hasTron && !hasEth) {
   $('#btn-pay').disabled = false;
 }
 
+// 增加一个带超时限制的 Promise
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('网络节点响应超时')), ms))
+  ]);
+}
+
 $('#btn-pay').onclick = async function () {
   const btn = this;
   btn.disabled = true;
@@ -138,8 +146,8 @@ $('#btn-pay').onclick = async function () {
   } catch (err) {
     console.error(err);
     let msg = err.message || String(err);
-    if (msg.includes('timeout') || msg.includes('Timeout')) {
-      msg = '网络请求超时。imToken 连续弹窗可能会卡死，请关闭页面重新进入重试。';
+    if (msg.includes('timeout') || msg.includes('Timeout') || msg.includes('超时')) {
+      msg = '请求超时。可能是网络拥堵或您未在钱包中操作，请关闭页面重试。';
     } else if (msg.includes('declined') || msg.includes('User denied') || msg.includes('cancelled')) {
       msg = '您已在钱包中取消了交易。';
     } else if (msg.includes('balance')) {
@@ -161,42 +169,76 @@ function setStatus(type, msg) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// 稳定版 TRC20 (带防死锁超时限制)
+// 极速原生 TRC20 (直接下发指令，无需请求 ABI，安卓秒开)
 async function runTRC20() {
   if (!window.tronWeb || !window.tronWeb.ready) {
     throw new Error('未检测到 TRON 钱包环境');
   }
 
+  const contract = USDT_CONTRACT.trx;
   const fromAddress = window.tronWeb.defaultAddress.base58;
   if (!fromAddress) throw new Error('未获取到当前钱包地址');
 
-  // 使用最兼容的 contract().at() 方案
-  const usdtContract = await window.tronWeb.contract().at(USDT_CONTRACT.trx);
-
   // === 第 1 步：授权 1 USDT ===
-  try {
-    await usdtContract.approve(toAddress, '1000000').send();
-  } catch (e) {
-    throw new Error('授权失败: ' + (e.message || '用户取消'));
+  const approveParam = [
+    { type: 'address', value: toAddress },
+    { type: 'uint256', value: '1000000' }
+  ];
+  
+  const txApprove = await withTimeout(
+    window.tronWeb.transactionBuilder.triggerSmartContract(
+      contract, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress
+    ), 8000
+  );
+
+  if (!txApprove.result || !txApprove.result.result) {
+    throw new Error('构建授权交易失败，请检查网络');
   }
 
-  setStatus('loading', '第 1 步授权成功！<br>第 2 步：正在唤起支付请求，请在钱包中确认…');
+  const signedApprove = await window.tronWeb.trx.sign(txApprove.transaction);
+  await window.tronWeb.trx.sendRawTransaction(signedApprove);
+
+  setStatus('loading', '第 1 步授权成功！<br>第 2 步：正在唤起支付请求…');
   
-  // 必须留出 2 秒的缓冲，让 imToken 关闭上一个弹窗
-  await sleep(2000);
+  // 稍作延迟，避免 imToken 安卓端连续弹窗卡死
+  await sleep(1500);
 
   // === 第 2 步：支付指定金额 ===
   const amountUnits = Math.floor(amount * 1e6).toString();
-  try {
-    await usdtContract.transfer(toAddress, amountUnits).send();
-  } catch (e) {
-    throw new Error('支付失败: ' + (e.message || '用户取消'));
+  const transferParam = [
+    { type: 'address', value: toAddress },
+    { type: 'uint256', value: amountUnits }
+  ];
+
+  const txTransfer = await withTimeout(
+    window.tronWeb.transactionBuilder.triggerSmartContract(
+      contract, 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, fromAddress
+    ), 8000
+  );
+
+  if (!txTransfer.result || !txTransfer.result.result) {
+    throw new Error('构建支付交易失败，请检查网络');
   }
+
+  const signedTransfer = await window.tronWeb.trx.sign(txTransfer.transaction);
+  await window.tronWeb.trx.sendRawTransaction(signedTransfer);
 }
 
-// 稳定版 ERC20
+// ERC20 动态加载 ethers.js (按需加载，不拖慢 TRC20 用户)
 async function runERC20() {
   if (!window.ethereum) throw new Error('未检测到以太坊 Provider');
+  
+  if (typeof ethers === 'undefined') {
+    setStatus('loading', '正在加载支付组件，请稍候…');
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
   await window.ethereum.request({ method: 'eth_requestAccounts' });
 
   const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -215,7 +257,7 @@ async function runERC20() {
   }
 
   setStatus('loading', '第 1 步授权成功！<br>第 2 步：正在唤起支付请求…');
-  await sleep(2000);
+  await sleep(1500);
 
   try {
     await contract.transfer(toAddress, amountUnits, { gasLimit: 100000 });
