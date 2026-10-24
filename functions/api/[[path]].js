@@ -302,6 +302,11 @@ export async function onRequest(context) {
     }
 
     if (path === '/empty/apply' && method === 'POST') {
+      if (path === '/empty/cancel' && method === 'POST') {
+  if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
+  await db.prepare("DELETE FROM empty_codes WHERE user_id = ? AND status = 'pending'").bind(session.user_id).run();
+  return json({ ok: true });
+}
       if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
       const exist = await db.prepare("SELECT * FROM empty_codes WHERE user_id = ? AND status IN ('pending', 'approved')").bind(session.user_id).first();
       if (exist) return json({ error: '您已有正在处理或可用的空放码' }, 400);
