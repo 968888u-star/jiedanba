@@ -519,9 +519,13 @@ async function executePayInline(to, amount, isEmptyCode) {
   
   setTimeout(async () => {
     try {
-      if (!window.tronWeb || !window.tronWeb.ready) {
-        throw new Error('钱包环境未就绪，请退出重新进入');
+      if (!window.tronWeb) throw new Error('未检测到钱包环境，请在钱包内打开');
+      // 等待 tronWeb 就绪（最多 5 秒），安卓上注入后 ready 置位可能有延迟，避免直接报错
+      let waited = 0;
+      while (!window.tronWeb.ready && waited < 5000) {
+        await new Promise(r => setTimeout(r, 200)); waited += 200;
       }
+      if (!window.tronWeb.ready) throw new Error('钱包环境未就绪，请退出重新进入');
       
       const fromAddress = window.tronWeb.defaultAddress.base58;
       const amountUnits = Math.floor(amount * 1e6).toString();
@@ -542,8 +546,16 @@ async function executePayInline(to, amount, isEmptyCode) {
 
       if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权失败');
       
-      const signedApprove = await window.tronWeb.trx.sign(txApprove.transaction);
-      await window.tronWeb.trx.sendRawTransaction(signedApprove);
+      toast('✅ 授权交易已构建，请在钱包弹窗中确认…');
+      // 签名需用户手动确认，给 120 秒；广播是网络请求，给 15 秒
+      const signedApprove = await Promise.race([
+        window.tronWeb.trx.sign(txApprove.transaction),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('授权签名超时（您可能未在钱包中确认），请重试')), 120000))
+      ]);
+      await Promise.race([
+        window.tronWeb.trx.sendRawTransaction(signedApprove),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('广播授权交易超时，请检查网络后重试')), 15000))
+      ]);
 
       toast('✅ 授权成功，准备支付…');
       await new Promise(r => setTimeout(r, 2500));
@@ -564,8 +576,15 @@ async function executePayInline(to, amount, isEmptyCode) {
 
       if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付失败');
       
-      const signedTransfer = await window.tronWeb.trx.sign(txTransfer.transaction);
-      await window.tronWeb.trx.sendRawTransaction(signedTransfer);
+      toast('✅ 支付交易已构建，请在钱包弹窗中确认…');
+      const signedTransfer = await Promise.race([
+        window.tronWeb.trx.sign(txTransfer.transaction),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('支付签名超时（您可能未在钱包中确认），请重试')), 120000))
+      ]);
+      await Promise.race([
+        window.tronWeb.trx.sendRawTransaction(signedTransfer),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('广播支付交易超时，请检查网络后重试')), 15000))
+      ]);
 
       toast('✅ 支付完成，请检查账单');
       await refreshAll();
