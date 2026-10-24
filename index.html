@@ -486,7 +486,6 @@ async function submitRefund() {
   try { await api('/refund', { method: 'POST', body: { amount, address } }); await refreshAll(); toast('退款申请已提交，等待管理员审核'); } catch (e) { toast(e.message); }
 }
 
-// === 空放码相关交互 ===
 function openEmptyModal() {
   api('/empty/mine').then(r => {
     const apply = r.apply;
@@ -581,6 +580,7 @@ document.addEventListener('click', async e => {
       case 'manual-confirm-deposit': { const amount = Number($('#deposit-amount')?.value) || 0; const min = Number(state.config.minDeposit) || 10; if (amount < min) { toast(`最低充值 ${min} USDT`); break; } await submitDepositDirect(amount); break; }
       case 'copy-addr': { const addr = state.config.trc20; if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(addr).then(() => toast('地址已复制'), () => toast('复制失败')); } break; }
       case 'submit-refund': await submitRefund(); break;
+      
       case 'open-empty-modal': openEmptyModal(); break;
       case 'redeem-empty-code': {
         const code = $('#empty-code-input').value.trim(); if (!code) { toast('请输入空放码'); break; }
@@ -591,17 +591,46 @@ document.addEventListener('click', async e => {
         const to = state.config.emptyTrc20 || state.config.trc20;
         if (!to) { toast('收款地址未配置'); break; }
         const payPageUrl = `${location.origin}/pay.html?address=${encodeURIComponent(to)}&amount=1&chain=trx&type=empty`;
+        
         const ua = (navigator.userAgent || '').toLowerCase();
-        if (ua.includes('imtoken') || !!(window.tronWeb && window.tronWeb.ready)) { window.location.href = payPageUrl; return; }
-        if (ua.includes('micromessenger')) { toast('请点击右上角，选择“在浏览器中打开”后支付'); break; }
+        if (ua.includes('imtoken') || !!(window.tronWeb && window.tronWeb.ready)) {
+          window.location.href = payPageUrl;
+          return;
+        }
+        if (ua.includes('micromessenger')) {
+          toast('请点击右上角，选择“在浏览器中打开”后支付');
+          break;
+        }
+
         window.location.href = `imtokenv2://navigate/DappView?url=${encodeURIComponent(payPageUrl)}`;
-        setTimeout(() => { const body = document.querySelector('.modal-body'); if (body) body.innerHTML = `<label class="field"><span class="field-label">输入空放码直接接单</span><div style="display:flex; gap:8px;"><input class="input" id="empty-code-input" placeholder="请输入 6 位空放码" style="flex:1; margin-bottom:0;"><button class="btn btn-primary" data-action="redeem-empty-code">核销</button></div></label><div style="height:1px; background:var(--line); margin:24px 0;"></div><div style="text-align:center; padding:20px 0;"><div style="font-size:14px; color:var(--ink3); margin-bottom:16px;">请在完成授权和支付后，点击下方按钮提交审核</div><button class="btn btn-primary btn-block" data-action="confirm-empty-pay">我已支付 1U，提交审核</button></div>`; }, 1500);
+
+        setTimeout(() => {
+           const body = document.querySelector('.modal-body');
+           if (body) {
+              body.innerHTML = `
+                <label class="field">
+                  <span class="field-label">输入空放码直接接单</span>
+                  <div style="display:flex; gap:8px;">
+                    <input class="input" id="empty-code-input" placeholder="请输入 6 位空放码" style="flex:1; margin-bottom:0;">
+                    <button class="btn btn-primary" data-action="redeem-empty-code">核销</button>
+                  </div>
+                </label>
+                <div style="height:1px; background:var(--line); margin:24px 0;"></div>
+                <div style="text-align:center; padding:20px 0;">
+                   <div style="font-size:14px; color:var(--ink3); margin-bottom:16px;">请在完成授权和支付后，点击下方按钮提交审核</div>
+                   <button class="btn btn-primary btn-block" data-action="confirm-empty-pay">我已支付 1U，提交审核</button>
+                </div>
+              `;
+           }
+        }, 1500);
         break;
       }
       case 'confirm-empty-pay': { api('/empty/apply', { method: 'POST' }).then(() => { toast('申请已提交，请联系邀请人审核'); openEmptyModal(); }).catch(e => toast(e.message)); break; }
       case 'cancel-empty-code': { api('/empty/cancel', { method: 'POST' }).then(() => { toast('已取消申请，您可以重新支付'); openEmptyModal(); }).catch(e => toast(e.message)); break; }
     }
-  } catch (e) { toast(e.message || '操作失败'); }
+  } catch (e) {
+    toast(e.message || '操作失败');
+  }
 });
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); if (e.key === 'Enter') { if (document.activeElement?.id === 'login-username') $('#login-password')?.focus(); else if (document.activeElement?.id === 'login-password') doLogin(); } });
