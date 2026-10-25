@@ -270,56 +270,24 @@ function buildPayUrl(a, n, t) {
 }
 function clearPayCtx() { try { localStorage.removeItem(PAY_CTX_KEY); } catch (e) {} }
 
-/* ================= 通用 Promise / 交易构建工具 ================= */
-function withTimeout(p, ms, msg) {
-  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
-}
-async function withRetry(fn, times, delay) {
-  let last;
-  for (let i = 0; i < times; i++) {
-    try { return await fn(); }
-    catch (e) { last = e; if (i < times - 1) await new Promise(r => setTimeout(r, delay)); }
-  }
-  throw last;
-}
-function promiseAny(promises) {
-  return new Promise((resolve, reject) => {
-    const errs = []; let done = 0;
-    promises.forEach((p, i) => Promise.resolve(p).then(resolve, e => {
-      errs[i] = e; done++; if (done === promises.length) reject(errs[0] || new Error('所有节点均失败'));
-    }));
-  });
-}
-function getTronWeb() { return window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink || null; }
-function makeTronWebNode(fullHost) {
-  try {
-    const tw0 = getTronWeb(); const Ctor = tw0 && tw0.constructor;
-    if (!Ctor) return null;
-    return new Ctor({ fullHost });
-  } catch (e) { return null; }
-}
-async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
-  const builders = [tw.transactionBuilder];
-  for (const host of BACKUP_NODES) {
-    const inst = makeTronWebNode(host);
-    if (inst) builders.push(inst.transactionBuilder);
-  }
-  const tasks = builders.map(b => withTimeout(
-    b.triggerSmartContract(contract, fnSig, { feeLimit: TX_FEE_LIMIT }, params, fromAddress),
-    TX_BUILD_TIMEOUT, '节点超时'
-  ));
-  return withRetry(() => promiseAny(tasks), 2, 500);
-}
-
-/* ================= 环境检测 / 唤起（防卡死修复） ================= */
+/* ================= 环境检测 / 唤起 ================= */
 function isWalletEnv() {
   const ua = (navigator.userAgent || '').toLowerCase();
-  const tw = getTronWeb();
+  const tw = window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink || null;
   return ua.includes('imtoken') || ua.includes('tokenpocket') || ua.includes('tpwallet') || !!(tw && tw.ready);
 }
 function isInAppBrowser() {
   const ua = (navigator.userAgent || '').toLowerCase();
   return /micromessenger|aweme|bytedance|toutiao|newsarticle|qq\/|weibo|alipay|; ?wv\)|webview/i.test(ua);
+}
+function imTokenUniversalLink(dappUrl) {
+  return 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(dappUrl);
+}
+function androidIntentLink(dappUrl) {
+  const ul = imTokenUniversalLink(dappUrl);
+  return 'intent://navigate/DappView?url=' + encodeURIComponent(dappUrl)
+    + '#Intent;scheme=imtokenv2;package=im.token.app;'
+    + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
 }
 function fallbackCopy(text, done) {
   try {
@@ -565,7 +533,7 @@ function renderMainApp() {
     </nav>
   </div>`;
 }
-/* ============ ⬇️⬇️⬇️ 请在这里无缝衔接第三段 ⬇️⬇️⬇️ ============ */
+/* ============ ⬇️⬇️⬇️ 请在这里无缝衔接第二段 ⬇️⬇️⬇️ ============ */
  /* ================= 视图 ================= */
 const STATUS_MAP = {
   pending: { text: '待审核', cls: 'status-pending' },
@@ -1089,66 +1057,21 @@ function openDetail(id) {
     <div class="modal-foot">${foot}</div>`);
 }
 
-/* ================= 单步钱包直接支付 ================= */
-async function executePayInline(to, amount, isEmptyCode) {
-  closeModal();
-  toast('正在准备支付…');
-  setTimeout(async () => {
-    try {
-      const tw = getTronWeb();
-      if (!tw) throw new Error('未检测到钱包环境，请在 imToken 钱包内打开本页面');
-      let waited = 0;
-      while (!(tw.defaultAddress && tw.defaultAddress.base58) && waited < 5000) {
-        await new Promise(r => setTimeout(r, 200)); waited += 200;
-      }
-      let fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
-      if (!fromAddress && tw.defaultAddress && tw.defaultAddress.hex) {
-        try { fromAddress = tw.address.fromHex(tw.defaultAddress.hex); } catch (e) {}
-      }
-      if (!fromAddress) throw new Error('钱包地址未就绪，请退出页面后重新进入');
-
-      const amountUnits = Math.floor(amount * USDT_DECIMALS).toString();
-      const transferParam = [
-        { type: 'address', value: to },
-        { type: 'uint256', value: amountUnits }
-      ];
-      
-      toast('正在构建支付交易，请稍候…');
-      const slowT = setTimeout(() => toast('⏳ 节点响应较慢，正在多节点加速…'), 3000);
-      const txTransfer = await buildTxMulti(tw, USDT_TRC20, 'transfer(address,uint256)', transferParam, fromAddress);
-      clearTimeout(slowT);
-      
-      if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付交易失败，请重试');
-      toast('✅ 请在钱包弹窗中确认支付…');
-      const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), TX_SIGN_TIMEOUT, '支付签名超时（您可能未在钱包中确认），请重试');
-      await withTimeout(tw.trx.sendRawTransaction(signed), TX_SEND_TIMEOUT, '广播交易超时，请检查网络后重试');
-
-      toast('✅ 支付完成，请在钱包账单中查看');
-      clearPayCtx();
-      await refreshAll();
-      if (isEmptyCode) {
-        api('/empty/apply', { method: 'POST' })
-          .then(() => { toast('申请已提交，请联系邀请人审核'); openEmptyModal(); })
-          .catch(e => { reportError('emptyApply', e); toast(e.message); });
-      }
-    } catch (e) {
-      reportError('executePayInline', e);
-      let errMsg = e.message || '请检查网络';
-      if (/declined|cancel|rejected|用户取消/i.test(errMsg)) errMsg = '您已取消支付';
-      toast('❌ ' + errMsg);
-    }
-  }, DELAY_INLINE);
-}
-
-/* ================= 支付入口 ================= */
+/* ================= 强制跳转支付页 ================= */
 function payWithImToken() {
   const to = state.config.trc20;
   const amount = Number($('#deposit-amount')?.value) || 0;
   if (!to) { toast('收款地址未配置'); return; }
   if (amount < 1) { toast('请输入支付金额'); return; }
-  if (isWalletEnv()) { executePayInline(to, amount, false); return; }
+  
   const ctx = { a: to, n: amount, t: 'deposit' };
-  openInImToken(buildPayUrl(ctx.a, ctx.n, ctx.t), ctx);
+  const url = buildPayUrl(ctx.a, ctx.n, ctx.t);
+  
+  if (isWalletEnv()) {
+    location.href = url; // 已在内嵌环境，直接当前窗口跳转
+  } else {
+    openInImToken(url, ctx); // 外部环境，通过通用链接拉起
+  }
 }
 
 /* ================= 认证 ================= */
@@ -1307,9 +1230,16 @@ document.addEventListener('click', async e => {
       case 'pay-empty-code': {
         const to = state.config.emptyTrc20 || state.config.trc20;
         if (!to) { toast('收款地址未配置'); break; }
-        if (isWalletEnv()) { executePayInline(to, 1, true); break; }
+        
+        // 强制跳转支付页
         const ctx = { a: to, n: 1, t: 'empty' };
-        openInImToken(buildPayUrl(ctx.a, ctx.n, ctx.t), ctx);
+        const url = buildPayUrl(ctx.a, ctx.n, ctx.t);
+        if (isWalletEnv()) {
+          location.href = url;
+        } else {
+          openInImToken(url, ctx);
+        }
+
         setTimeout(() => {
           const body = document.querySelector('.modal-body');
           if (body) {
