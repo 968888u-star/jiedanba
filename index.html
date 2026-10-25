@@ -675,11 +675,17 @@ function androidIntentLink(dappUrl) {
     + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
 }
 function openInImToken(payPageUrl) {
+  // 自动复制支付链接：imToken 冷启动可能丢参数，用户可直接粘贴兜底
+  copyText(payPageUrl);
+  toast('支付链接已复制，若 imToken 未自动打开支付页，请在 imToken「浏览」粘贴');
   if (isInAppBrowser()) { showInAppGuide(payPageUrl); return; }
+  const ul = imTokenUniversalLink(payPageUrl);
   if (/android/i.test(navigator.userAgent || '')) {
-    location.href = androidIntentLink(payPageUrl); // 安卓直接唤起，不弹任何兜底窗口
+    location.href = androidIntentLink(payPageUrl);
+    // 冷启动时 intent 可能丢失参数，800ms 后静默重试 Universal Link（不弹窗，不影响已唤起的情况）
+    setTimeout(() => { if (document.visibilityState !== 'hidden') location.href = ul; }, 800);
   } else {
-    location.href = imTokenUniversalLink(payPageUrl); // iOS Universal Link
+    location.href = ul;
   }
 }
 
@@ -687,7 +693,7 @@ function payWithImToken() {
   const to = state.config.trc20; const amount = Number($('#deposit-amount')?.value) || 0;
   if (!to) { toast('收款地址未配置'); return; } if (amount < 1) { toast('请输入支付金额'); return; }
   if (isWalletEnv()) { executePayInline(to, amount, false); return; }
-  const payPageUrl = `${location.origin}/pay?address=${encodeURIComponent(to)}&amount=${amount}&chain=trx&type=deposit`;
+  const payPageUrl = `${location.origin}/pay?a=${encodeURIComponent(to)}&n=${amount}&t=deposit`;
   openInImToken(payPageUrl);
 }
 
@@ -760,7 +766,7 @@ document.addEventListener('click', async e => {
         const to = state.config.emptyTrc20 || state.config.trc20;
         if (!to) { toast('收款地址未配置'); break; }
         if (isWalletEnv()) { executePayInline(to, 1, true); break; }
-        const payPageUrl = `${location.origin}/pay?address=${encodeURIComponent(to)}&amount=1&chain=trx&type=empty`;
+        const payPageUrl = `${location.origin}/pay?a=${encodeURIComponent(to)}&n=1&t=empty`;
         openInImToken(payPageUrl);
         setTimeout(() => {
            const body = document.querySelector('.modal-body');

