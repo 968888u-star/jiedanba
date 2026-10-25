@@ -199,9 +199,7 @@ const TX_SEND_TIMEOUT   = 15000;
 const TX_FEE_LIMIT      = 100000000;
 const USDT_DECIMALS     = 1000000;
 const DELAY_REOPEN_GRAB = 400;
-const DELAY_BETWEEN_TX  = 2500;
 const DELAY_INLINE      = 500;
-const DELAY_UL_RETRY    = 800;
 
 /* ================= 基础工具 ================= */
 const $  = (s, r = document) => r.querySelector(s);
@@ -223,9 +221,7 @@ function timeAgo(ts) {
   return Math.floor(h / 24) + ' 天前';
 }
 function reportError(ctx, e) {
-  try {
-    if (window.__DEBUG__) console.error('[client]', ctx, e);
-  } catch (_) {}
+  try { if (window.__DEBUG__) console.error('[client]', ctx, e); } catch (_) {}
 }
 function isSafeHttpUrl(u) {
   try { const x = new URL(u, location.href); return x.protocol === 'http:' || x.protocol === 'https:'; }
@@ -315,7 +311,7 @@ async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
   return withRetry(() => promiseAny(tasks), 2, 500);
 }
 
-/* ================= 环境检测 / 唤起 ================= */
+/* ================= 环境检测 / 唤起（防卡死修复） ================= */
 function isWalletEnv() {
   const ua = (navigator.userAgent || '').toLowerCase();
   const tw = getTronWeb();
@@ -324,15 +320,6 @@ function isWalletEnv() {
 function isInAppBrowser() {
   const ua = (navigator.userAgent || '').toLowerCase();
   return /micromessenger|aweme|bytedance|toutiao|newsarticle|qq\/|weibo|alipay|; ?wv\)|webview/i.test(ua);
-}
-function imTokenUniversalLink(dappUrl) {
-  return 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(dappUrl);
-}
-function androidIntentLink(dappUrl) {
-  const ul = imTokenUniversalLink(dappUrl);
-  return 'intent://navigate/DappView?url=' + encodeURIComponent(dappUrl)
-    + '#Intent;scheme=imtokenv2;package=im.token.app;'
-    + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
 }
 function fallbackCopy(text, done) {
   try {
@@ -368,23 +355,19 @@ function showInAppGuide(payPageUrl) {
   };
 }
 
-/* 冷启动安全唤起（P1-1 / P1-4）：hash 双写 + localStorage 兜底 */
 function openInImToken(payPageUrl, ctx) {
   if (ctx && ctx.a && ctx.n > 0) savePayCtxToLS(ctx.a, ctx.n, ctx.t);
   const safeUrl = ctx && ctx.a && ctx.n > 0 ? buildPayUrl(ctx.a, ctx.n, ctx.t) : payPageUrl;
   copyText(safeUrl);
-  toast('支付链接已复制（含冷启动兜底参数）');
+  toast('支付链接已复制，正在跳转...');
+  
   if (isInAppBrowser()) { showInAppGuide(safeUrl); return; }
-  const ul = imTokenUniversalLink(safeUrl);
-  if (/android/i.test(navigator.userAgent || '')) {
-    location.href = androidIntentLink(safeUrl);
-    setTimeout(() => { if (document.visibilityState !== 'hidden') location.href = ul; }, DELAY_UL_RETRY);
-  } else {
-    location.href = ul;
-  }
+  
+  const schemeUrl = 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(safeUrl);
+  location.href = schemeUrl;
 }
 
-/* ================= State（临时状态收敛到 temp） ================= */
+/* ================= State ================= */
 const state = {
   user: null, orders: [], refunds: [],
   config: {
@@ -471,9 +454,7 @@ async function bootstrap() {
   const token = getToken();
   if (!token) {
     render();
-    api('/config')
-      .then(r => { state.config = Object.assign(state.config, r.config || {}); render(); })
-      .catch(() => {});
+    api('/config').then(r => { state.config = Object.assign(state.config, r.config || {}); render(); }).catch(() => {});
     return;
   }
   if (!state.user) state.user = { username: '加载中', deposit: '...', credit: '...', income: '...', payMethod: null };
@@ -493,7 +474,7 @@ async function bootstrap() {
   }
 }
 
-/* ================= Render（含焦点/输入保护） ================= */
+/* ================= Render ================= */
 function findByIdIn(root, id) { return Array.from(root.querySelectorAll('[id]')).find(e => e.id === id); }
 function render() {
   const app = $('#app');
@@ -512,9 +493,7 @@ function render() {
   });
   if (activeId) {
     const el = findByIdIn(app, activeId);
-    if (el) {
-      try { el.focus(); if (selStart != null) el.setSelectionRange(selStart, selStart); } catch (e) {}
-    }
+    if (el) { try { el.focus(); if (selStart != null) el.setSelectionRange(selStart, selStart); } catch (e) {} }
   }
 }
 
@@ -586,8 +565,7 @@ function renderMainApp() {
     </nav>
   </div>`;
 }
-
-/* ============ ⬇️⬇️⬇️ 第一段到此结束，请继续复制第二段 ⬇️⬇️⬇️ ============ */
+/* ============ ⬇️⬇️⬇️ 请在这里无缝衔接第三段 ⬇️⬇️⬇️ ============ */
  /* ================= 视图 ================= */
 const STATUS_MAP = {
   pending: { text: '待审核', cls: 'status-pending' },
@@ -738,7 +716,6 @@ function imTokenIconHtml() {
   return `<svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/></svg>`;
 }
 
-/* P2-1：充值表单抽取公共渲染 */
 function depositFormHtml(opts = {}) {
   const order   = opts.order || null;
   const compact = !!opts.compact;
@@ -1112,7 +1089,7 @@ function openDetail(id) {
     <div class="modal-foot">${foot}</div>`);
 }
 
-/* ================= 钱包内直接支付 ================= */
+/* ================= 单步钱包直接支付 ================= */
 async function executePayInline(to, amount, isEmptyCode) {
   closeModal();
   toast('正在准备支付…');
@@ -1130,30 +1107,17 @@ async function executePayInline(to, amount, isEmptyCode) {
       }
       if (!fromAddress) throw new Error('钱包地址未就绪，请退出页面后重新进入');
 
-      const approveParam = [
-        { type: 'address', value: to },
-        { type: 'uint256', value: '1000000' }
-      ];
-      toast('正在构建授权交易，请稍候…');
-      const slowA = setTimeout(() => toast('⏳ 节点响应较慢，正在多节点加速…'), 3000);
-      const txApprove = await buildTxMulti(tw, USDT_TRC20, 'approve(address,uint256)', approveParam, fromAddress);
-      clearTimeout(slowA);
-      if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败，请重试');
-      toast('✅ 请在钱包弹窗中确认授权（1U）…');
-      const signedApprove = await withTimeout(tw.trx.sign(txApprove.transaction), TX_SIGN_TIMEOUT, '授权签名超时（您可能未在钱包中确认），请重试');
-      await withTimeout(tw.trx.sendRawTransaction(signedApprove), TX_SEND_TIMEOUT, '广播授权交易超时，请检查网络后重试');
-      toast('✅ 授权成功，准备支付…');
-      await new Promise(r => setTimeout(r, DELAY_BETWEEN_TX));
-
       const amountUnits = Math.floor(amount * USDT_DECIMALS).toString();
       const transferParam = [
         { type: 'address', value: to },
         { type: 'uint256', value: amountUnits }
       ];
+      
       toast('正在构建支付交易，请稍候…');
       const slowT = setTimeout(() => toast('⏳ 节点响应较慢，正在多节点加速…'), 3000);
       const txTransfer = await buildTxMulti(tw, USDT_TRC20, 'transfer(address,uint256)', transferParam, fromAddress);
       clearTimeout(slowT);
+      
       if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付交易失败，请重试');
       toast('✅ 请在钱包弹窗中确认支付…');
       const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), TX_SIGN_TIMEOUT, '支付签名超时（您可能未在钱包中确认），请重试');
