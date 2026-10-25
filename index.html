@@ -641,34 +641,19 @@ function showInAppGuide(payPageUrl) {
   };
 }
 // 唤起 imToken：优先 Universal Link；2.5 秒未离开页面则给出手动兜底
+// 安卓 intent:// 协议：直接指定 imToken 包名秒开 DApp 浏览器，未安装则兜底 Universal Link
+function androidIntentLink(dappUrl) {
+  const ul = imTokenUniversalLink(dappUrl);
+  return 'intent://navigate/DappView?url=' + encodeURIComponent(dappUrl)
+    + '#Intent;scheme=imtokenv2;package=im.token.app;'
+    + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
+}
 function openInImToken(payPageUrl) {
   if (isInAppBrowser()) { showInAppGuide(payPageUrl); return; }
-  const ul = imTokenUniversalLink(payPageUrl);
-  const fallbackTimer = setTimeout(() => {
-    if (document.visibilityState === 'hidden') return;
-    if (document.getElementById('__wallet_fallback__')) return;
-    const panel = document.createElement('div');
-    panel.id = '__wallet_fallback__';
-    panel.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99998;max-width:340px;width:calc(100% - 32px);background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.25);padding:18px;text-align:center;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;';
-    panel.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(payPageUrl) + '" style="width:110px;height:110px;margin:0 auto 8px;display:block;border-radius:8px;background:#fff;padding:5px;" alt="支付二维码">'
-      + '<div style="font-size:11px;color:#8d93a6;margin-bottom:10px;">imToken 扫码打开 · 或点下方按钮</div>'
-      + '<div style="font-size:15px;font-weight:800;color:#12141d;margin-bottom:6px;">没有自动打开 imToken？</div>'
-      + '<div style="font-size:12.5px;color:#8d93a6;margin-bottom:14px;line-height:1.6;">请确认已安装 imToken，或复制支付链接后在 imToken「浏览」中粘贴打开。</div>'
-      + '<button id="__retry_open__" style="width:100%;padding:12px;border:none;border-radius:10px;background:#f0a020;color:#fff;font-weight:800;font-size:14px;margin-bottom:8px;cursor:pointer;">重新打开 imToken</button>'
-      + '<button id="__copy_link__" style="width:100%;padding:11px;border:1px solid #e8eaf1;background:#fff;color:#5b6070;border-radius:10px;font-size:13px;cursor:pointer;">复制支付链接</button>'
-      + '<div id="__copy_tip__" style="font-size:12px;color:#16a34a;margin-top:8px;display:none;">✅ 已复制，打开 imToken → 浏览 → 粘贴网址</div>';
-    document.body.appendChild(panel);
-    panel.querySelector('#__retry_open__').onclick = () => { location.href = ul; };
-    panel.querySelector('#__copy_link__').onclick = () => { copyText(payPageUrl, () => { panel.querySelector('#__copy_tip__').style.display = 'block'; }); };
-  }, 1500);
-  const onVis = () => { if (document.visibilityState === 'hidden') { clearTimeout(fallbackTimer); document.removeEventListener('visibilitychange', onVis); } };
-  document.addEventListener('visibilitychange', onVis);
-  // 安卓直接用 scheme 秒唤起（少一次跳转），1.5s 未离开则用 Universal Link 兜底；iOS 用 Universal Link
   if (/android/i.test(navigator.userAgent || '')) {
-    location.href = 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(payPageUrl);
-    setTimeout(() => { if (document.visibilityState !== 'hidden') location.href = ul; }, 1500);
+    location.href = androidIntentLink(payPageUrl); // 安卓直接唤起，不弹任何兜底窗口
   } else {
-    location.href = ul;
+    location.href = imTokenUniversalLink(payPageUrl); // iOS Universal Link
   }
 }
 

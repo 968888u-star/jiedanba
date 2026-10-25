@@ -122,10 +122,15 @@ async function buildTxWithTip(tw, fnSig, params, fromAddress) {
   try { return await buildTxCore(tw, fnSig, params, fromAddress); }
   finally { clearTimeout(slowTimer); }
 }
+function androidIntentLink(dappUrl) {
+  const ul = imTokenUniversalLink(dappUrl);
+  return 'intent://navigate/DappView?url=' + encodeURIComponent(dappUrl)
+    + '#Intent;scheme=imtokenv2;package=im.token.app;'
+    + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
+}
 function openWalletNow() {
-  const ul = imTokenUniversalLink(payPageUrl);
-  if (isAndroid()) { location.href = imTokenSchemeLink(payPageUrl); setTimeout(() => { if (document.visibilityState !== 'hidden') location.href = ul; }, 1500); }
-  else { location.href = ul; }
+  if (isAndroid()) { location.href = androidIntentLink(payPageUrl); }
+  else { location.href = imTokenUniversalLink(payPageUrl); }
 }
 
 function showOpenWalletUI(reason) {
