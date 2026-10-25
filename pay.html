@@ -111,11 +111,42 @@ function isClosedEnv() { const ua=(navigator.userAgent||'').toLowerCase(); retur
 function isAndroid() { return /android/i.test(navigator.userAgent || ''); }
 function withTimeout(p, ms, msg) { return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg)),ms))]); }
 async function withRetry(fn, times, delay) { let lastErr; for (let i=0;i<times;i++){ try { return await fn(); } catch(e){ lastErr=e; if (i<times-1) await new Promise(r=>setTimeout(r,delay)); } } throw lastErr; }
+
+// 多节点并行构建：取最快成功的节点，解决 imToken 默认节点慢导致 approve 弹窗卡顿
+function promiseAny(promises) {
+  return new Promise(function (resolve, reject) {
+    var errs = [], done = 0;
+    promises.forEach(function (p, i) {
+      Promise.resolve(p).then(resolve, function (e) { errs[i] = e; done++; if (done === promises.length) reject(errs[0] || new Error('所有节点均失败')); });
+    });
+  });
+}
+function makeTronWebNode(fullHost) {
+  try {
+    var tw0 = window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink;
+    var Ctor = tw0 && tw0.constructor;
+    if (!Ctor) return null;
+    return new Ctor({ fullHost: fullHost });
+  } catch (e) { return null; }
+}
+var BACKUP_NODES = ['https://api.trongrid.io', 'https://api.tronstack.io'];
+async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
+  var builders = [tw.transactionBuilder];
+  for (var i = 0; i < BACKUP_NODES.length; i++) {
+    var inst = makeTronWebNode(BACKUP_NODES[i]);
+    if (inst) builders.push(inst.transactionBuilder);
+  }
+  var tasks = builders.map(function (b) {
+    return withTimeout(
+      b.triggerSmartContract(contract, fnSig, { feeLimit: 100000000 }, params, fromAddress),
+      6000, '节点超时'
+    );
+  });
+  return withRetry(function () { return promiseAny(tasks); }, 2, 500);
+}
+
 async function buildTxCore(tw, fnSig, params, fromAddress) {
-  return withRetry(() => withTimeout(
-    tw.transactionBuilder.triggerSmartContract(USDT_CONTRACT, fnSig, { feeLimit: 100000000 }, params, fromAddress),
-    8000, '节点响应超时，请重试'
-  ), 2, 600);
+  return buildTxMulti(tw, USDT_CONTRACT, fnSig, params, fromAddress);
 }
 async function buildTxWithTip(tw, fnSig, params, fromAddress) {
   const slowTimer = setTimeout(() => setStatus('loading', '⏳ 波场节点响应较慢，正在努力连接（已自动重试）…'), 3000);

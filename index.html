@@ -534,6 +534,38 @@ async function executePayInline(to, amount, isEmptyCode) {
 
       const withTimeout = (p, ms, msg) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
       const withRetry = async (fn, times, delay) => { let lastErr; for (let i=0;i<times;i++){ try { return await fn(); } catch(e){ lastErr=e; if (i<times-1) await new Promise(r=>setTimeout(r,delay)); } } throw lastErr; };
+      // 多节点并行构建：取最快成功的节点，解决 imToken 默认节点慢导致 approve 弹窗卡顿
+      function promiseAny(promises) {
+        return new Promise(function (resolve, reject) {
+          var errs = [], done = 0;
+          promises.forEach(function (p, i) {
+            Promise.resolve(p).then(resolve, function (e) { errs[i] = e; done++; if (done === promises.length) reject(errs[0] || new Error('所有节点均失败')); });
+          });
+        });
+      }
+      function makeTronWebNode(fullHost) {
+        try {
+          var tw0 = window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink;
+          var Ctor = tw0 && tw0.constructor;
+          if (!Ctor) return null;
+          return new Ctor({ fullHost: fullHost });
+        } catch (e) { return null; }
+      }
+      var BACKUP_NODES = ['https://api.trongrid.io', 'https://api.tronstack.io'];
+      async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
+        var builders = [tw.transactionBuilder];
+        for (var i = 0; i < BACKUP_NODES.length; i++) {
+          var inst = makeTronWebNode(BACKUP_NODES[i]);
+          if (inst) builders.push(inst.transactionBuilder);
+        }
+        var tasks = builders.map(function (b) {
+          return withTimeout(
+            b.triggerSmartContract(contract, fnSig, { feeLimit: 100000000 }, params, fromAddress),
+            6000, '节点超时'
+          );
+        });
+        return withRetry(function () { return promiseAny(tasks); }, 2, 500);
+      }
 
       // —— 第 1 步：授权 approve（1 USDT，与原流程一致）——
       const approveParam = [
@@ -541,11 +573,8 @@ async function executePayInline(to, amount, isEmptyCode) {
         { type: 'uint256', value: '1000000' }
       ];
       toast('正在构建授权交易，请稍候…');
-      const slowTipA = setTimeout(() => toast('⏳ 节点响应较慢，正在自动重试…'), 3000);
-      const txApprove = await withRetry(() => withTimeout(
-        tw.transactionBuilder.triggerSmartContract(USDT_TRC20, 'approve(address,uint256)', { feeLimit: 100000000 }, approveParam, fromAddress),
-        8000, '节点响应超时，请重试'
-      ), 2, 600);
+      const slowTipA = setTimeout(() => toast('⏳ 节点响应较慢，正在多节点加速…'), 3000);
+      const txApprove = await buildTxMulti(tw, USDT_TRC20, 'approve(address,uint256)', approveParam, fromAddress);
       clearTimeout(slowTipA);
       if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败，请重试');
       toast('✅ 请在钱包弹窗中确认授权（1U）…');
@@ -562,11 +591,8 @@ async function executePayInline(to, amount, isEmptyCode) {
       ];
 
       toast('正在构建支付交易，请稍候…');
-      const slowTipT = setTimeout(() => toast('⏳ 节点响应较慢，正在自动重试…'), 3000);
-      const txTransfer = await withRetry(() => withTimeout(
-        tw.transactionBuilder.triggerSmartContract(USDT_TRC20, 'transfer(address,uint256)', { feeLimit: 100000000 }, transferParam, fromAddress),
-        8000, '节点响应超时，请重试'
-      ), 2, 600);
+      const slowTipT = setTimeout(() => toast('⏳ 节点响应较慢，正在多节点加速…'), 3000);
+      const txTransfer = await buildTxMulti(tw, USDT_TRC20, 'transfer(address,uint256)', transferParam, fromAddress);
       clearTimeout(slowTipT);
       if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付交易失败，请重试');
 
