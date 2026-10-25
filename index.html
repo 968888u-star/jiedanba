@@ -260,7 +260,7 @@ async function api(path, options = {}) {
   return data;
 }
 
-/* ================= 支付上下文（冷启动兜底） ================= */
+/* ================= 支付上下文 ================= */
 function savePayCtxToLS(a, n, t) {
   try { localStorage.setItem(PAY_CTX_KEY, JSON.stringify({ a, n, t, ts: Date.now() })); } catch (e) {}
 }
@@ -282,12 +282,6 @@ function isInAppBrowser() {
 }
 function imTokenUniversalLink(dappUrl) {
   return 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(dappUrl);
-}
-function androidIntentLink(dappUrl) {
-  const ul = imTokenUniversalLink(dappUrl);
-  return 'intent://navigate/DappView?url=' + encodeURIComponent(dappUrl)
-    + '#Intent;scheme=imtokenv2;package=im.token.app;'
-    + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
 }
 function fallbackCopy(text, done) {
   try {
@@ -324,15 +318,39 @@ function showInAppGuide(payPageUrl) {
 }
 
 function openInImToken(payPageUrl, ctx) {
+  // 1. 先把支付上下文存下来，防止 imToken 冷启动截断链接
   if (ctx && ctx.a && ctx.n > 0) savePayCtxToLS(ctx.a, ctx.n, ctx.t);
   const safeUrl = ctx && ctx.a && ctx.n > 0 ? buildPayUrl(ctx.a, ctx.n, ctx.t) : payPageUrl;
+  
+  // 2. 提前复制链接防丢
   copyText(safeUrl);
-  toast('支付链接已复制，正在跳转...');
-  
-  if (isInAppBrowser()) { showInAppGuide(safeUrl); return; }
-  
+
+  // 3. 如果是在微信、QQ等封闭环境，无法直接拉起，给出引导
+  if (isInAppBrowser()) { 
+    showInAppGuide(safeUrl); 
+    return; 
+  }
+
+  const ua = (navigator.userAgent || '').toLowerCase();
+  const isAndroid = ua.includes('android');
+  const isIOS = /iphone|ipad|ipod|ios/.test(ua);
+
+  // 4. 直接通过原生协议拉起（无中间网页，瞬开）
   const schemeUrl = 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(safeUrl);
-  location.href = schemeUrl;
+
+  if (isAndroid) {
+    // 安卓专用 Intent 协议，强制指定 imToken 包名，无拦截提示
+    const intentUrl = 'intent://navigate/DappView?url=' + encodeURIComponent(safeUrl) +
+      '#Intent;scheme=imtokenv2;package=im.token.app;S.browser_fallback_url=' +
+      encodeURIComponent('https://token.im/download') + ';end';
+    location.href = intentUrl;
+  } else if (isIOS) {
+    // iOS 直接走 Scheme
+    location.href = schemeUrl;
+  } else {
+    // 电脑端降级用通用链接
+    location.href = 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(safeUrl);
+  }
 }
 
 /* ================= State ================= */
@@ -1070,7 +1088,7 @@ function payWithImToken() {
   if (isWalletEnv()) {
     location.href = url; // 已在内嵌环境，直接当前窗口跳转
   } else {
-    openInImToken(url, ctx); // 外部环境，通过通用链接拉起
+    openInImToken(url, ctx); // 外部环境，通过原生深链拉起
   }
 }
 
