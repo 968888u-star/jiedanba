@@ -521,12 +521,15 @@ async function executePayInline(to, amount, isEmptyCode) {
       const tw = getTronWeb();
       if (!tw) throw new Error('未检测到钱包环境，请在 imToken 钱包内打开本页面');
       // 等待钱包就绪 + 地址注入（安卓 imToken 上 ready 先于地址注入，必须同时等待地址非空）
+      // imToken 部分版本 ready 恒为 false，不强制等 ready；只要地址可用即继续（最多 5 秒）
       let waited = 0;
-      while ((!tw.ready || !(tw.defaultAddress && tw.defaultAddress.base58)) && waited < 8000) {
+      while (!(tw.defaultAddress && tw.defaultAddress.base58) && waited < 5000) {
         await new Promise(r => setTimeout(r, 200)); waited += 200;
       }
-      if (!tw.ready) throw new Error('钱包环境未就绪，请退出页面后重新进入');
-      const fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
+      let fromAddress = tw.defaultAddress && tw.defaultAddress.base58;
+      if (!fromAddress && tw.defaultAddress && tw.defaultAddress.hex) {
+        try { fromAddress = tw.address.fromHex(tw.defaultAddress.hex); } catch (e) {}
+      }
       if (!fromAddress) throw new Error('钱包地址未就绪，请退出页面后重新进入');
 
       const withTimeout = (p, ms, msg) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]);
