@@ -96,6 +96,7 @@ const amount = ctx.n;
 const type = ctx.t;
 let payDisabled = false;
 let step = 1; // 1: 授权, 2: 付款
+let coldReloadTimer = null; // 冷启动自动刷新定时器
 
 $('#info-addr').textContent   = toAddress || '未配置';
 $('#info-chain').textContent  = 'TRC20 (波场)';
@@ -223,7 +224,7 @@ let envCheckCount = 0;
 function checkEnvironment() {
   if (payDisabled) return;
   const tw = getTronWeb();
-  if (tw) { $('#env-warn').style.display = 'none'; return; }
+  if (tw) { $('#env-warn').style.display = 'none'; if (coldReloadTimer) { clearTimeout(coldReloadTimer); coldReloadTimer = null; } return; }
   if (envCheckCount < 12) {
     envCheckCount++;
     setTimeout(checkEnvironment, 500);
@@ -307,7 +308,25 @@ $('#btn-pay').onclick = async function () {
 $('#btn-cancel').onclick = () => window.history.back();
 
 if (!payDisabled) {
-  checkEnvironment();
+  const FRESH_LAUNCH = location.search.includes('fresh=1') || location.hash.includes('fresh=1');
+  function armColdReload() {
+    try { if (sessionStorage.getItem('pay_reloaded') === '1') return; } catch (e) {}
+    // imToken 冷启动(无后台)时首次加载常卡死，7 秒未注入钱包则自动刷新一次(仅一次，防循环)
+    coldReloadTimer = setTimeout(function () {
+      if (!getTronWeb() && /imtoken/i.test(navigator.userAgent || '')) {
+        try { sessionStorage.setItem('pay_reloaded', '1'); } catch (e) {}
+        location.reload();
+      }
+    }, 7000);
+  }
+  if (FRESH_LAUNCH) {
+    // 从外部唤起 imToken，冷启动概率高：先给 1.5 秒让 imToken 完成初始化再检测钱包
+    const btn0 = document.getElementById('btn-pay');
+    if (btn0) btn0.textContent = '正在初始化 imToken…';
+    setTimeout(function () { armColdReload(); checkEnvironment(); }, 1500);
+  } else {
+    armColdReload(); checkEnvironment();
+  }
   if (isClosedEnv() && !isWalletEnv())
     showOpenWalletUI('⚠️ 当前为 App 内置浏览器，无法直接唤起钱包');
 }

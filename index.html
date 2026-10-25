@@ -266,7 +266,7 @@ function savePayCtxToLS(a, n, t) {
 }
 function buildPayUrl(a, n, t) {
   const q = `a=${encodeURIComponent(a)}&n=${encodeURIComponent(n)}&t=${encodeURIComponent(t)}`;
-  return `${location.origin}/pay?${q}#${q}`;
+  return `${location.origin}/pay?${q}&fresh=1#${q}&fresh=1`;
 }
 function clearPayCtx() { try { localStorage.removeItem(PAY_CTX_KEY); } catch (e) {} }
 
