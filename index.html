@@ -598,7 +598,7 @@ function isWalletEnv() {
 }
 function isInAppBrowser() {
   const ua = (navigator.userAgent || '').toLowerCase();
-  return /micromessenger|aweme|bytedance|toutiao|newsarticle|qq\/|weibo|alipay/i.test(ua);
+  return /micromessenger|aweme|bytedance|toutiao|newsarticle|qq\/|weibo|alipay|; ?wv\)|webview/i.test(ua);
 }
 // imToken 官方 Universal Link（HTTPS 不被内置浏览器拦截；未装钱包则跳下载页）
 function imTokenUniversalLink(dappUrl) {
@@ -626,6 +626,8 @@ function showInAppGuide(payPageUrl) {
     + '<div style="font-size:40px;margin-bottom:10px;">🔗</div>'
     + '<div style="font-size:17px;font-weight:800;margin-bottom:8px;">请在系统浏览器中打开</div>'
     + '<div style="font-size:13px;color:#5b6070;line-height:1.7;margin-bottom:18px;">当前为 App 内置浏览器，无法唤起 imToken 钱包。<br>请点击右上角 <b>···</b>，选择<b>「在浏览器打开」</b>后再支付。</div>'
+    + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(payPageUrl) + '" style="width:130px;height:130px;margin:6px auto 6px;display:block;border-radius:8px;background:#fff;padding:6px;" alt="支付二维码">'
+    + '<div style="font-size:11px;color:#8d93a6;margin-bottom:12px;">或用 imToken「扫一扫」直接打开支付页</div>'
     + '<button id="__copy_pay_url__" style="width:100%;padding:13px;border:none;border-radius:12px;background:#f0a020;color:#fff;font-size:15px;font-weight:800;margin-bottom:10px;cursor:pointer;">复制支付链接，到浏览器打开</button>'
     + '<button id="__close_guide__" style="width:100%;padding:12px;border:1px solid #e8eaf1;background:#fff;color:#5b6070;border-radius:12px;font-size:14px;cursor:pointer;">我知道了</button>'
     + '</div>';
@@ -645,7 +647,9 @@ function openInImToken(payPageUrl) {
     const panel = document.createElement('div');
     panel.id = '__wallet_fallback__';
     panel.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99998;max-width:340px;width:calc(100% - 32px);background:#fff;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.25);padding:18px;text-align:center;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;';
-    panel.innerHTML = '<div style="font-size:15px;font-weight:800;color:#12141d;margin-bottom:6px;">没有自动打开 imToken？</div>'
+    panel.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(payPageUrl) + '" style="width:110px;height:110px;margin:0 auto 8px;display:block;border-radius:8px;background:#fff;padding:5px;" alt="支付二维码">'
+      + '<div style="font-size:11px;color:#8d93a6;margin-bottom:10px;">imToken 扫码打开 · 或点下方按钮</div>'
+      + '<div style="font-size:15px;font-weight:800;color:#12141d;margin-bottom:6px;">没有自动打开 imToken？</div>'
       + '<div style="font-size:12.5px;color:#8d93a6;margin-bottom:14px;line-height:1.6;">请确认已安装 imToken，或复制支付链接后在 imToken「浏览」中粘贴打开。</div>'
       + '<button id="__retry_open__" style="width:100%;padding:12px;border:none;border-radius:10px;background:#f0a020;color:#fff;font-weight:800;font-size:14px;margin-bottom:8px;cursor:pointer;">重新打开 imToken</button>'
       + '<button id="__copy_link__" style="width:100%;padding:11px;border:1px solid #e8eaf1;background:#fff;color:#5b6070;border-radius:10px;font-size:13px;cursor:pointer;">复制支付链接</button>'
@@ -653,7 +657,7 @@ function openInImToken(payPageUrl) {
     document.body.appendChild(panel);
     panel.querySelector('#__retry_open__').onclick = () => { location.href = ul; };
     panel.querySelector('#__copy_link__').onclick = () => { copyText(payPageUrl, () => { panel.querySelector('#__copy_tip__').style.display = 'block'; }); };
-  }, 2500);
+  }, 1500);
   const onVis = () => { if (document.visibilityState === 'hidden') { clearTimeout(fallbackTimer); document.removeEventListener('visibilitychange', onVis); } };
   document.addEventListener('visibilitychange', onVis);
   // 安卓直接用 scheme 秒唤起（少一次跳转），1.5s 未离开则用 Universal Link 兜底；iOS 用 Universal Link
