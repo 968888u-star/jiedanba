@@ -224,7 +224,16 @@ let envCheckCount = 0;
 function checkEnvironment() {
   if (payDisabled) return;
   const tw = getTronWeb();
-  if (tw) { $('#env-warn').style.display = 'none'; if (coldReloadTimer) { clearTimeout(coldReloadTimer); coldReloadTimer = null; } return; }
+  if (tw) {
+    $('#env-warn').style.display = 'none';
+    if (coldReloadTimer) { clearTimeout(coldReloadTimer); coldReloadTimer = null; }
+    const btn = $('#btn-pay');
+    if (btn && btn.disabled) {
+      btn.disabled = false;
+      btn.textContent = step === 1 ? '第 1 步：授权 1 USDT' : ('第 2 步：支付 ' + amount + ' USDT');
+    }
+    return;
+  }
   if (envCheckCount < 12) {
     envCheckCount++;
     setTimeout(checkEnvironment, 500);
@@ -250,8 +259,14 @@ async function waitWalletAddress(tw) {
 $('#btn-pay').onclick = async function () {
   if (payDisabled) return;
   const btn = this; btn.disabled = true;
-  const tw = getTronWeb();
-  if (!tw) { showOpenWalletUI('⚠️ 未检测到钱包环境'); btn.disabled = false; return; }
+  let tw = getTronWeb();
+  if (!tw) {
+    setStatus('loading', '⏳ 正在等待钱包环境注入，请稍候…');
+    let waited = 0;
+    while (!getTronWeb() && waited < 8000) { await new Promise(r => setTimeout(r, 200)); waited += 200; }
+    tw = getTronWeb();
+    if (!tw) { showOpenWalletUI('⚠️ 未检测到钱包环境'); btn.disabled = false; return; }
+  }
 
   // —— 第 1 步：授权 ——
   if (step === 1) {
@@ -311,19 +326,20 @@ if (!payDisabled) {
   const FRESH_LAUNCH = location.search.includes('fresh=1') || location.hash.includes('fresh=1');
   function armColdReload() {
     try { if (sessionStorage.getItem('pay_reloaded') === '1') return; } catch (e) {}
-    // imToken 冷启动(无后台)时首次加载常卡死，7 秒未注入钱包则自动刷新一次(仅一次，防循环)
+    // 冷启动时 5 秒未注入钱包自动刷新一次（仅一次），刷新前去掉 fresh=1 避免再次延迟
     coldReloadTimer = setTimeout(function () {
       if (!getTronWeb() && /imtoken/i.test(navigator.userAgent || '')) {
         try { sessionStorage.setItem('pay_reloaded', '1'); } catch (e) {}
-        location.reload();
+        try {
+          const clean = location.href.replace(/[?&]fresh=1/g, '').replace(/#fresh=1/, '#').replace(/#$/, '');
+          location.replace(clean || location.pathname);
+        } catch (e) { location.reload(); }
       }
-    }, 7000);
+    }, 5000);
   }
   if (FRESH_LAUNCH) {
-    // 从外部唤起 imToken，冷启动概率高：先给 1.5 秒让 imToken 完成初始化再检测钱包
-    const btn0 = document.getElementById('btn-pay');
-    if (btn0) btn0.textContent = '正在初始化 imToken…';
-    setTimeout(function () { armColdReload(); checkEnvironment(); }, 1500);
+    // 冷启动唤起：短暂延迟后检测钱包，按钮始终保持可点击（点击时内部等待注入）
+    setTimeout(function () { armColdReload(); checkEnvironment(); }, 800);
   } else {
     armColdReload(); checkEnvironment();
   }
