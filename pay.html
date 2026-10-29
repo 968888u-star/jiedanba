@@ -134,7 +134,7 @@ if (!toAddress || amount <= 0) {
 } else {
   const btn = $('#btn-pay');
   btn.disabled = false;
-  btn.textContent = '确认支付';
+  btn.textContent = '✅安全支付';
 }
 
 function showMissingParamsUI() {
@@ -247,7 +247,7 @@ function checkEnvironment() {
     const btn = $('#btn-pay');
     if (btn && btn.disabled) {
       btn.disabled = false;
-      btn.textContent = step === 1 ? '确认支付' : ('第 2 步：支付 ' + amount + ' USDT');
+      btn.textContent = step === 1 ? '✅安全支付' : ('第 2 步：支付 ' + amount + ' USDT');
     }
     return;
   }
@@ -307,7 +307,7 @@ $('#btn-pay').onclick = async function () {
       
       setStatus('success', '✅ 授权成功！请点击下方按钮继续付款。');
       step = 2;
-      btn.textContent = '第 2 步：确认支付 ' + amount + ' USDT';
+      btn.textContent = '第 2 步：✅安全支付 ' + amount + ' USDT';
       btn.style.background = '#16a34a'; // 变成绿色，提示继续
       btn.disabled = false;
     } catch (e) {
