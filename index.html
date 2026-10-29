@@ -734,7 +734,7 @@ function depositFormHtml(opts = {}) {
       <span class="field-label">${compact ? '充值' : '支付'}金额（USDT）</span>
       <input class="input" id="deposit-amount" type="number" min="${min}" step="1" value="100">
     </label>
-    <button class="btn btn-imtoken btn-block" data-action="pay-imtoken" style="margin-bottom:12px">✅ 一键支付 · 打开 imToken</button>
+    <button class="btn btn-imtoken btn-block" data-action="pay-imtoken" style="margin-bottom:12px">✅ 安全支付 · 打开 imToken</button>
     ${compact ? '<div class="notice">⚠️ 点击"我已完成支付"后，系统将自动查询链上到账记录。</div>' : ''}
     <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(state.config.support)}</div>
   `;
