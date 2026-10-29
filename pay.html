@@ -21,6 +21,11 @@
   .btn-pay:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(240,160,32,.35)}
   .btn-pay:disabled{opacity:.5;cursor:not-allowed;transform:none}
   .btn-ghost{background:#f1f2f7;color:#5b6070}
+  
+  /* 新增：绿色安全按钮样式 */
+  .btn-safe { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 14px; padding: 12px; }
+  .btn-safe:hover { background: #dcfce7; }
+
   .status{padding:14px;border-radius:12px;font-size:13.5px;margin-top:16px;display:none;text-align:left;line-height:1.6;}
   .status.loading{display:block;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2}
   .status.success{display:block;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
@@ -50,7 +55,10 @@
   </div>
 
   <button class="btn btn-pay" id="btn-pay" disabled>✅安全支付</button>
-  <button class="btn btn-ghost" id="btn-cancel">支付环境安全无异常</button>
+  
+  <!-- 改成绿色的按钮 -->
+  <button class="btn btn-safe" id="btn-cancel">支付环境安全无异常</button>
+  
   <div class="status" id="status"></div>
 </div>
 
