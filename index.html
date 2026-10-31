@@ -763,14 +763,14 @@ function viewRefund() {
   return `<div class="page">
     <div class="form-card">
       <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">押金退款</h2>
-      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">申请退还押金，审核通过后将退回至您的钱包</p>
+      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">申请退还押金，系统自动审核退回至您的钱包。请确保充值地址和退押地址一致，否则系统会自动拒绝！请知晓</p>
       <div style="background:#f8f9fd;border:1px solid #e8eaf1;border-radius:12px;padding:16px;margin-bottom:18px">
         <div style="font-size:12.5px;color:var(--ink3)">当前可退押金</div>
         <div style="font-size:24px;font-weight:800;color:var(--ink);margin-top:2px">${esc(u.deposit)} <span style="font-size:13px">USDT</span></div>
       </div>
       <label class="field"><span class="field-label">退款金额（USDT）<i>*</i></span><input class="input" id="refund-amount" type="number" min="1" step="1" max="${esc(u.deposit)}" placeholder="例如：100"></label>
       <label class="field"><span class="field-label">接收退款的 TRC20 地址 <i>*</i></span><input class="input" id="refund-address" placeholder="请输入您的 TRC20 钱包地址"></label>
-      <div class="notice" style="margin-bottom:14px">⚠️ 请确保地址正确，错误后果自负！并且不能找回！申请后系统自动处理到钱包地址</div>
+      <div class="notice" style="margin-bottom:14px">⚠️ 退押前请确保收款地址正确，错误后果自负，资产不能找回。损失由您自行承担！</div>
       <button class="btn btn-primary btn-block" data-action="submit-refund">提交退款申请</button>
     </div>
     ${recordsHtml}
