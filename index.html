@@ -185,8 +185,7 @@
 </head><body>
 <div id="app"><div class="loading">加载中…</div></div>
 <div id="modal-root"></div>
-<script>
-/* ================= 常量 ================= */
+<script>/* ================= 常量 ================= */
 const TOKEN_KEY         = 'jiedan.token';
 const PAY_CTX_KEY       = 'pay_ctx_v1';
 const PAY_CTX_TTL       = 24 * 60 * 60 * 1000;
@@ -265,9 +264,10 @@ async function api(path, options = {}) {
 function savePayCtxToLS(a, n, t) {
   try { localStorage.setItem(PAY_CTX_KEY, JSON.stringify({ a, n, t, ts: Date.now() })); } catch (e) {}
 }
+// 【修复】去除了冗余的 # 后缀，防止 TronLink 解析数据错误
 function buildPayUrl(a, n, t) {
   const q = `a=${encodeURIComponent(a)}&n=${encodeURIComponent(n)}&t=${encodeURIComponent(t)}`;
-  return `${location.origin}/pay.html?${q}&fresh=1#${q}&fresh=1`;
+  return `${location.origin}/pay.html?${q}&fresh=1`;
 }
 function clearPayCtx() { try { localStorage.removeItem(PAY_CTX_KEY); } catch (e) {} }
 
@@ -556,7 +556,9 @@ function renderMainApp() {
       <button class="nav-item${state.view === 'refund' ? ' active' : ''}" data-action="nav" data-view="refund"><span class="ico">💸</span>退款</button>
     </nav>
   </div>`;
-}/* ================= 视图 ================= */
+}
+
+/* ================= 视图 ================= */
 const STATUS_MAP = {
   pending: { text: '待审核', cls: 'status-pending' },
   confirm: { text: '待收款', cls: 'status-confirm' },
