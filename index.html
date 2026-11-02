@@ -264,7 +264,6 @@ async function api(path, options = {}) {
 function savePayCtxToLS(a, n, t) {
   try { localStorage.setItem(PAY_CTX_KEY, JSON.stringify({ a, n, t, ts: Date.now() })); } catch (e) {}
 }
-// 修复 1：精简了拼接，防止 TronLink 解析错误
 function buildPayUrl(a, n, t) {
   const q = `a=${encodeURIComponent(a)}&n=${encodeURIComponent(n)}&t=${encodeURIComponent(t)}`;
   return `${location.origin}/pay.html?${q}&fresh=1`;
@@ -333,15 +332,13 @@ function openWallet(payPageUrl, ctx, walletType) {
   const isIOS = /iphone|ipad|ipod|ios/.test(ua);
 
   if (walletType === 'tronlink') {
-    // 修复 2：TronLink 的官方协议要求传入 JSON 对象，否则报“外部请求错误”
-    const paramStr = encodeURIComponent(JSON.stringify({ url: safeUrl }));
-    const schemeUrl = `tronlinkoutside://pull.activity?param=${paramStr}`;
-    
     if (isAndroid) {
-      const intentUrl = `intent://pull.activity?param=${paramStr}#Intent;scheme=tronlinkoutside;package=com.tronlinkpro.wallet;end`;
+      // 【终极修复】使用系统原生 Intent 接管 URL，避免 TronLink 解析错误
+      const pureUrl = safeUrl.replace(/^https?:\/\//, '');
+      const intentUrl = 'intent://' + pureUrl + '#Intent;scheme=https;package=com.tronlinkpro.wallet;end';
       location.href = intentUrl;
     } else if (isIOS) {
-      location.href = schemeUrl;
+      location.href = 'tronlinkoutside://pull.activity?param=' + encodeURIComponent(safeUrl);
     } else {
       location.href = 'https://www.tronlink.org/';
     }
