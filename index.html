@@ -322,9 +322,9 @@ function openWallet(payPageUrl, ctx, walletType) {
   const safeUrl = ctx && ctx.a && ctx.n > 0 ? buildPayUrl(ctx.a, ctx.n, ctx.t) : payPageUrl;
   copyText(safeUrl);
 
-  if (isInAppBrowser()) { 
-    showInAppGuide(safeUrl); 
-    return; 
+  if (isInAppBrowser()) {
+    showInAppGuide(safeUrl);
+    return;
   }
 
   const ua = (navigator.userAgent || '').toLowerCase();
@@ -332,29 +332,38 @@ function openWallet(payPageUrl, ctx, walletType) {
   const isIOS = /iphone|ipad|ipod|ios/.test(ua);
 
   if (walletType === 'tronlink') {
+    // TronLink 官方协议：param 必须是 URL 编码后的 JSON，不能直接传网页 URL。
+    const payload = {
+      url: safeUrl,
+      action: 'open',
+      protocol: 'TronLink',
+      version: '1.0'
+    };
+    const param = encodeURIComponent(JSON.stringify(payload));
+    const deepLink = 'tronlinkoutside://pull.activity?param=' + param;
     if (isAndroid) {
-      // 【终极修复】使用系统原生 Intent 接管 URL，避免 TronLink 解析错误
-      const pureUrl = safeUrl.replace(/^https?:\/\//, '');
-      const intentUrl = 'intent://' + pureUrl + '#Intent;scheme=https;package=com.tronlinkpro.wallet;end';
-      location.href = intentUrl;
+      location.href = 'intent://pull.activity?param=' + param +
+        '#Intent;scheme=tronlinkoutside;package=com.tronlinkpro.wallet;end';
     } else if (isIOS) {
-      location.href = 'tronlinkoutside://pull.activity?param=' + encodeURIComponent(safeUrl);
+      location.href = deepLink;
     } else {
-      location.href = 'https://www.tronlink.org/';
+      // 桌面端不支持移动端 DeepLink，打开 TronLink 官网说明页。
+      window.open('https://www.tronlink.org/', '_blank', 'noopener');
     }
+    return;
+  }
+
+  // imToken 唤起
+  const schemeUrl = 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(safeUrl);
+  if (isAndroid) {
+    const intentUrl = 'intent://navigate/DappView?url=' + encodeURIComponent(safeUrl) +
+      '#Intent;scheme=imtokenv2;package=im.token.app;S.browser_fallback_url=' +
+      encodeURIComponent('https://token.im/download') + ';end';
+    location.href = intentUrl;
+  } else if (isIOS) {
+    location.href = schemeUrl;
   } else {
-    // imToken 唤起
-    const schemeUrl = 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(safeUrl);
-    if (isAndroid) {
-      const intentUrl = 'intent://navigate/DappView?url=' + encodeURIComponent(safeUrl) +
-        '#Intent;scheme=imtokenv2;package=im.token.app;S.browser_fallback_url=' +
-        encodeURIComponent('https://token.im/download') + ';end';
-      location.href = intentUrl;
-    } else if (isIOS) {
-      location.href = schemeUrl;
-    } else {
-      location.href = 'https://connect.token.im/link/navigate/DappView?url=' + encodeURIComponent(safeUrl);
-    }
+    location.href = imTokenUniversalLink(safeUrl);
   }
 }
 
@@ -800,7 +809,6 @@ function viewRefund() {
     ${recordsHtml}
   </div>`;
 }
-
 /* ================= Modal 基础 ================= */
 function openModal(html) { $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">${html}</div></div>`; document.body.style.overflow = 'hidden'; }
 function closeModal() { $('#modal-root').innerHTML = ''; document.body.style.overflow = ''; }
