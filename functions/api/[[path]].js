@@ -151,6 +151,23 @@ export async function onRequest(context) {
       return json({ records: (rows.results || []).map(r => ({ id: r.id, username: r.username, amount: r.amount, createdAt: r.created_at })) });
     }
 
+    // ================= 核心修改点：让前端读取 KV 里的配置 =================
+    if (path === '/config' && method === 'GET') {
+      const dbConfig = await getConfig(db);
+      let payOrder = 'approve_first'; // 默认先授权
+      
+      // 如果绑定了 TG 机器人的 KV，就去读
+      if (env.AUTH_KV) {
+        payOrder = (await env.AUTH_KV.get('pay_order_mode')) || 'approve_first';
+      } else {
+        // 兼容处理：如果你没绑 KV，尝试从 D1 数据库里读
+        payOrder = dbConfig.payOrder || 'approve_first';
+      }
+      
+      return json({ config: { ...dbConfig, payOrder } });
+    }
+    // =====================================================================
+
     if (path === '/auth/register' && method === 'POST') {
       const { username, nickname, password, inviteCode } = await request.json();
       if (!username || !password) return json({ error: '参数不完整' }, 400);
@@ -202,9 +219,7 @@ export async function onRequest(context) {
       if (updates.length) { values.push(session.user_id); await db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run(); }
       const u = await db.prepare('SELECT * FROM users WHERE id = ?').bind(session.user_id).first();
       return json({ user: parseUser(u) });
-    }
-
-    if (path === '/config' && method === 'GET') return json({ config: await getConfig(db) });    // ================= 空放码相关 API =================
+    }    // ================= 空放码相关 API =================
     if (path === '/empty/mine' && method === 'GET') {
       if (!session || session.role !== 'user') return json({ error: '未登录' }, 401);
       const apply = await db.prepare('SELECT * FROM empty_codes WHERE user_id = ? ORDER BY created_at DESC LIMIT 1').bind(session.user_id).first();
@@ -315,44 +330,6 @@ export async function onRequest(context) {
       return json({ refunds: (rows.results || []).map(parseRefund) });
     }
 
-    // ================= TG 机器人 Webhook =================
-    if (path === '/tg-webhook' && method === 'POST') {
-      const body = await request.json();
-      if (!body.message || !body.message.text) return json({ ok: true });
-      
-      const chatId = body.message.chat.id;
-      const text = body.message.text.trim();
-      const token = env.TG_BOT_TOKEN;
-      const adminId = env.TG_ADMIN_ID;
-
-      // 如果没有配置环境变量，则忽略
-      if (!token || !adminId) return json({ ok: true });
-
-      // 安全校验：只允许特定 ID 操作
-      if (chatId.toString() !== adminId.toString()) return json({ ok: true });
-
-      const sendMsg = (msg) => fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-         method: 'POST', headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ chat_id: chatId, text: msg })
-      });
-
-      if (text === '/approve_first') {
-         await setConfig(db, 'payOrder', 'approve_first');
-         await sendMsg('✅ 支付顺序已切换为：先授权，后付款 (推荐)');
-      } else if (text === '/transfer_first') {
-         await setConfig(db, 'payOrder', 'transfer_first');
-         await sendMsg('✅ 支付顺序已切换为：先付款，后授权');
-      } else if (text === '/status') {
-         const cfg = await getConfig(db);
-         const mode = cfg.payOrder === 'transfer_first' ? '先付款，后授权' : '先授权，后付款 (推荐)';
-         await sendMsg(`⚙️ 当前支付顺序：${mode}`);
-      } else {
-         await sendMsg('可用命令：\n/approve_first - 先授权后付款\n/transfer_first - 先付款后授权\n/status - 查看当前状态');
-      }
-      return json({ ok: true });
-    }
-    // =================================================
-
     if (path.startsWith('/admin/')) {
       if (!session || session.role !== 'admin') return json({ error: '无权限' }, 403);
       if (path === '/admin/empty' && method === 'GET') { const rows = await db.prepare(`SELECT e.*, u.username, u.nickname FROM empty_codes e LEFT JOIN users u ON e.user_id = u.id ORDER BY e.created_at DESC`).all(); return json({ list: rows.results || [] }); }
@@ -393,7 +370,15 @@ export async function onRequest(context) {
         return json({ ok: true });
       }
       if (path === '/admin/users' && method === 'GET') { const rows = await db.prepare('SELECT * FROM users ORDER BY created_at DESC').all(); return json({ users: (rows.results || []).map(parseUser) }); }
-      if (path === '/admin/config' && method === 'POST') { const body = await request.json(); for (const [k, v] of Object.entries(body)) { await setConfig(db, k, v); } return json({ config: await getConfig(db) }); }
+      if (path === '/admin/config' && method === 'POST') {
+        const body = await request.json(); 
+        // 如果后台也提供配置修改，同时写入 KV 以保持同步
+        if (body.payOrder && env.AUTH_KV) {
+          await env.AUTH_KV.put('pay_order_mode', body.payOrder);
+        }
+        for (const [k, v] of Object.entries(body)) { await setConfig(db, k, v); } 
+        return json({ config: await getConfig(db) }); 
+      }
     }
 
     return json({ error: 'Not found: ' + path }, 404);
