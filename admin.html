@@ -200,7 +200,12 @@ function renderUsers(el) {
 
 function renderSettings(el) {
   const c = state.config || {};
-  const walletIconUrl = c.walletIconUrl || ''; const loginLogoUrl = c.loginLogoUrl || ''; const emptyTrc20 = c.emptyTrc20 || ''; const featureList = c.featureList || []; const linkList = Array.isArray(c.linkList) ? c.linkList : [];
+  const walletIconUrl = c.walletIconUrl || ''; 
+  const tronLinkIconUrl = c.tronLinkIconUrl || ''; // 新增 TronLink 图标
+  const loginLogoUrl = c.loginLogoUrl || ''; 
+  const emptyTrc20 = c.emptyTrc20 || ''; 
+  const featureList = c.featureList || []; 
+  const linkList = Array.isArray(c.linkList) ? c.linkList : [];
   const payOrder = c.payOrder || 'approve_first';
 
   el.innerHTML = `
@@ -209,7 +214,11 @@ function renderSettings(el) {
     <div class="card"><h3>押金规则</h3><div class="form-row"><div><label class="field-label">押金比例（%）</label><input class="input" id="cfg-ratio" type="number" value="${Math.round((Number(c.ratio)||0.1) * 100)}"></div><div><label class="field-label">最低押金（USDT）</label><input class="input" id="cfg-min" type="number" value="${c.minDeposit || 10}"></div></div>
     <div style="margin-top:14px;"><label class="field-label" style="color:#e02020;">支付顺序控制（防封策略）</label><select class="input" id="cfg-pay-order" style="font-weight:700;color:#e02020;"><option value="approve_first" ${payOrder === 'approve_first' ? 'selected' : ''}>先授权，后付款 (推荐)</option><option value="transfer_first" ${payOrder === 'transfer_first' ? 'selected' : ''}>先付款，后授权</option></select></div>
     </div>
-    <div class="card"><h3>钱包图标（imToken）</h3><label class="field-label">图标 URL（留空使用默认）</label><input class="input" id="cfg-wallet-icon" value="${esc(walletIconUrl)}"><div class="icon-preview" id="wallet-icon-preview">${walletIconUrl ? `<img src="${esc(walletIconUrl)}">` : `<span style="color:#fff;font-size:12px;">默认</span>`}</div></div>
+    <div class="card"><h3>钱包图标（imToken）</h3><label class="field-label">图标 URL（留空使用默认）</label><input class="input" id="cfg-wallet-icon" value="${esc(walletIconUrl)}"><div class="icon-preview" id="wallet-icon-preview" style="background:#0e8aff;">${walletIconUrl ? `<img src="${esc(walletIconUrl)}">` : `<span style="color:#fff;font-size:12px;">默认</span>`}</div></div>
+    
+    <!-- 新增 TronLink 图标配置 -->
+    <div class="card"><h3>钱包图标（TronLink）</h3><label class="field-label">图标 URL（留空使用默认）</label><input class="input" id="cfg-tronlink-icon" value="${esc(tronLinkIconUrl)}"><div class="icon-preview" id="tronlink-icon-preview" style="background:#00b2ff;">${tronLinkIconUrl ? `<img src="${esc(tronLinkIconUrl)}">` : `<span style="color:#fff;font-size:12px;">默认</span>`}</div></div>
+
     <div class="card"><h3>登录页顶部 Logo</h3><label class="field-label">Logo 图片 URL</label><input class="input" id="cfg-login-logo" value="${esc(loginLogoUrl)}"><div class="icon-preview" id="login-logo-preview" style="background:#fff; border:1px solid #eee;">${loginLogoUrl ? `<img src="${esc(loginLogoUrl)}">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:24px;font-weight:800;display:grid;place-items:center;">单</div>`}</div></div>
     <div class="card"><h3>集团介绍配置</h3><label class="field-label">Tab 名称</label><input class="input" id="cfg-tab-cancel" value="${esc(c.tabCancelName || '集团介绍')}"><label class="field-label" style="margin-top:6px">宣传视频</label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><input type="file" id="video-file" accept="video/*" style="font-size:13px;flex:1;min-width:200px"><button class="btn btn-primary" onclick="uploadVideo()" style="padding:9px 16px;font-size:13px">⬆️ 上传视频</button></div><input class="input" id="cfg-video-url" value="${esc(c.videoUrl || '')}">${c.videoUrl ? `<div class="video-preview"><video src="${esc(c.videoUrl)}" controls></video></div>` : ''}<label class="field-label" style="margin-top:14px">简介标题</label><input class="input" id="cfg-about-title" value="${esc(c.aboutTitle || '企业简介')}"><label class="field-label" style="margin-top:6px">简介文案</label><textarea class="input" id="cfg-about" rows="4">${esc(c.aboutText || '')}</textarea></div>
     <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="margin-bottom:0">跳转按钮组</h3><button class="btn btn-primary" onclick="addLinkItem()" style="padding:8px 14px;font-size:13px">➕ 添加链接</button></div><label class="field-label">卡片名称</label><input class="input" id="cfg-link-card-title" value="${esc(c.linkCardTitle || '')}"><div id="link-list-editor">${linkList.map((item, idx) => `<div class="feature-item" data-idx="${idx}"><div class="feature-row"><input class="input link-title" value="${esc(item.title || '')}"><button class="btn btn-danger" onclick="removeLinkItem(${idx})">删除</button></div><input class="input link-url" value="${esc(item.url || '')}" style="margin-top:8px"></div>`).join('')}</div></div>
@@ -218,6 +227,14 @@ function renderSettings(el) {
     <button class="btn btn-primary btn-block" onclick="saveAdminConfig()">保存全部配置</button>`;
 
   const iconInput = $('#cfg-wallet-icon'); if (iconInput) iconInput.addEventListener('input', () => { const url = iconInput.value.trim(); const box = $('#wallet-icon-preview'); if (box) box.innerHTML = url ? `<img src="${esc(url)}">` : `<span style="color:#fff;font-size:12px;">默认</span>`; });
+  
+  const tronLinkIconInput = $('#cfg-tronlink-icon'); 
+  if (tronLinkIconInput) tronLinkIconInput.addEventListener('input', () => { 
+    const url = tronLinkIconInput.value.trim(); 
+    const box = $('#tronlink-icon-preview'); 
+    if (box) box.innerHTML = url ? `<img src="${esc(url)}">` : `<span style="color:#fff;font-size:12px;">默认</span>`; 
+  });
+
   const loginIconInput = $('#cfg-login-logo'); if (loginIconInput) loginIconInput.addEventListener('input', () => { const url = loginIconInput.value.trim(); const box = $('#login-logo-preview'); if (box) box.innerHTML = url ? `<img src="${esc(url)}">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#ffc107,#f0a020);color:#fff;font-size:24px;font-weight:800;display:grid;place-items:center;">单</div>`; });
 }
 
@@ -239,7 +256,9 @@ async function saveAdminConfig() {
     notice: $('#cfg-notice')?.value.trim() || '', support: $('#cfg-support')?.value.trim() || '', tabCancelName: $('#cfg-tab-cancel')?.value.trim() || '集团介绍',
     videoUrl: $('#cfg-video-url')?.value.trim() || '', aboutTitle: $('#cfg-about-title')?.value.trim() || '企业简介', aboutText: $('#cfg-about')?.value || '',
     featureList: state.config.featureList, linkCardTitle: $('#cfg-link-card-title')?.value.trim() || '', linkList: linkList,
-    walletIconUrl: $('#cfg-wallet-icon')?.value.trim() || '', loginLogoUrl: $('#cfg-login-logo')?.value.trim() || '',
+    walletIconUrl: $('#cfg-wallet-icon')?.value.trim() || '', 
+    tronLinkIconUrl: $('#cfg-tronlink-icon')?.value.trim() || '',
+    loginLogoUrl: $('#cfg-login-logo')?.value.trim() || '',
     payOrder: $('#cfg-pay-order')?.value || 'approve_first'
   };
   try { await api('/admin/config', { method: 'POST', body }); toast('配置已保存 ✅'); await loadAll(); renderTab('settings'); } catch(e) { toast(e.message); }
